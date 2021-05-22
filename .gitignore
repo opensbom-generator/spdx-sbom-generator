@@ -1,0 +1,8 @@
+# modules
+vendor/
+
+#binaries
+bin/
+
+# output
+bom*
