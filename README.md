@@ -132,8 +132,8 @@ type Module struct {
 type PluginMetadata struct {
     Name       string
     Slug       string
-    Manifest   string
-    ModulePath string
+    Manifest   []string
+    ModulePath []string
 }
 ```
 
@@ -154,8 +154,8 @@ type PluginMetadata struct {
 PluginMetadata{
     Name:       "Go Modules",
     Slug:       "go-mod",
-    Manifest:   "go.mod",
-    ModulePath: "vendor",
+    Manifest:   []string{"go.mod"},
+    ModulePath: []string{"vendor"},
 }
 ```
 
@@ -163,7 +163,7 @@ PluginMetadata{
 
     **Input**: The working directory to read the package from
 
-    **Output**: retirns the Package Information of the root  Module
+    **Output**: returns the Package Information of the root  Module
 
 * `ListModules`: fetches and lists all packages (root and dependencies) required by the project in the given project directory (side-by-side)
 
@@ -268,14 +268,14 @@ func New() *npm {
 		metadata: models.PluginMetadata{
 			Name:       "Node Package Manager",
 			Slug:       "npm",
-			Manifest:   "package.json",
-			ModulePath: "node_modules",
+			Manifest:   []string{"package.json"},
+			ModulePath: []string{"node_modules"},
 		},
 	}
 }
 ```
 
-#### Step 5
+#### Step 6
 In `handler.go`, create the required interface function (Data contract definition above)
 
 ```GO
@@ -315,7 +315,7 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 }
 ```
 
-#### Step 5
+#### Step 7
 In `modules.go` at `./internal/modules/` directory, register the new plugin. Add the plugin to register to the existing definition
 
 ```GO

@@ -66,9 +66,8 @@ func (m *Manager) Run() error {
 	}
 
 	log.Infof("Current Language Version %s", version)
-
-	if !m.Plugin.HasModulesInstalled(modulePath) {
-		return errNoModulesInstalled
+	if err := m.Plugin.HasModulesInstalled(modulePath); err != nil {
+		return err
 	}
 
 	modules, err := m.Plugin.ListModules(modulePath)
