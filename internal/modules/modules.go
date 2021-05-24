@@ -6,6 +6,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/modules/composer"
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/npm"
 )
@@ -22,6 +23,7 @@ func init() {
 	registeredPlugins = append(registeredPlugins,
 		gomod.New(),
 		npm.New(),
+		composer.New(),
 	)
 }
 

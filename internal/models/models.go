@@ -89,3 +89,13 @@ type License struct {
 	ExtractedText string
 	Comments      string
 }
+
+type ComposerModules struct {
+	Installed []ComposerModuleInstalled
+}
+
+type ComposerModuleInstalled struct {
+	Name        string
+	Version     string
+	Description string
+}
