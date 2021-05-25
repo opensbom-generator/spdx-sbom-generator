@@ -1,6 +1,8 @@
 package composer
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +18,27 @@ import (
 // rest of the file below
 type composer struct {
 	metadata models.PluginMetadata
+}
+
+type ComposerInfo struct {
+	Packages    []ComposerInfoPackage
+	PackagesDev []ComposerInfoPackage `json:"packages-dev"`
+}
+
+type ComposerInfoPackageDist struct {
+	Type      string
+	URL       string
+	Reference string
+	Shasum    string
+}
+
+type ComposerInfoPackage struct {
+	Name        string
+	Version     string
+	Type        string
+	Dist        ComposerInfoPackageDist
+	License     []string
+	Description string
 }
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
@@ -113,7 +136,9 @@ func ListModulesFromLock() (ComposerInfo, error) {
 
 	var lock ComposerInfo
 	err = json.Unmarshal(raw, &lock)
-
+	if err != nil {
+		return ComposerInfo{}, err
+	}
 	return lock, nil
 }
 
@@ -141,12 +166,21 @@ func getModuleFromComposerPackage(dep ComposerInfoPackage) models.Module {
 	mod.Version = dep.Version
 	mod.CheckSum = &models.CheckSum{
 		Algorithm: models.HashAlgoSHA1,
-		Value:     dep.Dist.Shasum,
+		Value:     getCheckSumValue(dep),
 	}
 	mod.LicenseDeclared = getLicenseDeclared(dep)
 	mod.OtherLicense = getOtherLicense(dep)
 
 	return mod
+}
+
+func getCheckSumValue(module ComposerInfoPackage) string {
+	value := module.Dist.Shasum
+	if value != "" {
+		return value
+	}
+
+	return readCheckSum(genUrl(module))
 }
 
 func getOtherLicense(module ComposerInfoPackage) []*models.License {
@@ -180,31 +214,29 @@ func getLicenseDeclared(module ComposerInfoPackage) string {
 
 func getName(moduleName string) string {
 	s := strings.Split(moduleName, "/")
-	return s[1]
+
+	if len(s) > 1 {
+		return s[1]
+	}
+
+	return s[0]
 }
 
 func genUrl(dep ComposerInfoPackage) string {
-	return "pkg:composer/" + dep.Name + "@" + dep.Version
+	return "pkg:composer/" + dep.Name + "@" + normalizePackageVersion(dep.Version)
 }
 
-type ComposerInfo struct {
-	Packages    []ComposerInfoPackage
-	PackagesDev []ComposerInfoPackage `json:"packages-dev"`
+func normalizePackageVersion(version string) string {
+	parts := strings.Split(version, "v")
+	if len(parts) > 1 {
+		return parts[1]
+	}
+
+	return parts[0]
 }
 
-type ComposerInfoPackageDist struct {
-	Type      string
-	URL       string
-	Reference string
-	Shasum    string
-}
-
-type ComposerInfoPackage struct {
-	Name        string
-	Version     string
-	Type        string // library
-	Authors     []string
-	Dist        ComposerInfoPackageDist
-	License     []string
-	Description string
+func readCheckSum(content string) string {
+	h := sha1.New()
+	h.Write([]byte(content))
+	return hex.EncodeToString(h.Sum(nil))
 }
