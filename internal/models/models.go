@@ -12,15 +12,15 @@ type IPlugin interface {
 	ListModules(path string) ([]Module, error)
 	ListAllModules(path string) ([]Module, error)
 	IsValid(path string) bool
-	HasModulesInstalled(path string) bool
+	HasModulesInstalled(path string) error
 }
 
 // PluginMetadata ...
 type PluginMetadata struct {
 	Name       string
 	Slug       string
-	Manifest   string
-	ModulePath string
+	Manifest   []string
+	ModulePath []string
 }
 
 // Module ... ...

@@ -21,14 +21,16 @@ type mod struct {
 	metadata models.PluginMetadata
 }
 
+var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
+
 // New ...
 func New() *mod {
 	return &mod{
 		metadata: models.PluginMetadata{
 			Name:       "Go Modules",
 			Slug:       "go-mod",
-			Manifest:   "go.mod",
-			ModulePath: "vendor",
+			Manifest:   []string{"go.mod"},
+			ModulePath: []string{"vendor"}, // todo Add other module source
 		},
 	}
 }
@@ -40,12 +42,22 @@ func (m *mod) GetMetadata() models.PluginMetadata {
 
 // IsValid ...
 func (m *mod) IsValid(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.Manifest))
+	for i := range m.metadata.Manifest {
+		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return true
+		}
+	}
+	return false
 }
 
 // HasModulesInstalled ...
-func (m *mod) HasModulesInstalled(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.ModulePath))
+func (m *mod) HasModulesInstalled(path string) error {
+	for i := range m.metadata.ModulePath {
+		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+			return nil
+		}
+	}
+	return errDependenciesNotFound
 }
 
 // GetVersion...

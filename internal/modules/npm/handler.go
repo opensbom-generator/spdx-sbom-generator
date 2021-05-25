@@ -1,6 +1,7 @@
 package npm
 
 import (
+	"errors"
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
@@ -11,14 +12,16 @@ type npm struct {
 	metadata models.PluginMetadata
 }
 
+var errDependenciesNotFound = errors.New("Please install dependencies by running go mod vendor")
+
 // New ...
 func New() *npm {
 	return &npm{
 		metadata: models.PluginMetadata{
 			Name:       "Node Package Manager",
 			Slug:       "npm",
-			Manifest:   "package.json",
-			ModulePath: "node_modules",
+			Manifest:   []string{"package.json"},
+			ModulePath: []string{"node_modules"},
 		},
 	}
 }
@@ -30,12 +33,22 @@ func (m *npm) GetMetadata() models.PluginMetadata {
 
 // IsValid ...
 func (m *npm) IsValid(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.Manifest))
+	for i := range m.metadata.Manifest {
+		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return true
+		}
+	}
+	return false
 }
 
 // HasModulesInstalled ...
-func (m *npm) HasModulesInstalled(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.ModulePath))
+func (m *npm) HasModulesInstalled(path string) error {
+	for i := range m.metadata.ModulePath {
+		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+			return nil
+		}
+	}
+	return errDependenciesNotFound
 }
 
 // GetVersion ...
