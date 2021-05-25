@@ -18,6 +18,8 @@ import (
 type composer struct {
 	metadata models.PluginMetadata
 }
+var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
+
 
 // New ...
 func New() *composer {
@@ -25,8 +27,8 @@ func New() *composer {
 		metadata: models.PluginMetadata{
 			Name:       "composer Package Manager",
 			Slug:       "composer",
-			Manifest:   "composer.json",
-			ModulePath: "vendor",
+			Manifest:   []string{"composer.json"},
+			ModulePath: []string{"vendor"},
 		},
 	}
 }
@@ -38,13 +40,22 @@ func (m *composer) GetMetadata() models.PluginMetadata {
 
 // IsValid ...
 func (m *composer) IsValid(path string) bool {
-	isValid := helper.FileExists(filepath.Join(path, m.metadata.Manifest))
-	return isValid
+	for i := range m.metadata.Manifest {
+		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return true
+		}
+	}
+	return false
 }
 
 // HasModulesInstalled ...
-func (m *composer) HasModulesInstalled(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.ModulePath))
+func (m *composer) HasModulesInstalled(path string) error {
+	for i := range m.metadata.ModulePath {
+		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+			return nil
+		}
+	}
+	return errDependenciesNotFound
 }
 
 // GetVersion ...
