@@ -1,11 +1,10 @@
 package composer
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"io/ioutil"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -18,8 +17,8 @@ import (
 type composer struct {
 	metadata models.PluginMetadata
 }
-var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
 
+var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
 
 // New ...
 func New() *composer {
@@ -91,16 +90,13 @@ func (m *composer) ListModules(path string) ([]models.Module, error) {
 	var modules []models.Module
 	var err error
 
-	buf := new(bytes.Buffer)
-	err = helper.ExecCMD(path, buf, "composer", "show", "-i", "-f", "json")
-
+	composerInfo, err := ListModulesFromLock()
 	if err != nil {
-		return nil, fmt.Errorf("listing modules failed: %w", err)
+		return nil, fmt.Errorf("parsing modules failed: %w", err)
 	}
 
-	defer buf.Reset()
+	modules, err = parseLockModules(composerInfo)
 
-	modules, err = parseModules(buf)
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
 	}
@@ -108,39 +104,107 @@ func (m *composer) ListModules(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// parseModules parses the output of `go list -json -m` into a Module slice
-func parseModules(reader io.Reader) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
-	var composerModules models.ComposerModules
+func ListModulesFromLock() (ComposerInfo, error) {
 
-	err := json.NewDecoder(reader).Decode(&composerModules)
-	if errors.Is(err, io.EOF) {
-		return nil, err
+	raw, err := ioutil.ReadFile("composer.lock")
+	if err != nil {
+		return ComposerInfo{}, err
 	}
 
-	for _, installed := range composerModules.Installed {
-		var mod models.Module
-		mod.Name = getName(installed.Name)
-		mod.PackageURL = genUrl(installed.Name)
-		mod.Version = installed.Version
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     "",
-		}
+	var lock ComposerInfo
+	err = json.Unmarshal(raw, &lock)
+
+	return lock, nil
+}
+
+func parseLockModules(info ComposerInfo) ([]models.Module, error) {
+
+	modules := make([]models.Module, 0)
+
+	for _, dep := range info.Packages {
+		mod := getModuleFromComposerPackage(dep)
+		modules = append(modules, mod)
+	}
+
+	for _, dep := range info.PackagesDev {
+		mod := getModuleFromComposerPackage(dep)
 		modules = append(modules, mod)
 	}
 
 	return modules, nil
+}
 
+func getModuleFromComposerPackage(dep ComposerInfoPackage) models.Module {
+	var mod models.Module
+	mod.Name = getName(dep.Name)
+	mod.PackageURL = genUrl(dep)
+	mod.Version = dep.Version
+	mod.CheckSum = &models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Value:     dep.Dist.Shasum,
+	}
+	mod.LicenseDeclared = getLicenseDeclared(dep)
+	mod.OtherLicense = getOtherLicense(dep)
+
+	return mod
+}
+
+func getOtherLicense(module ComposerInfoPackage) []*models.License {
+
+	licenses := module.License
+
+	var collection []*models.License
+
+	if len(licenses) > 0 {
+		return collection
+	}
+
+	for _, lib := range licenses {
+		collection = append(collection, &models.License{
+			Name: lib,
+		})
+	}
+
+	return collection
+}
+
+func getLicenseDeclared(module ComposerInfoPackage) string {
+	licenses := module.License
+
+	if len(licenses) > 0 {
+		return ""
+	}
+
+	return licenses[0]
 }
 
 func getName(moduleName string) string {
-
 	s := strings.Split(moduleName, "/")
-
 	return s[1]
 }
-func genUrl(path string) string {
 
-	return "https://packagist.org/packages/" + path
+func genUrl(dep ComposerInfoPackage) string {
+	return "pkg:composer/" + dep.Name + "@" + dep.Version
+}
+
+type ComposerInfo struct {
+	Packages    []ComposerInfoPackage
+	PackagesDev []ComposerInfoPackage `json:"packages-dev"`
+}
+
+type ComposerInfoPackageDist struct {
+	Type      string
+	URL       string
+	Reference string
+	Shasum    string
+}
+
+type ComposerInfoPackage struct {
+	Name        string
+	Version     string
+	Type        string // library
+	Authors     []string
+	Dist        ComposerInfoPackageDist
+	License     []string
+	Description string
 }
