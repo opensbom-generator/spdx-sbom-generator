@@ -165,17 +165,17 @@ PluginMetadata{
 
     **Output**: returns the Package Information of the root  Module
 
-* `ListModules`: fetches and lists all packages (root and dependencies) required by the project in the given project directory (side-by-side)
+* `ListModules`: fetches and lists all packages required by the project in the given project directory 
 
     **Input**: The working directory to read the package from
 
     **Output**: returns the Package Information of the root  Module, and its dependencies in flatten format
 
-* `ListAllModules`: fetches and lists all packages (root and dependencies) required by the project in the given project directory (nested structure)
+* `ListAllModules`: fetches and lists all packages (root and direct dependencies) required by the project in the given project directory (side-by-side)
 
     **Input**: The working directory to read the package from
 
-    **Output**: returns the Package Information of the root  Module, and its dependencies in a nested structure
+    **Output**: returns the Package Information of the root  Module, and its direct dependencies
 
 * `IsValid`: check if the project dependency file provided in the contract exists
 
@@ -192,34 +192,61 @@ PluginMetadata{
 
 #### Module Structure JSON Example:
 ```JSON
+
 {
-      "Version": "v1.4.0",
-      "Name": "atomic",
-      "Path": "go.uber.org/atomic",
-      "LocalPath": "",
-      "Supplier": {
-            "Type": "",
-            "Name": "",
-            "EMail": ""
-            },
-      "PackageURL": "pkg:golang/go.uber.org/atomic@v1.4.0",
-      "CheckSums": null,
-      "PackageHomePage": "pkg:golang/go.uber.org/atomic@v1.4.0",
-      "LicenseConcluded": "NOASSERTION",
-      "LicenseDeclared": "NOASSERTION",
-      "CommentsLicense": "NOASSERTION",
-      "OtherLicense": {
-            "ID":"",
-            "Name":"",
-            "ExtractedText":"",
-            "Comments":""
-            },
-      "Copyright": "NOASSERTION",
-      "PackageComment": "NOASSERTION",
-      "Root": false,
-      "Modules": null
+       "Version": "v0.0.1-2019.2.3",
+       "Name": "honnef.co/go/tools",
+       "Path": "honnef.co/go/tools",
+       "LocalPath": "",
+       "Supplier": {
+               "Type": "",
+               "Name": "",
+               "EMail": ""
+       },
+       "PackageURL": "pkg:golang/honnef.co/go/tools@v0.0.1-2019.2.3",
+       "CheckSum": {
+               "Algorithm": "SHA-1",
+               "Value": "66ed272162df8ef5f9e6d7bece3da6828a4ef3eb"
+       },
+       "PackageHomePage": "",
+       "LicenseConcluded": "",
+       "LicenseDeclared": "",
+       "CommentsLicense": "",
+       "OtherLicense": null,
+       "Copyright": "",
+       "PackageComment": "",
+       "Root": false,
+       "Modules": {
+               "github.com/BurntSushi/toml": {
+                       "Version": "v0.3.1",
+                       "Name": "github.com/BurntSushi/toml",
+                       "Path": "github.com/BurntSushi/toml",
+                       "LocalPath": "",
+                       "Supplier": {
+                               "Type": "",
+                               "Name": "",
+                               "EMail": ""
+                       },
+                       "PackageURL": "pkg:golang/github.com/BurntSushi/toml@v0.3.1",
+                       "CheckSum": {
+                               "Algorithm": "SHA-1",
+                               "Value": "38263d2f264e90324c9e9b3b1933f0e94fde1c7e"
+                       },
+                       "PackageHomePage": "",
+                       "LicenseConcluded": "",
+                       "LicenseDeclared": "",
+                       "CommentsLicense": "",
+                       "OtherLicense": null,
+                       "Copyright": "",
+                       "PackageComment": "",
+                       "Root": false,
+                       "Modules": null
+               }
+        }
 }
 ```
+
+For a more complete JSON example look at [modules.json](./examples/modules.json)
 
 ### How to register a new Plugin
 

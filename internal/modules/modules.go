@@ -72,7 +72,7 @@ func (m *Manager) Run() error {
 		return err
 	}
 
-	modules, err := m.Plugin.ListModules(modulePath)
+	modules, err := m.Plugin.ListAllModules(modulePath)
 	if err != nil {
 		log.Error(err)
 		return errFailedToReadModules

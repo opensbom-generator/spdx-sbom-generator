@@ -1,6 +1,7 @@
 package gomod
 
 import (
+	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
@@ -9,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -104,22 +104,20 @@ func (m *mod) ListModules(path string) ([]models.Module, error) {
 
 // ListAllModules ...
 func (m *mod) ListAllModules(path string) ([]models.Module, error) {
-
-	var modules []models.Module
-	var err error
-
-	buf := new(bytes.Buffer)
-	if err := helper.ExecCMD(path, buf, "go", "list", "-mod", "readonly", "-json", "-m", "all"); err != nil {
-		return nil, fmt.Errorf("listing modules failed: %w", err)
-	}
-
-	defer buf.Reset()
-	modules, err = parseModules(buf)
+	modules, err := m.ListModules(path)
 	if err != nil {
-		return nil, fmt.Errorf("parsing modules failed: %w", err)
+		return nil, err
 	}
 
-	//Add Dependencies
+	bufGraph := new(bytes.Buffer)
+	if err := helper.ExecCMD(path, bufGraph, "go", "mod", "graph"); err != nil {
+		return nil, fmt.Errorf("listing dependencies failed: %w", err)
+	}
+	defer bufGraph.Reset()
+
+	if err := buildDependenciesGraph(modules, bufGraph); err != nil {
+		return nil, fmt.Errorf("listing dependencies failed: %w", err)
+	}
 
 	return modules, nil
 }
@@ -138,15 +136,69 @@ func parseModules(reader io.Reader) ([]models.Module, error) {
 			}
 			return nil, err
 		}
-		mod.Name = path.Base(mod.Path)
+		mod.Name = mod.Path
 		mod.PackageURL = genUrl(mod)
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(mod.Path),
 		}
+		mod.Modules = map[string]*models.Module{}
 		modules = append(modules, mod)
 	}
 	return modules, nil
+}
+
+func buildDependenciesGraph(modules []models.Module, reader io.Reader) error {
+	moduleMap := map[string]models.Module{}
+	moduleIndex := map[string]int{}
+	for idx, module := range modules {
+		moduleMap[module.Name] = module
+		moduleIndex[module.Name] = idx
+	}
+
+	scanner := bufio.NewScanner(reader)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" {
+			continue
+		}
+
+		fields := strings.Fields(line)
+		if len(fields) != 2 {
+			return fmt.Errorf("expected two fields per line, but got %d: %s", len(fields), line)
+		}
+
+		moduleName := strings.Split(fields[0], "@")[0]
+		if _, ok := moduleMap[moduleName]; !ok {
+			continue
+		}
+
+		depName := strings.Split(fields[1], "@")[0]
+		depModule, ok := moduleMap[depName]
+		if !ok {
+			continue
+		}
+
+		modules[moduleIndex[moduleName]].Modules[depName] = &models.Module{
+			Name:             depModule.Name,
+			Version:          depModule.Version,
+			Path:             depModule.Path,
+			LocalPath:        depModule.LocalPath,
+			Supplier:         depModule.Supplier,
+			PackageURL:       depModule.PackageURL,
+			CheckSum:         depModule.CheckSum,
+			PackageHomePage:  depModule.PackageHomePage,
+			LicenseConcluded: depModule.LicenseConcluded,
+			LicenseDeclared:  depModule.LicenseDeclared,
+			CommentsLicense:  depModule.CommentsLicense,
+			OtherLicense:     depModule.OtherLicense,
+			Copyright:        depModule.Copyright,
+			PackageComment:   depModule.PackageComment,
+			Root:             depModule.Root,
+		}
+	}
+
+	return nil
 }
 
 func genUrl(m models.Module) string {
@@ -163,4 +215,11 @@ func readCheckSum(content string) string {
 	h := sha1.New()
 	h.Write([]byte(content))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func decoratePath(m models.Module) string {
+	if m.Version == "" {
+		return m.Path
+	}
+	return m.Path + "@" + m.Version
 }
