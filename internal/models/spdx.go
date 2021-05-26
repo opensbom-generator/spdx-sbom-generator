@@ -19,6 +19,8 @@ type Package struct {
 	PackageCopyrightText    string
 	PackageLicenseComments  string
 	PackageComment          string
+	RootPackage             bool
+	Packages                []Package
 }
 
 // Document ...
