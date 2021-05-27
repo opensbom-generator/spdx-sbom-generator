@@ -1,9 +1,5 @@
 package models
 
-import (
-	"time"
-)
-
 // Package ...
 type Package struct {
 	PackageName             string
@@ -31,5 +27,5 @@ type Document struct {
 	DocumentName      string
 	DocumentNamespace string
 	Creator           string
-	Created           time.Time
+	Created           string
 }
