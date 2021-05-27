@@ -1,9 +1,8 @@
 name: Release
-
 on:
-  push:
-    tags:
-      - '*'
+  release:
+    types:
+      - created
 
 jobs:
   release:
@@ -22,9 +21,10 @@ jobs:
         with:
           go-version: 1.15
       - name: Release binaries
-        uses: goreleaser/goreleaser-action@v2
+        uses: mcuadros/go-release-action@master
         with:
-          version: latest
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          project_path: cmd/generator
+          binary_name: spdx-sbom-generator 
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          goos: ${{ matrix.goos }}
+          goarch: amd64
