@@ -11,6 +11,10 @@ import (
 	"spdx-sbom-generator/internal/models"
 )
 
+const (
+	RFC3339 = "2006-01-02T15:04:05Z"
+)
+
 // Format ...
 type Format struct {
 	Config Config
@@ -87,7 +91,7 @@ func (f *Format) Render() error {
 }
 
 func generatePackage(file *os.File, pkg models.Package) {
-	file.WriteString(fmt.Sprintf("PackageNam: %s\n", pkg.PackageName))
+	file.WriteString(fmt.Sprintf("PackageName: %s\n", pkg.PackageName))
 	file.WriteString(fmt.Sprintf("SPDXID: %s\n", pkg.SPDXID))
 	file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
 	file.WriteString(fmt.Sprintf("PackageSupplier: %s\n", pkg.PackageSupplier))
@@ -104,6 +108,8 @@ func generatePackage(file *os.File, pkg models.Package) {
 
 func buildDocument(module models.Module) (*models.Document, error) {
 	uuid := uuid.New().String()
+	t := time.Now()
+	created := t.Format(RFC3339)
 	return &models.Document{
 		SPDXVersion:       "SPDX-2.2",
 		DataLicense:       "CC0-1.0",
@@ -111,7 +117,7 @@ func buildDocument(module models.Module) (*models.Document, error) {
 		DocumentName:      module.Name,
 		DocumentNamespace: fmt.Sprintf("http://spdx.org/spdxpackages/%s-%s-%s", module.Name, module.Version, uuid),
 		Creator:           "Tool: spdx-sbom-generator-XXXXX",
-		Created:           time.Now(),
+		Created:           created,
 	}, nil
 }
 
