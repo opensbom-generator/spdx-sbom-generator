@@ -7,6 +7,10 @@ on:
 
 jobs:
   release:
+    strategy:
+      fail-fast: false
+      matrix:
+        goos: [linux, darwin, windows]  
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
