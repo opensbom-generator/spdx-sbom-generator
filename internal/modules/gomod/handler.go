@@ -142,6 +142,15 @@ func parseModules(reader io.Reader) ([]models.Module, error) {
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(mod.Path),
 		}
+		licensePkg, err := helper.GetLicenses(mod.LocalPath)
+		if err == nil {
+			mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
+			mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+			if !helper.LicenseSPDXExists(licensePkg.ID) {
+				licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
+				mod.OtherLicense = append(mod.OtherLicense, licensePkg)
+			}
+		}
 		mod.Modules = map[string]*models.Module{}
 		modules = append(modules, mod)
 	}

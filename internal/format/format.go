@@ -1,7 +1,6 @@
 package format
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"time"
@@ -32,26 +31,22 @@ func New(cfg Config) (Format, error) {
 // Build ...
 func (f *Format) Render() error {
 	modules := f.Config.GetSource()
-	// Remove
-	println("Modules formatter")
-	a, _ := json.MarshalIndent(modules, " ", "\t")
-	fmt.Println(string(a))
 	document, err := buildDocument(modules[0])
 	if err != nil {
 		return err
 	}
 
-	packages, err := buildPackages(modules)
+	packages, otherLicenses, err := buildPackages(modules)
 	if err != nil {
 		return err
 	}
 
-	// THIS IS JUST TESTING DATA IN JSON FORMAT
-	println(f.Config.Filename)
 	file, err2 := os.Create(f.Config.Filename)
 	if err2 != nil {
 		return err2
 	}
+
+	// todo organize file generation code below
 	//Print DOCUMENT
 	file.WriteString(fmt.Sprintf("SPDXVersion: %s\n", document.SPDXVersion))
 	file.WriteString(fmt.Sprintf("DataLicense: %s\n", document.DataLicense))
@@ -80,6 +75,17 @@ func (f *Format) Render() error {
 		}
 	}
 
+	//Print Other Licenses
+	if len(otherLicenses) > 0 {
+		file.WriteString("##### Non-standard license\n\n")
+		for lic := range otherLicenses {
+			file.WriteString(fmt.Sprintf("LicenseID: %s\n", lic))
+			file.WriteString(fmt.Sprintf("LicenseName: %s\n", otherLicenses[lic].Name))
+			file.WriteString(fmt.Sprintf("LicenseText: %s\n", otherLicenses[lic].ExtractedText))
+			file.WriteString(fmt.Sprintf("LicenseComment: %s\n\n", otherLicenses[lic].Comments))
+		}
+	}
+
 	// Write to file
 	file.Sync()
 
@@ -87,7 +93,7 @@ func (f *Format) Render() error {
 }
 
 func generatePackage(file *os.File, pkg models.Package) {
-	file.WriteString(fmt.Sprintf("PackageNam: %s\n", pkg.PackageName))
+	file.WriteString(fmt.Sprintf("PackageName: %s\n", pkg.PackageName))
 	file.WriteString(fmt.Sprintf("SPDXID: %s\n", pkg.SPDXID))
 	file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
 	file.WriteString(fmt.Sprintf("PackageSupplier: %s\n", pkg.PackageSupplier))
@@ -116,32 +122,43 @@ func buildDocument(module models.Module) (*models.Document, error) {
 }
 
 // WIP
-func buildPackages(modules []models.Module) ([]models.Package, error) {
+func buildPackages(modules []models.Module) ([]models.Package, map[string]*models.License, error) {
 	packages := make([]models.Package, len(modules))
+	otherLicenses := map[string]*models.License{}
 	for i, module := range modules {
 		pkg, err := convertToPackage(module)
 		if err != nil {
-			return nil, fmt.Errorf("failed to convert module %w", err)
+			return nil, nil, fmt.Errorf("failed to convert module %w", err)
 		}
 		subPackages := make([]models.Package, len(module.Modules))
 		idx := 0
 		for _, subMod := range module.Modules {
 			subPkg, err := convertToPackage(*subMod)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			subPackages[idx] = subPkg
 			idx++
 		}
 		pkg.Packages = subPackages
+		for l := range module.OtherLicense {
+			otherLicenses[module.OtherLicense[l].ID] = module.OtherLicense[l]
+		}
 		packages[i] = pkg
 	}
 
-	return packages, nil
+	return packages, otherLicenses, nil
 }
 
 // WIP
 func convertToPackage(module models.Module) (models.Package, error) {
+	setPkgValue := func(s string) string {
+		if s == "" {
+			return "NOASSERTION"
+		}
+
+		return s
+	}
 	return models.Package{
 		PackageName:             module.Name,
 		SPDXID:                  fmt.Sprintf("SPDXRef-Package-%s", module.Name),
@@ -151,11 +168,11 @@ func convertToPackage(module models.Module) (models.Package, error) {
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
 		PackageHomePage:         module.PackageURL,
-		PackageLicenseConcluded: "NOASSERTION",
-		PackageLicenseDeclared:  "NOASSERTION",
-		PackageCopyrightText:    "NOASSERTION",
-		PackageLicenseComments:  "NOASSERTION",
-		PackageComment:          "NOASSERTION",
+		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
+		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
+		PackageCopyrightText:    setPkgValue(""),
+		PackageLicenseComments:  setPkgValue(""),
+		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
 	}, nil
 }

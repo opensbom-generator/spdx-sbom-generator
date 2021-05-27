@@ -248,6 +248,29 @@ PluginMetadata{
 
 For a more complete JSON example look at [modules.json](./examples/modules.json)
 
+### Utility methods:
+
+* `GetLicenses`: returns the detected license object
+
+    **Input**: The working directory of the package licenses
+
+    **Output**: The package license object
+```GO
+type License struct {
+	ID            string
+	Name          string
+	ExtractedText string
+	Comments      string
+	File          string
+}
+```
+
+* `LicenseSPDXExists`: Check if the package license is a valid SPDX reference
+
+    **Input**: The package license
+
+    **Output**: True or False
+
 ### How to register a new Plugin
 
 #### Step 1
