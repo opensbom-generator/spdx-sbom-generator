@@ -16,7 +16,7 @@ type Package struct {
 	PackageLicenseComments  string
 	PackageComment          string
 	RootPackage             bool
-	Packages                []Package
+	DependsOn               []Package
 }
 
 // Document ...
