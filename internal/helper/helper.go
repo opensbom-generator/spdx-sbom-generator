@@ -15,13 +15,7 @@ import (
 // FileExists ...
 func FileExists(path string) bool {
 	_, err := os.Stat(path)
-	if err != nil {
-		return false
-	}
-
-	isValid := !os.IsNotExist(err)
-
-	return isValid
+	return !os.IsNotExist(err)
 }
 
 // StringSliceIndex determines the index of a given string in a given string slice.

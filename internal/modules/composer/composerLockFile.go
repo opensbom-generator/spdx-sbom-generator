@@ -17,7 +17,7 @@ type ComposerLockFile struct {
 }
 
 type ComposerLockPackage struct {
-	Name        string // "name": "asm89/stack-cors",
+	Name        string
 	Version     string
 	Type        string
 	Dist        ComposerLockPackageDist
@@ -33,13 +33,13 @@ type ComposerLockPackageAuthor struct {
 
 type ComposerLockPackageSource struct {
 	Type      string
-	URL       string // "url": "https://github.com/asm89/stack-cors.git"
-	Reference string // "reference": "9cb795bf30988e8c96dd3c40623c48a877bc6714"
+	URL       string
+	Reference string
 }
 
 type ComposerLockPackageDist struct {
 	Type      string
-	URL       string //  "url": "https://api.github.com/repos/asm89/stack-cors/zipball/9cb795bf30988e8c96dd3c40623c48a877bc6714"
+	URL       string
 	Reference string
 	Shasum    string
 }
@@ -94,6 +94,7 @@ func getModulesFromComposerLockFile() ([]models.Module, error) {
 
 func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 
+	license := getLicenseDeclared(dep)
 	modules := models.Module{
 		Version: normalizePackageVersion(dep.Version),
 		Name:    getName(dep.Name),
@@ -102,19 +103,11 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 			Algorithm: models.HashAlgoSHA1,
 			Value:     getCheckSumValue(dep),
 		},
-		Modules:         map[string]*models.Module{},
-		LicenseDeclared: getLicenseDeclared(dep),
-		Supplier:        getAuthor(dep),
-		LocalPath:       getLocalPath(dep),
-		// TODO
-		// LicenseConcluded:
-		// CommentsLicense:
-		// Path:
-		// PackageHomePage:
-		// OtherLicense:
-		// Copyright:
-		// PackageComment:
-
+		Modules:          map[string]*models.Module{},
+		LicenseDeclared:  license,
+		LicenseConcluded: license,
+		Supplier:         getAuthor(dep),
+		LocalPath:        getLocalPath(dep),
 	}
 
 	return modules

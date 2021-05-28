@@ -45,7 +45,6 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 	rootLevelName := getName(treeComponent.Name)
 	_, ok := moduleMap[rootLevelName]
 	if !ok {
-
 		return false
 	}
 
@@ -60,7 +59,6 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 	}
 
 	for _, subTreeComponent := range requires {
-
 		childLevelName := getName(subTreeComponent.Name)
 		childLevelModule, ok := moduleMap[childLevelName]
 		if !ok {
@@ -68,7 +66,6 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 		}
 
 		addSubModuleToAModule(modules, moduleIndex[rootLevelName], childLevelModule)
-
 		addTreeComponentsToModule(subTreeComponent, modules)
 	}
 
@@ -76,7 +73,6 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 }
 
 func addSubModuleToAModule(modules []models.Module, moduleIndex int, subModule models.Module) {
-
 	modules[moduleIndex].Modules[subModule.Name] = &models.Module{
 		Name:             subModule.Name,
 		Version:          subModule.Version,

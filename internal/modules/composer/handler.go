@@ -11,7 +11,6 @@ import (
 	"spdx-sbom-generator/internal/models"
 )
 
-// rest of the file below
 var COMPOSER_LOCK_FILE_NAME = "composer.lock"
 var COMPOSER_JSON_FILE_NAME = "composer.json"
 var COMPOSER_VENDOR_FOLDER = "vendor"
@@ -100,19 +99,8 @@ func (m *composer) ListModules(path string) ([]models.Module, error) {
 	}
 
 	for _, treeComponent := range treeList.Installed {
-
 		addTreeComponentsToModule(treeComponent, modules)
 	}
 
 	return modules, nil
-}
-
-func findModuleByName(modules []models.Module, moduleName string) models.Module {
-	for _, module := range modules {
-		if module.Name == moduleName {
-			return module
-		}
-	}
-
-	return models.Module{}
 }

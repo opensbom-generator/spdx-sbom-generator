@@ -11,13 +11,13 @@ import (
 type ComposerProjectInfo struct {
 	Name        string
 	Description string
-	Versions    []string // "1.0.0+no-version-set"
+	Versions    []string
 	Licenses    []ComposerProjectInfoLincense
 }
 
 type ComposerProjectInfoLincense struct {
-	Name string //  "name": "MIT License",
-	Osi  string //"osi": "MIT",
+	Name string
+	Osi  string
 	URL  string
 }
 
@@ -32,7 +32,6 @@ func getProjectInfo() (models.Module, error) {
 	var projectInfo ComposerProjectInfo
 
 	err := json.NewDecoder(buf).Decode(&projectInfo)
-
 	if err != nil {
 		return models.Module{}, err
 	}
@@ -62,13 +61,6 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 		LicenseConcluded: project.Licenses[0].Osi,
 		LicenseDeclared:  project.Licenses[0].Osi,
 		CommentsLicense:  project.Licenses[0].Name,
-		// Path:             subModule.Path,
-		// LocalPath:        subModule.LocalPath,
-		// Supplier:         subModule.Supplier,
-		// PackageHomePage:  subModule.PackageHomePage,
-		// OtherLicense:     subModule.OtherLicense,
-		// Copyright:        subModule.Copyright,
-		// PackageComment:   subModule.PackageComment,
 	}
 
 	return nodule, nil

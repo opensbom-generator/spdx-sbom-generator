@@ -90,13 +90,3 @@ type License struct {
 	Comments      string
 	File          string
 }
-
-type ComposerModules struct {
-	Installed []ComposerModuleInstalled
-}
-
-type ComposerModuleInstalled struct {
-	Name        string
-	Version     string
-	Description string
-}
