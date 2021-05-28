@@ -20,10 +20,10 @@ var (
 	errDependenciesNotFound = errors.New("please install dependencies by running npm install")
 	shrink                  = "npm-shrinkwrap.json"
 	npmRegistry             = "https://registry.npmjs.org"
-	licences = "licenses.json"
+	licences                = "licenses.json"
 )
 
-// New ...
+// New creates a new npm instance
 func New() *npm {
 	return &npm{
 		metadata: models.PluginMetadata{
@@ -35,12 +35,13 @@ func New() *npm {
 	}
 }
 
-// GetMetadata ...
+// GetMetadata returns metadata descriptions Name, Slug, Manifest, ModulePath
 func (m *npm) GetMetadata() models.PluginMetadata {
 	return m.metadata
 }
 
-// IsValid ...
+// IsValid checks if module has a valid Manifest file
+// for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
@@ -50,7 +51,7 @@ func (m *npm) IsValid(path string) bool {
 	return false
 }
 
-// HasModulesInstalled ...
+// HasModulesInstalled checks if modules of manifest file already installed
 func (m *npm) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
 		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
@@ -60,7 +61,7 @@ func (m *npm) HasModulesInstalled(path string) error {
 	return errDependenciesNotFound
 }
 
-// GetVersion ...
+// GetVersion returns npm version
 func (m *npm) GetVersion() (string, error) {
 	cmd := exec.Command("npm", "--v")
 	output, err := cmd.Output()
@@ -75,7 +76,7 @@ func (m *npm) GetVersion() (string, error) {
 	return string(output), nil
 }
 
-// GetModule ...
+// GetModule return root package information ex. Name, Version
 func (m *npm) GetModule(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
@@ -93,7 +94,7 @@ func (m *npm) GetModule(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListModules ...
+// ListModules return brief info of installed modules, Name and Version
 func (m *npm) ListModules(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
@@ -112,7 +113,7 @@ func (m *npm) ListModules(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListAllModules ...
+// ListAllModules return all info of installed modules
 func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	pk := "package-lock.json"
 	if helper.FileExists(filepath.Join(path, shrink)) {
@@ -141,10 +142,9 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	return m.buildDependencies(path, deps, licenses), nil
 }
 
-
 func (m *npm) buildDependencies(path string, deps map[string]interface{}, licenses map[string]string) []models.Module {
 	modules := make([]models.Module, 0)
-	fmt.Println("ddddd",len(deps))
+	fmt.Println("ddddd", len(deps))
 	for key, dd := range deps {
 		d := dd.(map[string]interface{})
 		var mod models.Module
@@ -159,14 +159,14 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 		}
 
 		mod.PackageURL = d["resolved"].(string)
-/*		sha, err := hash.SHA256ForFile(mod.Name)
-		if err != nil {
-			continue
-		}
-		mod.CheckSum = &models.CheckSum{
-			Value:     sha,
-			Algorithm: "SHA256",
-		}*/
+		/*		sha, err := hash.SHA256ForFile(mod.Name)
+				if err != nil {
+					continue
+				}
+				mod.CheckSum = &models.CheckSum{
+					Value:     sha,
+					Algorithm: "SHA256",
+				}*/
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
 		if helper.FileExists(licensePath) {
 			r := reader.New(licensePath)
@@ -180,7 +180,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 	return modules
 }
 
-func (m *npm) getLicense(path string,pkName string, licenses map[string]string) string {
+func (m *npm) getLicense(path string, pkName string, licenses map[string]string) string {
 	licenseDeclared := ""
 	r := reader.New(filepath.Join(path, m.metadata.ModulePath[0], pkName, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
@@ -190,7 +190,7 @@ func (m *npm) getLicense(path string,pkName string, licenses map[string]string) 
 	pkLic := pkResult["license"].(string)
 
 	if pkLic != "" {
-		for k,_ := range licenses {
+		for k, _ := range licenses {
 			if pkLic == k {
 				licenseDeclared = pkLic
 				break
@@ -200,17 +200,16 @@ func (m *npm) getLicense(path string,pkName string, licenses map[string]string) 
 	if pkLic != "" && licenseDeclared == "" && strings.HasSuffix(pkLic, "or later") {
 		licenseDeclared = strings.Replace(pkLic, "or later", "+", 1)
 	}
-	if pkLic != "" && licenseDeclared == ""{
+	if pkLic != "" && licenseDeclared == "" {
 		licenseDeclared = pkLic
 	}
-	if pkLic == ""{
+	if pkLic == "" {
 		licenseDeclared = "NONE"
 	}
 
 	return licenseDeclared
 
 }
-
 
 type dependency struct {
 	version      string
