@@ -23,7 +23,7 @@ var (
 	licences                = "licenses.json"
 )
 
-// New ...
+// New creates a new npm instance
 func New() *npm {
 	return &npm{
 		metadata: models.PluginMetadata{
@@ -35,12 +35,13 @@ func New() *npm {
 	}
 }
 
-// GetMetadata ...
+// GetMetadata returns metadata descriptions Name, Slug, Manifest, ModulePath
 func (m *npm) GetMetadata() models.PluginMetadata {
 	return m.metadata
 }
 
-// IsValid ...
+// IsValid checks if module has a valid Manifest file
+// for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
 		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
@@ -50,7 +51,7 @@ func (m *npm) IsValid(path string) bool {
 	return false
 }
 
-// HasModulesInstalled ...
+// HasModulesInstalled checks if modules of manifest file already installed
 func (m *npm) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
 		if !helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
@@ -66,7 +67,7 @@ func (m *npm) HasModulesInstalled(path string) error {
 	return nil
 }
 
-// GetVersion ...
+// GetVersion returns npm version
 func (m *npm) GetVersion() (string, error) {
 	cmd := exec.Command("npm", "--v")
 	output, err := cmd.Output()
@@ -81,7 +82,7 @@ func (m *npm) GetVersion() (string, error) {
 	return string(output), nil
 }
 
-// GetModule ...
+// GetModule return root package information ex. Name, Version
 func (m *npm) GetModule(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
@@ -101,7 +102,7 @@ func (m *npm) GetModule(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListModules ...
+// ListModules return brief info of installed modules, Name and Version
 func (m *npm) ListModules(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
@@ -120,7 +121,7 @@ func (m *npm) ListModules(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListAllModules ...
+// ListAllModules return all info of installed modules
 func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	pk := "package-lock.json"
 	if helper.FileExists(filepath.Join(path, shrink)) {
