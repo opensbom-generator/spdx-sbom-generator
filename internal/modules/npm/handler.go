@@ -8,7 +8,6 @@ import (
 	"spdx-sbom-generator/internal/reader"
 	"strings"
 
-	"sigs.k8s.io/release-utils/hash"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
@@ -115,7 +114,7 @@ func (m *npm) ListModules(path string) ([]models.Module, error) {
 
 // ListAllModules ...
 func (m *npm) ListAllModules(path string) ([]models.Module, error) {
-	pk := m.metadata.Manifest[0]
+	pk := "package-lock.json"
 	if helper.FileExists(filepath.Join(path, shrink)) {
 		pk = shrink
 	}
@@ -126,46 +125,48 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 		return nil, err
 	}
 
-	deps, ok := pkResults["packages"].(map[string]dependency)
+	deps, ok := pkResults["packages"].(map[string]interface{})
 	if !ok {
-		deps = pkResults["dependencies"].(map[string]dependency)
+		deps = pkResults["dependencies"].(map[string]interface{})
 	}
 
 	re := reader.New(licences)
 	lic, err := re.ReadJson()
-	lics := lic["lics"].([]map[string]interface{})
+	lics := lic["licenses"].([]interface{})
 	licenses := make(map[string]string)
 	for i := range lics {
-		licenses[lics[i]["licenseId"].(string)] = lics[i]["name"].(string)
+		licenses[lics[i].(map[string]interface{})["licenseId"].(string)] = lics[i].(map[string]interface{})["name"].(string)
 	}
 
 	return m.buildDependencies(path, deps, licenses), nil
 }
 
 
-func (m *npm) buildDependencies(path string, deps map[string]dependency, licenses map[string]string) []models.Module {
+func (m *npm) buildDependencies(path string, deps map[string]interface{}, licenses map[string]string) []models.Module {
 	modules := make([]models.Module, 0)
-	for key, d := range deps {
+	fmt.Println("ddddd",len(deps))
+	for key, dd := range deps {
+		d := dd.(map[string]interface{})
 		var mod models.Module
-		mod.Name = fmt.Sprintf("%s-%s", key, d.version)
-		mod.Version = d.version
+		mod.Name = fmt.Sprintf("%s-%s", key, d["version"].(string))
+		mod.Version = d["version"].(string)
 
 		// todo: handle mod.supplier
 		// todo: handle relationships
 
-		resolved := d.resolved
+		resolved := d["resolved"].(string)
 		if strings.Contains(resolved, npmRegistry) {
 		}
 
-		mod.PackageURL = d.resolved
-		sha, err := hash.SHA256ForFile(mod.Name)
+		mod.PackageURL = d["resolved"].(string)
+/*		sha, err := hash.SHA256ForFile(mod.Name)
 		if err != nil {
 			continue
 		}
 		mod.CheckSum = &models.CheckSum{
 			Value:     sha,
 			Algorithm: "SHA256",
-		}
+		}*/
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
 		if helper.FileExists(licensePath) {
 			r := reader.New(licensePath)

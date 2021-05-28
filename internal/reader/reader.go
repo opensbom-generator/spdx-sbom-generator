@@ -25,6 +25,9 @@ func (s *Reader) GetCopyrightText() string {
 	}
 
 	ind := strings.Index(string(fByte), "Copyright (c)")
+	if ind < 0 {
+		return ""
+	}
 	copyWrite := strings.Split(string(fByte)[ind:], `\n`)
 	return copyWrite[0]
 }
