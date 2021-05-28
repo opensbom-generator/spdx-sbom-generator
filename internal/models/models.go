@@ -72,10 +72,10 @@ type HashAlgorithm string
 
 const (
 	HashAlgoSHA1   HashAlgorithm = "SHA1"
-	HashAlgoSHA224 HashAlgorithm = "SHA-224"
-	HashAlgoSHA256 HashAlgorithm = "SHA-256"
-	HashAlgoSHA384 HashAlgorithm = "SHA-384"
-	HashAlgoSHA512 HashAlgorithm = "SHA-512"
+	HashAlgoSHA224 HashAlgorithm = "SHA224"
+	HashAlgoSHA256 HashAlgorithm = "SHA256"
+	HashAlgoSHA384 HashAlgorithm = "SHA384"
+	HashAlgoSHA512 HashAlgorithm = "SHA512"
 	HashAlgoMD2    HashAlgorithm = "MD2"
 	HashAlgoMD4    HashAlgorithm = "MD4"
 	HashAlgoMD5    HashAlgorithm = "MD5"
