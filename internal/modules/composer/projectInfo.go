@@ -12,13 +12,6 @@ type ComposerProjectInfo struct {
 	Name        string
 	Description string
 	Versions    []string
-	Licenses    []ComposerProjectInfoLincense
-}
-
-type ComposerProjectInfoLincense struct {
-	Name string
-	Osi  string
-	URL  string
 }
 
 func getProjectInfo() (models.Module, error) {
@@ -58,10 +51,19 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 			Algorithm: models.HashAlgoSHA1,
 			Value:     checkSumValue,
 		},
-		LicenseConcluded: project.Licenses[0].Osi,
-		LicenseDeclared:  project.Licenses[0].Osi,
-		CommentsLicense:  project.Licenses[0].Name,
+		LicenseConcluded: getProjectLicense(),
+		LicenseDeclared:  getProjectLicense(),
 	}
 
 	return nodule, nil
+}
+
+func getProjectLicense() string {
+	path := "."
+	lic, err := helper.GetLicenses(path)
+	if err != nil {
+		return ""
+	}
+
+	return lic.Name
 }
