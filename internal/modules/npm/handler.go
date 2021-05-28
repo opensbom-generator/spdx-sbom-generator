@@ -20,7 +20,7 @@ var (
 	errDependenciesNotFound = errors.New("please install dependencies by running npm install")
 	shrink                  = "npm-shrinkwrap.json"
 	npmRegistry             = "https://registry.npmjs.org"
-	licences = "licenses.json"
+	licences                = "licenses.json"
 )
 
 // New ...
@@ -86,8 +86,10 @@ func (m *npm) GetModule(path string) ([]models.Module, error) {
 	var mod models.Module
 
 	mod.Name = pkResult["name"].(string)
-	mod.Modules = map[string]*models.Module{}
+	mod.Supplier.Name = pkResult["author"].(string)
+	mod.Version = pkResult["version"].(string)
 
+	mod.Modules = map[string]*models.Module{}
 	modules = append(modules, mod)
 
 	return modules, nil
@@ -141,10 +143,8 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	return m.buildDependencies(path, deps, licenses), nil
 }
 
-
 func (m *npm) buildDependencies(path string, deps map[string]interface{}, licenses map[string]string) []models.Module {
 	modules := make([]models.Module, 0)
-	fmt.Println("ddddd",len(deps))
 	for key, dd := range deps {
 		d := dd.(map[string]interface{})
 		var mod models.Module
@@ -152,21 +152,17 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 		mod.Version = d["version"].(string)
 
 		// todo: handle mod.supplier
-		// todo: handle relationships
 
-		resolved := d["resolved"].(string)
-		if strings.Contains(resolved, npmRegistry) {
+		r := d["resolved"].(string)
+		if strings.Contains(r, npmRegistry) {
 		}
 
-		mod.PackageURL = d["resolved"].(string)
-/*		sha, err := hash.SHA256ForFile(mod.Name)
-		if err != nil {
-			continue
-		}
+		mod.PackageURL = r
+		rArr := strings.Split(d["integrity"].(string), "-")
 		mod.CheckSum = &models.CheckSum{
-			Value:     sha,
-			Algorithm: "SHA256",
-		}*/
+			Value:     rArr[1],
+			Algorithm: models.HashAlgorithm(rArr[0]),
+		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
 		if helper.FileExists(licensePath) {
 			r := reader.New(licensePath)
@@ -180,17 +176,32 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 	return modules
 }
 
-func (m *npm) getLicense(path string,pkName string, licenses map[string]string) string {
+func (m *npm) getLicense(path string, pkName string, licenses map[string]string) string {
 	licenseDeclared := ""
 	r := reader.New(filepath.Join(path, m.metadata.ModulePath[0], pkName, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
 		return ""
 	}
-	pkLic := pkResult["license"].(string)
+	pkLic := ""
+	if pkResult["licenses"] != nil {
+		l := pkResult["licenses"].([]interface{})
+
+		for i := range l {
+			if i > 0 {
+				pkLic += " OR"
+				pkLic += l[i].(map[string]interface{})["type"].(string)
+				continue
+			}
+			pkLic += l[i].(map[string]interface{})["type"].(string)
+		}
+	}
+	if pkResult["license"] != nil {
+		pkLic = pkResult["license"].(string)
+	}
 
 	if pkLic != "" {
-		for k,_ := range licenses {
+		for k, _ := range licenses {
 			if pkLic == k {
 				licenseDeclared = pkLic
 				break
@@ -200,17 +211,16 @@ func (m *npm) getLicense(path string,pkName string, licenses map[string]string) 
 	if pkLic != "" && licenseDeclared == "" && strings.HasSuffix(pkLic, "or later") {
 		licenseDeclared = strings.Replace(pkLic, "or later", "+", 1)
 	}
-	if pkLic != "" && licenseDeclared == ""{
+	if pkLic != "" && licenseDeclared == "" {
 		licenseDeclared = pkLic
 	}
-	if pkLic == ""{
+	if pkLic == "" {
 		licenseDeclared = "NONE"
 	}
 
 	return licenseDeclared
 
 }
-
 
 type dependency struct {
 	version      string
