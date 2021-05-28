@@ -3,7 +3,6 @@ package reader
 import (
 	"encoding/json"
 	"io/ioutil"
-	"strings"
 )
 
 // Reader ...
@@ -17,19 +16,15 @@ func New(filename string) *Reader {
 }
 
 
-// GetCopyrightText ...
-func (s *Reader) GetCopyrightText() string {
+// StringFromFile ...
+func (s *Reader) StringFromFile() string {
 	fByte, err := s.readFile()
 	if err != nil {
 		return ""
 	}
 
-	ind := strings.Index(string(fByte), "Copyright (c)")
-	if ind < 0 {
-		return ""
-	}
-	copyWrite := strings.Split(string(fByte)[ind:], `\n`)
-	return copyWrite[0]
+	return string(fByte)
+
 }
 
 // ReadJson ...

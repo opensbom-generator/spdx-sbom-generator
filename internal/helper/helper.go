@@ -4,6 +4,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"spdx-sbom-generator/internal/reader"
+	"strings"
 )
 
 // FileExists ...
@@ -27,4 +29,16 @@ func ExecCMD(modulePath string, writer io.Writer, cmdParameter ...string) error 
 	cmd.Dir = modulePath
 	cmd.Stdout = writer
 	return cmd.Run()
+}
+
+// GetCopyrightText ...
+func GetCopyrightText(path string) string {
+	r := reader.New(path)
+	c := r.StringFromFile()
+	ind := strings.Index(c, "Copyright (c)")
+	if ind < 0 {
+		return ""
+	}
+	copyWrite := strings.Split(c[ind:], `\n`)
+	return copyWrite[0]
 }

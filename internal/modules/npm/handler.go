@@ -127,7 +127,6 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	if helper.FileExists(filepath.Join(path, shrink)) {
 		pk = shrink
 	}
-// todo: stop if node-modules not exist
 	r := reader.New(filepath.Join(path, pk))
 	pkResults, err := r.ReadJson()
 	if err != nil {
@@ -172,8 +171,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
 		if helper.FileExists(licensePath) {
-			r := reader.New(licensePath)
-			mod.Copyright = r.GetCopyrightText()
+			mod.Copyright = helper.GetCopyrightText(licensePath)
 		}
 
 		mod.LicenseDeclared = m.getLicense(path, key, licenses)
