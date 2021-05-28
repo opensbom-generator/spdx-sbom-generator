@@ -1,0 +1,11 @@
+# Local ENV  metadata
+.DS_Store
+
+# modules
+vendor/
+
+#binaries
+bin/
+
+# output
+bom*
