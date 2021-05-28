@@ -29,7 +29,7 @@ func New() *npm {
 		metadata: models.PluginMetadata{
 			Name:       "Node Package Manager",
 			Slug:       "npm",
-			Manifest:   []string{"package.json"},
+			Manifest:   []string{"package.json", "package-lock.json"},
 			ModulePath: []string{"node_modules"},
 		},
 	}
@@ -53,11 +53,17 @@ func (m *npm) IsValid(path string) bool {
 // HasModulesInstalled ...
 func (m *npm) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
-		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
-			return nil
+		if !helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+			return errDependenciesNotFound
 		}
 	}
-	return errDependenciesNotFound
+
+	for i := range m.metadata.Manifest {
+		if !helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return errDependenciesNotFound
+		}
+	}
+	return nil
 }
 
 // GetVersion ...
@@ -120,7 +126,7 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	if helper.FileExists(filepath.Join(path, shrink)) {
 		pk = shrink
 	}
-
+// todo: stop if node-modules not exist
 	r := reader.New(filepath.Join(path, pk))
 	pkResults, err := r.ReadJson()
 	if err != nil {
