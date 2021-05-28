@@ -25,10 +25,10 @@ type PluginMetadata struct {
 
 // Module ... ...
 type Module struct {
-	Version          string
+	Version          string `json:"Version,omitempty"`
 	Name             string
-	Path             string
-	LocalPath        string
+	Path             string `json:"Path,omitempty"`
+	LocalPath        string `json:"Dir,noempty"`
 	Supplier         SupplierContact
 	PackageURL       string
 	CheckSum         *CheckSum
@@ -88,4 +88,5 @@ type License struct {
 	Name          string
 	ExtractedText string
 	Comments      string
+	File          string
 }
