@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
 
@@ -16,7 +17,7 @@ type ComposerLockFile struct {
 }
 
 type ComposerLockPackage struct {
-	Name        string
+	Name        string // "name": "asm89/stack-cors",
 	Version     string
 	Type        string
 	Dist        ComposerLockPackageDist
@@ -26,13 +27,13 @@ type ComposerLockPackage struct {
 }
 type ComposerLockPackageSource struct {
 	Type      string
-	URL       string
-	Reference string
+	URL       string // "url": "https://github.com/asm89/stack-cors.git"
+	Reference string // "reference": "9cb795bf30988e8c96dd3c40623c48a877bc6714"
 }
 
 type ComposerLockPackageDist struct {
 	Type      string
-	URL       string
+	URL       string //  "url": "https://api.github.com/repos/asm89/stack-cors/zipball/9cb795bf30988e8c96dd3c40623c48a877bc6714"
 	Reference string
 	Shasum    string
 }
@@ -96,7 +97,7 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 		Value:     getCheckSumValue(dep),
 	}
 	mod.LicenseDeclared = getLicenseDeclared(dep)
-	mod.OtherLicense = getOtherLicense(dep)
+	// mod.OtherLicense = getOtherLicense(dep)
 	mod.Modules = map[string]*models.Module{}
 
 	return mod
@@ -176,11 +177,11 @@ func getOtherLicense(module ComposerLockPackage) []*models.License {
 }
 
 func getLicenseDeclared(module ComposerLockPackage) string {
-	licenses := module.License
-
-	if len(licenses) > 0 {
+	path := "./vendor/" + module.Name
+	lic, err := helper.GetLicenses(path)
+	if err != nil {
 		return ""
 	}
 
-	return licenses[0]
+	return lic.Name
 }

@@ -1,7 +1,6 @@
 package composer
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os/exec"
@@ -116,10 +115,4 @@ func findModuleByName(modules []models.Module, moduleName string) models.Module 
 	}
 
 	return models.Module{}
-}
-
-func debug(str string, values interface{}) {
-	fmt.Printf(" 🚀️ (composer > handler) > "+str+" %+v\n", "")
-	json, _ := json.Marshal(values)
-	fmt.Printf("## string:  "+str+"  %s\n", json)
 }
