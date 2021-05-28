@@ -1,7 +1,11 @@
 # SPDX Software Bill of Materials (SBOM) Generator
 
+### NOTE
+The CLI is under development. Expect breaking changes until the beta release.
+
 ## Overview
 A CLI named `spdx-sbom-generator,` that generates SPDX format files. It will understand the ecosystems of most languages, and will connect to the appropriate package management system (OR read it from a local machine) during the run time and get Document creation, Package, Relationships, and Other License information.
+
 CLI will perform the following things:
 * Automatically recognize which package management system to connect (OR read it from local machine) based on package manifest file used in the project repository i.e., package.json, pom.xml
 * Display ecosystem name i.e npm and project manifest file i.e package.json
@@ -33,7 +37,6 @@ Flags:
 - `spdx` (Default format)
 - `JSON`
 - `RDF`
-- `XML`
 
 Command output sample option:
 ```BASH
@@ -165,7 +168,7 @@ PluginMetadata{
 
     **Output**: returns the Package Information of the root  Module
 
-* `ListModules`: fetches and lists all packages required by the project in the given project directory 
+* `ListModules`: fetches and lists all packages required by the project in the given project directory
 
     **Input**: The working directory to read the package from
 
