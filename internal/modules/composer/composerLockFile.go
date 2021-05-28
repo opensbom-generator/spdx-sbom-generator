@@ -24,7 +24,13 @@ type ComposerLockPackage struct {
 	License     []string
 	Description string
 	Source      ComposerLockPackageSource
+	Authors     []ComposerLockPackageAuthor
 }
+type ComposerLockPackageAuthor struct {
+	Name  string
+	Email string
+}
+
 type ComposerLockPackageSource struct {
 	Type      string
 	URL       string // "url": "https://github.com/asm89/stack-cors.git"
@@ -88,19 +94,44 @@ func getModulesFromComposerLockFile() ([]models.Module, error) {
 
 func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 
-	var mod models.Module
-	mod.Name = getName(dep.Name)
-	mod.PackageURL = genUrlFromComposerPackage(dep)
-	mod.Version = normalizePackageVersion(dep.Version)
-	mod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Value:     getCheckSumValue(dep),
-	}
-	mod.LicenseDeclared = getLicenseDeclared(dep)
-	// mod.OtherLicense = getOtherLicense(dep)
-	mod.Modules = map[string]*models.Module{}
+	modules := models.Module{
+		Version: normalizePackageVersion(dep.Version),
+		Name:    getName(dep.Name),
+		Root:    true, PackageURL: genUrlFromComposerPackage(dep),
+		CheckSum: &models.CheckSum{
+			Algorithm: models.HashAlgoSHA1,
+			Value:     getCheckSumValue(dep),
+		},
+		Modules:         map[string]*models.Module{},
+		LicenseDeclared: getLicenseDeclared(dep),
+		Supplier:        getAuthor(dep),
+		LocalPath:       getLocalPath(dep),
+		// TODO
+		// LicenseConcluded:
+		// CommentsLicense:
+		// Path:
+		// PackageHomePage:
+		// OtherLicense:
+		// Copyright:
+		// PackageComment:
 
-	return mod
+	}
+
+	return modules
+}
+
+func getAuthor(dep ComposerLockPackage) models.SupplierContact {
+
+	authors := dep.Authors
+	if len(authors) == 0 {
+		return models.SupplierContact{}
+	}
+	author := authors[0]
+	pckAuthor := models.SupplierContact{
+		Name:  author.Name,
+		Email: author.Email,
+	}
+	return pckAuthor
 }
 
 func getName(moduleName string) string {
@@ -176,8 +207,13 @@ func getOtherLicense(module ComposerLockPackage) []*models.License {
 	return collection
 }
 
-func getLicenseDeclared(module ComposerLockPackage) string {
+func getLocalPath(module ComposerLockPackage) string {
 	path := "./vendor/" + module.Name
+	return path
+}
+
+func getLicenseDeclared(module ComposerLockPackage) string {
+	path := getLocalPath(module)
 	lic, err := helper.GetLicenses(path)
 	if err != nil {
 		return ""

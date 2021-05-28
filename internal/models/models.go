@@ -47,7 +47,7 @@ type Module struct {
 type SupplierContact struct {
 	Type  TypeContact
 	Name  string
-	EMail string
+	Email string
 }
 
 // TypeContact ...
