@@ -185,7 +185,7 @@ func convertToPackage(module models.Module) (models.Package, error) {
 		PackageHomePage:         noAssertion,
 		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
 		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
-		PackageCopyrightText:    setPkgValue(""),
+		PackageCopyrightText:    setPkgValue(module.Copyright),
 		PackageLicenseComments:  setPkgValue(""),
 		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
