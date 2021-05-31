@@ -2,6 +2,7 @@ package modules
 
 import (
 	"errors"
+	"spdx-sbom-generator/internal/modules/yarn"
 
 	log "github.com/sirupsen/logrus"
 
@@ -22,6 +23,7 @@ func init() {
 	registeredPlugins = append(registeredPlugins,
 		gomod.New(),
 		npm.New(),
+		yarn.New(),
 	)
 }
 

@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -91,4 +92,93 @@ func GetCopyrightText(path string) string {
 	}
 	copyWrite := strings.Split(c[ind:], `\n`)
 	return copyWrite[0]
+}
+
+func ReadLockFile(path string) ([]Package, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	p := make([]Package, 0)
+	i := -1
+	scanner := bufio.NewScanner(file)
+
+	isPk := false
+	isDep := false
+	for scanner.Scan() {
+		text := scanner.Text()
+		if strings.HasPrefix(scanner.Text(), "#") {
+			continue
+		}
+		if strings.TrimSpace(text) == "" {
+			isPk = false
+			isDep = false
+			continue
+		}
+		if isDep {
+			p[i].Dependencies = append(p[i].Dependencies, text)
+			continue
+		}
+		if isPk {
+			if strings.HasPrefix(text, "  version ") {
+				p[i].Version = strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(text, "  version "), "\""), "\"")
+				n := p[i].Name[:strings.Index(p[i].Name, "@")]
+				p[i].Name = fmt.Sprintf("%s-%s", n, p[i].Version)
+				continue
+			}
+			if strings.HasPrefix(text, "  resolved ") {
+				p[i].Resolved = strings.TrimPrefix(text, "  resolved ")
+				continue
+			}
+			if strings.HasPrefix(text, "  integrity ") {
+				p[i].Integrity = strings.TrimPrefix(text, "  integrity ")
+				continue
+			}
+			if strings.HasPrefix(text, "  dependencies:") {
+				isDep = true
+				continue
+			}
+		}
+
+		if !strings.HasPrefix(scanner.Text(), "  ") {
+			isPk = true
+			i++
+			var pak Package
+			name := text
+			name = strings.TrimSpace(name)
+			if strings.Contains(name, ",") {
+				s := strings.Split(name, ",")
+				name = s[0]
+			}
+			name = strings.TrimPrefix(name, "\"")
+			pak.PkPath = name
+			name = strings.TrimPrefix(name, "@")
+			name = strings.TrimSuffix(name, ":")
+
+			pak.Name = name
+			p = append(p, pak)
+			continue
+		}
+		if strings.HasSuffix(scanner.Text(), ":") {
+
+		}
+
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	fmt.Println(len(p))
+	return p, nil
+}
+
+type Package struct {
+	Name         string
+	PkPath       string
+	Version      string
+	Resolved     string
+	Integrity    string
+	Dependencies []string
 }
