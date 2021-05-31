@@ -124,8 +124,9 @@ func (m *yarn) ListModules(path string) ([]models.Module, error) {
 // ListAllModules return all info of installed modules
 func (m *yarn) ListAllModules(path string) ([]models.Module, error) {
 	pk := "yarn.lock"
-	deps, err := helper.ReadLockFile(pk)
+	deps, err := helper.ReadLockFile(filepath.Join(path, pk))
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
 

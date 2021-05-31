@@ -43,11 +43,9 @@ func (m *npm) GetMetadata() models.PluginMetadata {
 // IsValid checks if module has a valid Manifest file
 // for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
-	for i := range m.metadata.Manifest {
-		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[1])) {
 			return true
 		}
-	}
 	return false
 }
 
