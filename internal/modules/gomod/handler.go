@@ -141,9 +141,13 @@ func parseModules(reader io.Reader) ([]models.Module, error) {
 		if err == nil {
 			mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
 			mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+			mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+			mod.CommentsLicense = licensePkg.Comments
 			if !helper.LicenseSPDXExists(licensePkg.ID) {
 				licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
-				mod.OtherLicense = append(mod.OtherLicense, licensePkg)
+				// figure out why other license always fails to validate SPDX
+				//licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
+				//mod.OtherLicense = append(mod.OtherLicense, licensePkg)
 			}
 		}
 
