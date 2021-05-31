@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/reader"
 	"strings"
 
@@ -129,16 +130,9 @@ func (m *yarn) ListAllModules(path string) ([]models.Module, error) {
 		fmt.Println(err)
 		return nil, err
 	}
+	lic := licenses.DB
 
-	re := reader.New(licences)
-	lic, err := re.ReadJson()
-	lics := lic["licenses"].([]interface{})
-	licenses := make(map[string]string)
-	for i := range lics {
-		licenses[lics[i].(map[string]interface{})["licenseId"].(string)] = lics[i].(map[string]interface{})["name"].(string)
-	}
-
-	return m.buildDependencies(path, deps, licenses), nil
+	return m.buildDependencies(path, deps, lic), nil
 }
 
 func (m *yarn) buildDependencies(path string, deps []helper.Package, licenses map[string]string) []models.Module {

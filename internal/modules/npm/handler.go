@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/reader"
 	"strings"
 
@@ -20,7 +21,6 @@ var (
 	errDependenciesNotFound = errors.New("please install dependencies by running npm install")
 	shrink                  = "npm-shrinkwrap.json"
 	npmRegistry             = "https://registry.npmjs.org"
-	licences                = "licenses.json"
 )
 
 // New creates a new npm instance
@@ -135,16 +135,9 @@ func (m *npm) ListAllModules(path string) ([]models.Module, error) {
 	if !ok {
 		deps = pkResults["dependencies"].(map[string]interface{})
 	}
+	lic := licenses.DB
 
-	re := reader.New(licences)
-	lic, err := re.ReadJson()
-	lics := lic["licenses"].([]interface{})
-	licenses := make(map[string]string)
-	for i := range lics {
-		licenses[lics[i].(map[string]interface{})["licenseId"].(string)] = lics[i].(map[string]interface{})["name"].(string)
-	}
-
-	return m.buildDependencies(path, deps, licenses), nil
+	return m.buildDependencies(path, deps, lic), nil
 }
 
 func (m *npm) buildDependencies(path string, deps map[string]interface{}, licenses map[string]string) []models.Module {
