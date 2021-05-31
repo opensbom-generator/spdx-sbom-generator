@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -22,6 +21,11 @@ type mod struct {
 }
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
+var errFaildtoReadMod = errors.New("Failds to read go.mod line")
+var errExecutingCmdToGetModule = errors.New("Error executing command to GetModule")
+var errExecutingCmdToListModule = errors.New("Error executing command to ListModule")
+var errExecutingCmdToListAllModule = errors.New("Error executing command to ListAllModule")
+var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 
 // New ...
 func New() *mod {
@@ -62,29 +66,20 @@ func (m *mod) HasModulesInstalled(path string) error {
 
 // GetVersion...
 func (m *mod) GetVersion() (string, error) {
-	cmd := exec.Command("go", "version")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
+	buf := new(bytes.Buffer)
+	if err := helper.ExecCMD(".", buf, "go", "version"); err != nil {
+		return "", fmt.Errorf("%w : ", errExecutingCmdToGetModule, err)
 	}
+	defer buf.Reset()
 
-	fields := strings.Fields(string(output))
-	if len(fields) != 4 {
-		return "", fmt.Errorf("expected four fields in output, but got %d: %s", len(fields), output)
-	}
-
-	if fields[0] != "go" || fields[1] != "version" {
-		return "", fmt.Errorf("unexpected output format: %s", output)
-	}
-
-	return fields[2], nil
+	return strings.Trim(string(buf.Bytes()), "go version"), nil
 }
 
 // GetModule...
 func (m *mod) GetModule(path string) ([]models.Module, error) {
 	buf := new(bytes.Buffer)
 	if err := helper.ExecCMD(path, buf, "go", "list", "-mod", "readonly", "-json", "-m"); err != nil {
-		return nil, fmt.Errorf("listing modules failed: %w", err)
+		return nil, fmt.Errorf("%w : ", errExecutingCmdToGetModule, err)
 	}
 	defer buf.Reset()
 
@@ -95,7 +90,7 @@ func (m *mod) GetModule(path string) ([]models.Module, error) {
 func (m *mod) ListModules(path string) ([]models.Module, error) {
 	buf := new(bytes.Buffer)
 	if err := helper.ExecCMD(path, buf, "go", "list", "-mod", "readonly", "-json", "-m", "all"); err != nil {
-		return nil, fmt.Errorf("listing modules failed: %w", err)
+		return nil, fmt.Errorf("%w : ", errExecutingCmdToListModule, err)
 	}
 	defer buf.Reset()
 
@@ -111,23 +106,22 @@ func (m *mod) ListAllModules(path string) ([]models.Module, error) {
 
 	bufGraph := new(bytes.Buffer)
 	if err := helper.ExecCMD(path, bufGraph, "go", "mod", "graph"); err != nil {
-		return nil, fmt.Errorf("listing dependencies failed: %w", err)
+		return nil, fmt.Errorf("%w : ", errExecutingCmdToListAllModule, err)
 	}
 	defer bufGraph.Reset()
 
 	if err := buildDependenciesGraph(modules, bufGraph); err != nil {
-		return nil, fmt.Errorf("listing dependencies failed: %w", err)
+		return nil, fmt.Errorf("%w : ", errBuildlingModuleDependencies, err)
 	}
 
 	return modules, nil
 }
 
-// parseModules parses the output of `go list -json -m` into a Module slice
+// WIP ...
 func parseModules(reader io.Reader) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	jsonDecoder := json.NewDecoder(reader)
-
-	// Output is not a JSON array, so we have to parse one object after another
+	isRoot := true
 	for {
 		var mod models.Module
 		if err := jsonDecoder.Decode(&mod); err != nil {
@@ -136,6 +130,7 @@ func parseModules(reader io.Reader) ([]models.Module, error) {
 			}
 			return nil, err
 		}
+
 		mod.Name = mod.Path
 		mod.PackageURL = genUrl(mod)
 		mod.CheckSum = &models.CheckSum{
@@ -146,17 +141,25 @@ func parseModules(reader io.Reader) ([]models.Module, error) {
 		if err == nil {
 			mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
 			mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+			mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+			mod.CommentsLicense = licensePkg.Comments
 			if !helper.LicenseSPDXExists(licensePkg.ID) {
 				licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
-				mod.OtherLicense = append(mod.OtherLicense, licensePkg)
+				// figure out why other license always fails to validate SPDX
+				//licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
+				//mod.OtherLicense = append(mod.OtherLicense, licensePkg)
 			}
 		}
+
 		mod.Modules = map[string]*models.Module{}
+		mod.Root = isRoot
 		modules = append(modules, mod)
+		isRoot = false
 	}
 	return modules, nil
 }
 
+// WIP ...
 func buildDependenciesGraph(modules []models.Module, reader io.Reader) error {
 	moduleMap := map[string]models.Module{}
 	moduleIndex := map[string]int{}
@@ -167,22 +170,18 @@ func buildDependenciesGraph(modules []models.Module, reader io.Reader) error {
 
 	scanner := bufio.NewScanner(reader)
 	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line == "" {
-			continue
+		modToken := scanner.Text()
+		mods := strings.Fields(strings.TrimSpace(modToken))
+		if len(mods) != 2 {
+			return errFaildtoReadMod
 		}
 
-		fields := strings.Fields(line)
-		if len(fields) != 2 {
-			return fmt.Errorf("expected two fields per line, but got %d: %s", len(fields), line)
-		}
-
-		moduleName := strings.Split(fields[0], "@")[0]
+		moduleName := strings.Split(mods[0], "@")[0]
 		if _, ok := moduleMap[moduleName]; !ok {
 			continue
 		}
 
-		depName := strings.Split(fields[1], "@")[0]
+		depName := strings.Split(mods[1], "@")[0]
 		depModule, ok := moduleMap[depName]
 		if !ok {
 			continue

@@ -1,9 +1,5 @@
 package models
 
-import (
-	"time"
-)
-
 // Package ...
 type Package struct {
 	PackageName             string
@@ -20,7 +16,7 @@ type Package struct {
 	PackageLicenseComments  string
 	PackageComment          string
 	RootPackage             bool
-	Packages                []Package
+	DependsOn               []Package
 }
 
 // Document ...
@@ -31,5 +27,5 @@ type Document struct {
 	DocumentName      string
 	DocumentNamespace string
 	Creator           string
-	Created           time.Time
+	Created           string
 }

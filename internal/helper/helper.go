@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 	"spdx-sbom-generator/internal/reader"
@@ -47,7 +50,7 @@ func GetLicenses(modulePath string) (*models.License, error) {
 				//returns the first element, the best match
 				return &models.License{ID: licenses[i].Matches[j].License,
 					Name:          licenses[i].Matches[j].License,
-					ExtractedText: "",
+					ExtractedText: extractLicenseContent(modulePath, licenses[i].Matches[j].File),
 					Comments:      "",
 					File:          licenses[i].Matches[j].File}, nil
 			}
@@ -80,6 +83,41 @@ func BuildLicenseConcluded(license string) string {
 		return license
 	}
 	return fmt.Sprintf("LicenseRef-%s", license)
+}
+
+// todo: figure out how to extract only required text
+func extractLicenseContent(path, filename string) string {
+	bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", path, filename))
+	if err != nil {
+		log.Errorf("Could not read license file: %w", err)
+		return ""
+	}
+
+	// extract license required segment
+	return string(bytes)
+}
+
+// GetCopyright ...
+func GetCopyright(content string) string {
+	// split by paragraph
+	paragraphs := strings.Split(content, "\n\n")
+	for _, p := range paragraphs {
+		lines := strings.Split(p, "\n")
+		if len(lines) == 0 {
+			continue
+		}
+
+		line := strings.TrimSpace(lines[0])
+		tokens := strings.Fields(line)
+		if len(tokens) == 0 {
+			continue
+		}
+		if strings.Contains(strings.ToLower(tokens[0]), "copyright") {
+			return line
+		}
+	}
+
+	return ""
 }
 
 // GetCopyrightText ...
@@ -170,7 +208,6 @@ func ReadLockFile(path string) ([]Package, error) {
 		return nil, err
 	}
 
-	fmt.Println(len(p))
 	return p, nil
 }
 
