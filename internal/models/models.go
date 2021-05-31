@@ -47,7 +47,7 @@ type Module struct {
 type SupplierContact struct {
 	Type  TypeContact
 	Name  string
-	EMail string
+	Email string
 }
 
 // TypeContact ...
@@ -64,18 +64,18 @@ type CheckSum struct {
 }
 
 func (c *CheckSum) String() string {
-	return fmt.Sprintf("TEST: %v %s", c.Algorithm, c.Value)
+	return fmt.Sprintf("%v: %s", c.Algorithm, c.Value)
 }
 
 // HashAlgorithm ...
 type HashAlgorithm string
 
 const (
-	HashAlgoSHA1   HashAlgorithm = "SHA-1"
-	HashAlgoSHA224 HashAlgorithm = "SHA-224"
-	HashAlgoSHA256 HashAlgorithm = "SHA-256"
-	HashAlgoSHA384 HashAlgorithm = "SHA-384"
-	HashAlgoSHA512 HashAlgorithm = "SHA-512"
+	HashAlgoSHA1   HashAlgorithm = "SHA1"
+	HashAlgoSHA224 HashAlgorithm = "SHA224"
+	HashAlgoSHA256 HashAlgorithm = "SHA256"
+	HashAlgoSHA384 HashAlgorithm = "SHA384"
+	HashAlgoSHA512 HashAlgorithm = "SHA512"
 	HashAlgoMD2    HashAlgorithm = "MD2"
 	HashAlgoMD4    HashAlgorithm = "MD4"
 	HashAlgoMD5    HashAlgorithm = "MD5"

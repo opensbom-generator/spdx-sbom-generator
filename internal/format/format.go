@@ -3,12 +3,20 @@ package format
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
 
 	"spdx-sbom-generator/internal/models"
 )
+
+const (
+	noAssertion = "NOASSERTION"
+	version     = "0.0.1" // todo: get version from version.txt
+)
+
+var replacer *strings.Replacer
 
 // Format ...
 type Format struct {
@@ -21,6 +29,11 @@ type Config struct {
 	GetSource func() []models.Module
 }
 
+func init() {
+	replacers := []string{"/", ".", "_", "-"}
+	replacer = strings.NewReplacer(replacers...)
+}
+
 // New ...
 func New(cfg Config) (Format, error) {
 	return Format{
@@ -29,6 +42,8 @@ func New(cfg Config) (Format, error) {
 }
 
 // Build ...
+// todo: refactor this Render into interface that different priting format can leverage
+// move into go templates
 func (f *Format) Render() error {
 	modules := f.Config.GetSource()
 	document, err := buildDocument(modules[0])
@@ -55,24 +70,21 @@ func (f *Format) Render() error {
 	file.WriteString(fmt.Sprintf("DocumentNamespace: %s\n", document.DocumentNamespace))
 	file.WriteString(fmt.Sprintf("Creator: %s\n", document.Creator))
 	file.WriteString(fmt.Sprintf("Created: %v\n\n", document.Created))
-
 	//Print Package
-	rootPackageSPDXID := fmt.Sprintf("SPDXRef-Package-%s", document.DocumentName)
 	for _, pkg := range packages {
 		file.WriteString(fmt.Sprintf("##### Package representing the %s\n\n", pkg.PackageName))
 		generatePackage(file, pkg)
 		if pkg.RootPackage {
 			file.WriteString(fmt.Sprintf("Relationship %s DESCRIBES %s \n\n", document.SPDXID, pkg.SPDXID))
-		} else {
-			file.WriteString(fmt.Sprintf("Relationship %s CONTAINS %s \n\n", rootPackageSPDXID, pkg.SPDXID))
 		}
-		if len(pkg.Packages) > 0 {
-			file.WriteString(fmt.Sprintf("##### Package representing the %s\n\n", pkg.PackageName))
-			for _, subPkg := range packages {
-				generatePackage(file, pkg)
-				file.WriteString(fmt.Sprintf("Relationship %s CONTAINS %s \n\n", pkg.PackageName, subPkg.PackageName))
+		//Print DEPS ON
+		if len(pkg.DependsOn) > 0 {
+			for _, subPkg := range pkg.DependsOn {
+				file.WriteString(fmt.Sprintf("Relationship %s DEPENDS_ON %s \n", pkg.SPDXID, subPkg.SPDXID))
 			}
+			file.WriteString("\n")
 		}
+
 	}
 
 	//Print Other Licenses
@@ -116,8 +128,8 @@ func buildDocument(module models.Module) (*models.Document, error) {
 		SPDXID:            "SPDXRef-DOCUMENT",
 		DocumentName:      module.Name,
 		DocumentNamespace: fmt.Sprintf("http://spdx.org/spdxpackages/%s-%s-%s", module.Name, module.Version, uuid),
-		Creator:           "Tool: spdx-sbom-generator-XXXXX",
-		Created:           time.Now(),
+		Creator:           fmt.Sprintf("Tool: spdx-sbom-generator-%s", version),
+		Created:           time.Now().UTC().Format(time.RFC3339),
 	}, nil
 }
 
@@ -130,6 +142,7 @@ func buildPackages(modules []models.Module) ([]models.Package, map[string]*model
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert module %w", err)
 		}
+
 		subPackages := make([]models.Package, len(module.Modules))
 		idx := 0
 		for _, subMod := range module.Modules {
@@ -140,7 +153,7 @@ func buildPackages(modules []models.Module) ([]models.Package, map[string]*model
 			subPackages[idx] = subPkg
 			idx++
 		}
-		pkg.Packages = subPackages
+		pkg.DependsOn = subPackages
 		for l := range module.OtherLicense {
 			otherLicenses[module.OtherLicense[l].ID] = module.OtherLicense[l]
 		}
@@ -154,23 +167,25 @@ func buildPackages(modules []models.Module) ([]models.Package, map[string]*model
 func convertToPackage(module models.Module) (models.Package, error) {
 	setPkgValue := func(s string) string {
 		if s == "" {
-			return "NOASSERTION"
+			return noAssertion
 		}
 
 		return s
 	}
 	return models.Package{
-		PackageName:             module.Name,
-		SPDXID:                  fmt.Sprintf("SPDXRef-Package-%s", module.Name),
-		PackageVersion:          module.Version,
-		PackageSupplier:         "NOASSERTION",
-		PackageDownloadLocation: module.PackageURL,
+		PackageName:     module.Name,
+		SPDXID:          fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(module.Name)),
+		PackageVersion:  module.Version,
+		PackageSupplier: noAssertion,
+		//PackageDownloadLocation: module.PackageURL,
+		PackageDownloadLocation: noAssertion,
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
-		PackageHomePage:         module.PackageURL,
+		//PackageHomePage:         module.PackageURL,
+		PackageHomePage:         noAssertion,
 		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
 		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
-		PackageCopyrightText:    setPkgValue(""),
+		PackageCopyrightText:    setPkgValue(module.Copyright),
 		PackageLicenseComments:  setPkgValue(""),
 		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
