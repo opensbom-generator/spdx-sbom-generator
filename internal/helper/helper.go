@@ -4,10 +4,8 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
 
@@ -18,27 +16,13 @@ import (
 	"strings"
 )
 
-// FileExists ...
-func FileExists(path string) bool {
-	_, err := os.Stat(path)
-	return !os.IsNotExist(err)
-}
-
-// StringSliceIndex determines the index of a given string in a given string slice.
-func StringSliceIndex(haystack []string, needle string) int {
-	for i := range haystack {
-		if haystack[i] == needle {
-			return i
-		}
+// Exists ...
+func Exists(filepath string) bool {
+	if _, err := os.Stat(filepath); os.IsNotExist(err) {
+		return false
 	}
-	return -1
-}
 
-func ExecCMD(modulePath string, writer io.Writer, cmdParameter ...string) error {
-	cmd := exec.Command(cmdParameter[0], cmdParameter[1:]...)
-	cmd.Dir = modulePath
-	cmd.Stdout = writer
-	return cmd.Run()
+	return true
 }
 
 // GetLicenses ...

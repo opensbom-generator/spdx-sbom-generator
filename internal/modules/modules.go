@@ -44,6 +44,9 @@ func New(cfg Config) (*Manager, error) {
 	var usePlugin models.IPlugin
 	for _, plugin := range registeredPlugins {
 		if plugin.IsValid(cfg.Path) {
+			if err := plugin.SetRootModule(cfg.Path); err != nil {
+				return nil, err
+			}
 			usePlugin = plugin
 			break
 		}
@@ -72,7 +75,7 @@ func (m *Manager) Run() error {
 		return err
 	}
 
-	modules, err := m.Plugin.ListAllModules(modulePath)
+	modules, err := m.Plugin.ListModulesWithDeps(modulePath)
 	if err != nil {
 		log.Error(err)
 		return errFailedToReadModules

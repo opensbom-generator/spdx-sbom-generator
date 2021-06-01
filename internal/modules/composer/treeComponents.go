@@ -3,7 +3,7 @@ package composer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
@@ -19,14 +19,25 @@ type ComposerTreeComponent struct {
 }
 
 func getTreeListFromComposerShowTree(path string) (ComposerTreeList, error) {
-	buf := new(bytes.Buffer)
-	if err := helper.ExecCMD(path, buf, "composer", "show", "-t", "-f", "json"); err != nil {
-		return ComposerTreeList{}, fmt.Errorf("listing modules failed: %w", err)
+	cmdArgs := ShowModulesCmd.Parse()
+	if cmdArgs[0] != "composer" {
+		return ComposerTreeList{}, errors.New("no composer command")
 	}
-	defer buf.Reset()
+
+	command := helper.NewCmd(helper.CmdOptions{
+		Name:      cmdArgs[0],
+		Args:      cmdArgs[1:],
+		Directory: path,
+	})
+
+	buffer := new(bytes.Buffer)
+	if err := command.Execute(buffer); err != nil {
+		return ComposerTreeList{}, err
+	}
+	defer buffer.Reset()
 
 	var graphModules ComposerTreeList
-	err := json.NewDecoder(buf).Decode(&graphModules)
+	err := json.NewDecoder(buffer).Decode(&graphModules)
 	if err != nil {
 		return ComposerTreeList{}, err
 	}

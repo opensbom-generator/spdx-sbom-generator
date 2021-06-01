@@ -44,7 +44,7 @@ func (m *yarn) GetMetadata() models.PluginMetadata {
 // for yarn manifest file is package.json
 func (m *yarn) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
-		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
 		}
 	}
@@ -54,13 +54,13 @@ func (m *yarn) IsValid(path string) bool {
 // HasModulesInstalled checks if modules of manifest file already installed
 func (m *yarn) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
-		if !helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+		if !helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
 			return errDependenciesNotFound
 		}
 	}
 
 	for i := range m.metadata.Manifest {
-		if !helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return errDependenciesNotFound
 		}
 	}
@@ -82,9 +82,15 @@ func (m *yarn) GetVersion() (string, error) {
 	return string(output), nil
 }
 
-// GetModule return
+// SetRootModule ...
+func (m *yarn) SetRootModule(path string) error {
+	return nil
+}
+
+
+// GetRootModule return
 //root package information ex. Name, Version
-func (m *yarn) GetModule(path string) ([]models.Module, error) {
+func (m *yarn) GetRootModule(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
@@ -109,8 +115,8 @@ func (m *yarn) GetModule(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListModules return brief info of installed modules, Name and Version
-func (m *yarn) ListModules(path string) ([]models.Module, error) {
+// ListUsedModules return brief info of installed modules, Name and Version
+func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
@@ -129,8 +135,8 @@ func (m *yarn) ListModules(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListAllModules return all info of installed modules
-func (m *yarn) ListAllModules(path string) ([]models.Module, error) {
+// ListModulesWithDeps return all info of installed modules
+func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
 	pk := "yarn.lock"
 	deps, err := helper.ReadLockFile(filepath.Join(path, pk))
 	if err != nil {
@@ -162,7 +168,7 @@ func (m *yarn) buildDependencies(path string, deps []helper.Package, licenses ma
 			Algorithm: models.HashAlgorithm(rArr[0]),
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, "LICENSE")
-		if helper.FileExists(licensePath) {
+		if helper.Exists(licensePath) {
 			mod.Copyright = helper.GetCopyrightText(licensePath)
 		}
 

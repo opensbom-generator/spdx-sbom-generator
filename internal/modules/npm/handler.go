@@ -43,7 +43,7 @@ func (m *npm) GetMetadata() models.PluginMetadata {
 // IsValid checks if module has a valid Manifest file
 // for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
-	if helper.FileExists(filepath.Join(path, m.metadata.Manifest[1])) {
+	if helper.Exists(filepath.Join(path, m.metadata.Manifest[1])) {
 		return true
 	}
 	return false
@@ -52,13 +52,13 @@ func (m *npm) IsValid(path string) bool {
 // HasModulesInstalled checks if modules of manifest file already installed
 func (m *npm) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
-		if !helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+		if !helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
 			return errDependenciesNotFound
 		}
 	}
 
 	for i := range m.metadata.Manifest {
-		if !helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return errDependenciesNotFound
 		}
 	}
@@ -80,8 +80,13 @@ func (m *npm) GetVersion() (string, error) {
 	return string(output), nil
 }
 
-// GetModule return root package information ex. Name, Version
-func (m *npm) GetModule(path string) ([]models.Module, error) {
+// SetRootModule ...
+func (m *npm) SetRootModule(path string) error {
+	return nil
+}
+
+// GetRootModule return root package information ex. Name, Version
+func (m *npm) GetRootModule(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
@@ -106,8 +111,8 @@ func (m *npm) GetModule(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListModules return brief info of installed modules, Name and Version
-func (m *npm) ListModules(path string) ([]models.Module, error) {
+// ListUsedModules return brief info of installed modules, Name and Version
+func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
@@ -126,10 +131,10 @@ func (m *npm) ListModules(path string) ([]models.Module, error) {
 	return modules, nil
 }
 
-// ListAllModules return all info of installed modules
-func (m *npm) ListAllModules(path string) ([]models.Module, error) {
+// ListModulesWithDeps return all info of installed modules
+func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	pk := "package-lock.json"
-	if helper.FileExists(filepath.Join(path, shrink)) {
+	if helper.Exists(filepath.Join(path, shrink)) {
 		pk = shrink
 	}
 	r := reader.New(filepath.Join(path, pk))
@@ -168,7 +173,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 			Algorithm: models.HashAlgorithm(rArr[0]),
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
-		if helper.FileExists(licensePath) {
+		if helper.Exists(licensePath) {
 			mod.Copyright = helper.GetCopyrightText(licensePath)
 		}
 
