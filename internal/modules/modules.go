@@ -23,9 +23,9 @@ var registeredPlugins []models.IPlugin
 
 func init() {
 	registeredPlugins = append(registeredPlugins,
+		composer.New(),
 		gomod.New(),
 		npm.New(),
-		composer.New(),
 	)
 }
 

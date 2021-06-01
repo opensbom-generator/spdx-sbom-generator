@@ -16,20 +16,13 @@ type ComposerProjectInfo struct {
 	Versions    []string
 }
 
-func getProjectInfo() (models.Module, error) {
-	cmdArgs := ShowModulesCmd.Parse()
-	if cmdArgs[0] != "composer" {
-		return models.Module{}, errors.New("no composer command")
+func (m *composer) getProjectInfo() (models.Module, error) {
+	if err := m.buildCmd(projectInfoCmd, "."); err != nil {
+		return models.Module{}, err
 	}
 
-	command := helper.NewCmd(helper.CmdOptions{
-		Name:      cmdArgs[0],
-		Args:      cmdArgs[1:],
-		Directory: ".",
-	})
-
 	buffer := new(bytes.Buffer)
-	if err := command.Execute(buffer); err != nil {
+	if err := m.command.Execute(buffer); err != nil {
 		return models.Module{}, err
 	}
 	defer buffer.Reset()
@@ -39,6 +32,9 @@ func getProjectInfo() (models.Module, error) {
 	err := json.NewDecoder(buffer).Decode(&projectInfo)
 	if err != nil {
 		return models.Module{}, err
+	}
+	if projectInfo.Name == "" {
+		return models.Module{}, errors.New("root project info not found")
 	}
 
 	module, err := convertProjectInfoToModule(projectInfo)
@@ -54,7 +50,7 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 	packageUrl := genComposerUrl(project.Name, version)
 	checkSumValue := readCheckSum(packageUrl)
 	name := getName(project.Name)
-	nodule := models.Module{
+	module := models.Module{
 		Name:       name,
 		Version:    version,
 		Root:       true,
@@ -63,19 +59,15 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 			Algorithm: models.HashAlgoSHA1,
 			Value:     checkSumValue,
 		},
-		LicenseConcluded: getProjectLicense(),
-		LicenseDeclared:  getProjectLicense(),
 	}
 
-	return nodule, nil
-}
-
-func getProjectLicense() string {
-	path := "."
-	lic, err := helper.GetLicenses(path)
-	if err != nil {
-		return ""
+	licensePkg, err := helper.GetLicenses(".")
+	if err == nil {
+		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
+		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+		module.CommentsLicense = licensePkg.Comments
 	}
 
-	return lic.Name
+	return module, nil
 }

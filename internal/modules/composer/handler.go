@@ -17,9 +17,12 @@ var COMPOSER_VENDOR_FOLDER = "vendor"
 
 type composer struct {
 	metadata models.PluginMetadata
+	command  *helper.Cmd
 }
 
-var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install` might solve the issue.")
+var errDependenciesNotFound = errors.New("there are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install` might solve the issue.")
+var errNoComposerCommand = errors.New("no Composer command")
+var errFailedToConvertModules = errors.New("failed to convert modules")
 
 // New ...
 func New() *composer {
@@ -60,18 +63,28 @@ func (m *composer) HasModulesInstalled(path string) error {
 
 // GetVersion ...
 func (m *composer) GetVersion() (string, error) {
-	cmdArgs := VersionCmd.Parse()
+	if err := m.buildCmd(VersionCmd, "."); err != nil {
+		return "", err
+	}
+
+	return m.command.Output()
+}
+
+func (m *composer) buildCmd(cmd command, path string) error {
+	cmdArgs := cmd.Parse()
 	if cmdArgs[0] != "composer" {
-		return "", errors.New("no composer command")
+		return errNoComposerCommand
 	}
 
 	command := helper.NewCmd(helper.CmdOptions{
 		Name:      cmdArgs[0],
 		Args:      cmdArgs[1:],
-		Directory: ".",
+		Directory: path,
 	})
 
-	return command.Output()
+	m.command = command
+
+	return command.Build()
 }
 
 // SetRootModule ...
@@ -91,12 +104,12 @@ func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 // ListUsedModules...
 func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
-	modules, err := getModulesFromComposerLockFile()
+	modules, err := m.getModulesFromComposerLockFile()
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
 	}
 
-	treeList, err := getTreeListFromComposerShowTree(path)
+	treeList, err := m.getTreeListFromComposerShowTree(path)
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
 	}
