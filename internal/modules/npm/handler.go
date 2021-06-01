@@ -44,10 +44,12 @@ func (m *npm) GetMetadata() models.PluginMetadata {
 // IsValid checks if module has a valid Manifest file
 // for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
-	if helper.Exists(filepath.Join(path, m.metadata.Manifest[1])) {
-		return true
+	for i := range m.metadata.Manifest {
+		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return false
+		}
 	}
-	return false
+	return true
 }
 
 // HasModulesInstalled checks if modules of manifest file already installed
@@ -176,64 +178,10 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 			mod.Copyright = helper.GetCopyrightText(licensePath)
 		}
 
-		mod.LicenseDeclared = m.getLicense(path, key, licenses)
+		mod.LicenseDeclared = helper.GetJSLicense(path, key, licenses, m.metadata.ModulePath[0], m.metadata.Manifest[0] )
 
 		modules = append(modules, mod)
 	}
 	return modules
 }
 
-func (m *npm) getLicense(path string, pkName string, licenses map[string]string) string {
-	licenseDeclared := ""
-	r := reader.New(filepath.Join(path, m.metadata.ModulePath[0], pkName, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJson()
-	if err != nil {
-		return ""
-	}
-	pkLic := ""
-	if pkResult["licenses"] != nil {
-		l := pkResult["licenses"].([]interface{})
-
-		for i := range l {
-			if i > 0 {
-				pkLic += " OR"
-				pkLic += l[i].(map[string]interface{})["type"].(string)
-				continue
-			}
-			pkLic += l[i].(map[string]interface{})["type"].(string)
-		}
-	}
-	if pkResult["license"] != nil {
-		pkLic = pkResult["license"].(string)
-	}
-
-	if pkLic != "" {
-		for k, _ := range licenses {
-			if pkLic == k {
-				licenseDeclared = pkLic
-				break
-			}
-		}
-	}
-	if pkLic != "" && licenseDeclared == "" && strings.HasSuffix(pkLic, "or later") {
-		licenseDeclared = strings.Replace(pkLic, "or later", "+", 1)
-	}
-	if pkLic != "" && licenseDeclared == "" {
-		licenseDeclared = pkLic
-	}
-	if pkLic == "" {
-		licenseDeclared = "NONE"
-	}
-
-	return licenseDeclared
-
-}
-
-type dependency struct {
-	version      string
-	resolved     string
-	integrity    string
-	requires     map[string]string
-	dev          string
-	dependencies []dependency
-}

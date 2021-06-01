@@ -44,11 +44,11 @@ func (m *yarn) GetMetadata() models.PluginMetadata {
 // for yarn manifest file is package.json
 func (m *yarn) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
-		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
-			return true
+		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 // HasModulesInstalled checks if modules of manifest file already installed
@@ -137,7 +137,6 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
 	deps, err := helper.ReadLockFile(filepath.Join(path, lockFile))
 	if err != nil {
-		fmt.Println(err)
 		return nil, err
 	}
 	lic := licenses.DB
@@ -169,64 +168,9 @@ func (m *yarn) buildDependencies(path string, deps []helper.Package, licenses ma
 			mod.Copyright = helper.GetCopyrightText(licensePath)
 		}
 
-		mod.LicenseDeclared = m.getLicense(path, d.PkPath, licenses)
+		mod.LicenseDeclared = helper.GetJSLicense(path, d.PkPath, licenses, m.metadata.ModulePath[0], m.metadata.Manifest[0])
 
 		modules = append(modules, mod)
 	}
 	return modules
-}
-
-func (m *yarn) getLicense(path string, pkName string, licenses map[string]string) string {
-	licenseDeclared := ""
-	r := reader.New(filepath.Join(path, m.metadata.ModulePath[0], pkName, m.metadata.Manifest[0]))
-	pkResult, err := r.ReadJson()
-	if err != nil {
-		return ""
-	}
-	pkLic := ""
-	if pkResult["licenses"] != nil {
-		l := pkResult["licenses"].([]interface{})
-
-		for i := range l {
-			if i > 0 {
-				pkLic += " OR"
-				pkLic += l[i].(map[string]interface{})["type"].(string)
-				continue
-			}
-			pkLic += l[i].(map[string]interface{})["type"].(string)
-		}
-	}
-	if pkResult["license"] != nil {
-		pkLic = pkResult["license"].(string)
-	}
-
-	if pkLic != "" {
-		for k, _ := range licenses {
-			if pkLic == k {
-				licenseDeclared = pkLic
-				break
-			}
-		}
-	}
-	if pkLic != "" && licenseDeclared == "" && strings.HasSuffix(pkLic, "or later") {
-		licenseDeclared = strings.Replace(pkLic, "or later", "+", 1)
-	}
-	if pkLic != "" && licenseDeclared == "" {
-		licenseDeclared = pkLic
-	}
-	if pkLic == "" {
-		licenseDeclared = "NONE"
-	}
-
-	return licenseDeclared
-
-}
-
-type dependency struct {
-	version      string
-	resolved     string
-	integrity    string
-	requires     map[string]string
-	dev          string
-	dependencies []dependency
 }
