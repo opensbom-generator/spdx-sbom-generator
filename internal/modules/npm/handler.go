@@ -21,6 +21,7 @@ var (
 	errDependenciesNotFound = errors.New("please install dependencies by running npm install")
 	shrink                  = "npm-shrinkwrap.json"
 	npmRegistry             = "https://registry.npmjs.org"
+	lockFile                = "package-lock.json"
 )
 
 // New creates a new npm instance
@@ -29,7 +30,7 @@ func New() *npm {
 		metadata: models.PluginMetadata{
 			Name:       "Node Package Manager",
 			Slug:       "npm",
-			Manifest:   []string{"package.json", "package-lock.json"},
+			Manifest:   []string{"package.json", lockFile},
 			ModulePath: []string{"node_modules"},
 		},
 	}
@@ -131,7 +132,7 @@ func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
 
 // ListModulesWithDeps return all info of installed modules
 func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
-	pk := "package-lock.json"
+	pk := lockFile
 	if helper.Exists(filepath.Join(path, shrink)) {
 		pk = shrink
 	}

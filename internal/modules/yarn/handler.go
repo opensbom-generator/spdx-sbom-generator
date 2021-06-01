@@ -20,7 +20,7 @@ type yarn struct {
 var (
 	errDependenciesNotFound = errors.New("please install dependencies by running yarn install")
 	yarnRegistry            = "https://registry.yarnpkg.com"
-	licences                = "licenses.json"
+	lockFile = "yarn.lock"
 )
 
 // New creates a new yarn instance
@@ -29,7 +29,7 @@ func New() *yarn {
 		metadata: models.PluginMetadata{
 			Name:       "Yarn Package Manager",
 			Slug:       "yarn",
-			Manifest:   []string{"package.json", "yarn.lock"},
+			Manifest:   []string{"package.json", lockFile},
 			ModulePath: []string{"node_modules"},
 		},
 	}
@@ -135,8 +135,7 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 
 // ListModulesWithDeps return all info of installed modules
 func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
-	pk := "yarn.lock"
-	deps, err := helper.ReadLockFile(filepath.Join(path, pk))
+	deps, err := helper.ReadLockFile(filepath.Join(path, lockFile))
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
