@@ -43,9 +43,9 @@ func (m *npm) GetMetadata() models.PluginMetadata {
 // IsValid checks if module has a valid Manifest file
 // for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
-		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[1])) {
-			return true
-		}
+	if helper.FileExists(filepath.Join(path, m.metadata.Manifest[1])) {
+		return true
+	}
 	return false
 }
 
@@ -90,9 +90,15 @@ func (m *npm) GetModule(path string) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	var mod models.Module
 
-	mod.Name = pkResult["name"].(string)
-	mod.Supplier.Name = pkResult["author"].(string)
-	mod.Version = pkResult["version"].(string)
+	if pkResult["name"] != nil {
+		mod.Name = pkResult["name"].(string)
+	}
+	if pkResult["author"] != nil {
+		mod.Supplier.Name = pkResult["author"].(string)
+	}
+	if pkResult["version"] != nil {
+		mod.Version = pkResult["version"].(string)
+	}
 
 	mod.Modules = map[string]*models.Module{}
 	modules = append(modules, mod)
@@ -108,12 +114,13 @@ func (m *npm) ListModules(path string) ([]models.Module, error) {
 		return nil, err
 	}
 	modules := make([]models.Module, 0)
-	deps := pkResult["dependencies"].(map[string]string)
+	deps := pkResult["dependencies"].(map[string]interface{})
 
 	for k, v := range deps {
 		var mod models.Module
 		mod.Name = k
-		mod.Version = v
+		mod.Version = strings.TrimPrefix(v.(string), "^")
+		modules = append(modules, mod)
 	}
 
 	return modules, nil

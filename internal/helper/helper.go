@@ -128,8 +128,8 @@ func GetCopyrightText(path string) string {
 	if ind < 0 {
 		return ""
 	}
-	copyWrite := strings.Split(c[ind:], `\n`)
-	return copyWrite[0]
+	copyWrite := strings.Split(c[ind:], "\n")
+	return strings.TrimSuffix(copyWrite[0], "\r")
 }
 
 func ReadLockFile(path string) ([]Package, error) {
@@ -163,6 +163,7 @@ func ReadLockFile(path string) ([]Package, error) {
 				p[i].Version = strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(text, "  version "), "\""), "\"")
 				n := p[i].Name[:strings.Index(p[i].Name, "@")]
 				p[i].Name = fmt.Sprintf("%s-%s", n, p[i].Version)
+				p[i].PkPath = p[i].PkPath[:strings.LastIndex(p[i].PkPath, "@")]
 				continue
 			}
 			if strings.HasPrefix(text, "  resolved ") {
@@ -190,9 +191,10 @@ func ReadLockFile(path string) ([]Package, error) {
 				name = s[0]
 			}
 			name = strings.TrimPrefix(name, "\"")
-			pak.PkPath = name
-			name = strings.TrimPrefix(name, "@")
 			name = strings.TrimSuffix(name, ":")
+
+			pak.PkPath = strings.TrimSuffix(name, "\"")
+			name = strings.TrimPrefix(name, "@")
 
 			pak.Name = name
 			p = append(p, pak)

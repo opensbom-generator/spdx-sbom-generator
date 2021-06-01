@@ -93,9 +93,15 @@ func (m *yarn) GetModule(path string) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	var mod models.Module
 
-	mod.Name = pkResult["name"].(string)
-	mod.Supplier.Name = pkResult["author"].(string)
-	mod.Version = pkResult["version"].(string)
+	if pkResult["name"] !=nil {
+		mod.Name = pkResult["name"].(string)
+	}
+	if pkResult["author"] != nil {
+		mod.Supplier.Name = pkResult["author"].(string)
+	}
+	if pkResult["version"] != nil {
+		mod.Version = pkResult["version"].(string)
+	}
 
 	mod.Modules = map[string]*models.Module{}
 	modules = append(modules, mod)
@@ -111,12 +117,13 @@ func (m *yarn) ListModules(path string) ([]models.Module, error) {
 		return nil, err
 	}
 	modules := make([]models.Module, 0)
-	deps := pkResult["dependencies"].(map[string]string)
+	deps := pkResult["dependencies"].(map[string]interface{})
 
 	for k, v := range deps {
 		var mod models.Module
 		mod.Name = k
-		mod.Version = v
+		mod.Version = strings.TrimPrefix(v.(string), "^")
+		modules = append(modules, mod)
 	}
 
 	return modules, nil
@@ -144,7 +151,7 @@ func (m *yarn) buildDependencies(path string, deps []helper.Package, licenses ma
 
 		// todo: handle mod.supplier
 
-		r := d.Resolved
+		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
 		if strings.Contains(r, yarnRegistry) {
 		}
 
