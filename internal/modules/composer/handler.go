@@ -20,9 +20,8 @@ type composer struct {
 	command  *helper.Cmd
 }
 
-var errDependenciesNotFound = errors.New("there are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install` might solve the issue.")
+var errDependenciesNotFound = errors.New("no dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install`")
 var errNoComposerCommand = errors.New("no Composer command")
-var errFailedToConvertModules = errors.New("failed to convert modules")
 
 // New ...
 func New() *composer {

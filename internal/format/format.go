@@ -3,7 +3,6 @@
 package format
 
 import (
-	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -49,11 +48,6 @@ func New(cfg Config) (Format, error) {
 // move into go templates
 func (f *Format) Render() error {
 	modules := f.Config.GetSource()
-
-	if len(modules) == 0 {
-		return errors.New("no modules found")
-	}
-
 	document, err := buildDocument(modules[0])
 	if err != nil {
 		return err
