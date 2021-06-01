@@ -3,31 +3,26 @@
 package gomod
 
 import (
-	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
 	"path/filepath"
-	"strings"
 
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
 
 type mod struct {
-	metadata models.PluginMetadata
+	metadata   models.PluginMetadata
+	rootModule *models.Module
+	command    *helper.Cmd
 }
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
-var errFaildtoReadMod = errors.New("Failds to read go.mod line")
-var errExecutingCmdToGetModule = errors.New("Error executing command to GetModule")
-var errExecutingCmdToListModule = errors.New("Error executing command to ListModule")
-var errExecutingCmdToListAllModule = errors.New("Error executing command to ListAllModule")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
+var errNoGoCommand = errors.New("No Golang command")
+var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 // New ...
 func New() *mod {
@@ -46,10 +41,22 @@ func (m *mod) GetMetadata() models.PluginMetadata {
 	return m.metadata
 }
 
+// SetRootModule ...
+func (m *mod) SetRootModule(path string) error {
+	module, err := m.getModule(path)
+	if err != nil {
+		return err
+	}
+
+	m.rootModule = &module
+
+	return nil
+}
+
 // IsValid ...
 func (m *mod) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
-		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
 		}
 	}
@@ -59,7 +66,7 @@ func (m *mod) IsValid(path string) bool {
 // HasModulesInstalled ...
 func (m *mod) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
-		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
 			return nil
 		}
 	}
@@ -68,156 +75,109 @@ func (m *mod) HasModulesInstalled(path string) error {
 
 // GetVersion...
 func (m *mod) GetVersion() (string, error) {
-	buf := new(bytes.Buffer)
-	if err := helper.ExecCMD(".", buf, "go", "version"); err != nil {
-		return "", fmt.Errorf("%w : ", errExecutingCmdToGetModule, err)
+	if err := m.buildCmd(VersionCmd, "."); err != nil {
+		return "", err
 	}
-	defer buf.Reset()
 
-	return strings.Trim(string(buf.Bytes()), "go version"), nil
+	return m.command.Output()
 }
 
-// GetModule...
-func (m *mod) GetModule(path string) ([]models.Module, error) {
-	buf := new(bytes.Buffer)
-	if err := helper.ExecCMD(path, buf, "go", "list", "-mod", "readonly", "-json", "-m"); err != nil {
-		return nil, fmt.Errorf("%w : ", errExecutingCmdToGetModule, err)
-	}
-	defer buf.Reset()
+// GetRootModule...
+func (m *mod) GetRootModule(path string) (*models.Module, error) {
+	if m.rootModule == nil {
+		module, err := m.getModule(path)
+		if err != nil {
+			return nil, err
+		}
 
-	return parseModules(buf)
+		m.rootModule = &module
+	}
+
+	return m.rootModule, nil
 }
 
-// ListModules...
-func (m *mod) ListModules(path string) ([]models.Module, error) {
-	buf := new(bytes.Buffer)
-	if err := helper.ExecCMD(path, buf, "go", "list", "-mod", "readonly", "-json", "-m", "all"); err != nil {
-		return nil, fmt.Errorf("%w : ", errExecutingCmdToListModule, err)
+// ListUsedModules...
+func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
+	if err := m.buildCmd(ModulesCmd, path); err != nil {
+		return nil, err
 	}
-	defer buf.Reset()
 
-	return parseModules(buf)
+	buffer := new(bytes.Buffer)
+	if err := m.command.Execute(buffer); err != nil {
+		return nil, err
+	}
+	defer buffer.Reset()
+
+	modules := []models.Module{}
+	if err := NewDecoder(buffer).ConvertJSONReaderToModules(&modules); err != nil {
+		return nil, err
+	}
+
+	return modules, nil
 }
 
-// ListAllModules ...
-func (m *mod) ListAllModules(path string) ([]models.Module, error) {
-	modules, err := m.ListModules(path)
+// ListModulesWithDeps ...
+func (m *mod) ListModulesWithDeps(path string) ([]models.Module, error) {
+	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
 	}
 
-	bufGraph := new(bytes.Buffer)
-	if err := helper.ExecCMD(path, bufGraph, "go", "mod", "graph"); err != nil {
-		return nil, fmt.Errorf("%w : ", errExecutingCmdToListAllModule, err)
+	if err := m.buildCmd(GraphModuleCmd, path); err != nil {
+		return nil, err
 	}
-	defer bufGraph.Reset()
 
-	if err := buildDependenciesGraph(modules, bufGraph); err != nil {
-		return nil, fmt.Errorf("%w : ", errBuildlingModuleDependencies, err)
+	buffer := new(bytes.Buffer)
+	if err := m.command.Execute(buffer); err != nil {
+		return nil, err
+	}
+	defer buffer.Reset()
+
+	if err := NewDecoder(buffer).ConvertPlainReaderToModules(modules); err != nil {
+		return nil, err
 	}
 
 	return modules, nil
 }
 
-// WIP ...
-func parseModules(reader io.Reader) ([]models.Module, error) {
-	modules := make([]models.Module, 0)
-	jsonDecoder := json.NewDecoder(reader)
-	isRoot := true
-	for {
-		var mod models.Module
-		if err := jsonDecoder.Decode(&mod); err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return nil, err
-		}
-
-		mod.Name = mod.Path
-		mod.PackageURL = genUrl(mod)
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(mod.Path),
-		}
-		licensePkg, err := helper.GetLicenses(mod.LocalPath)
-		if err == nil {
-			mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
-			mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
-			mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
-			mod.CommentsLicense = licensePkg.Comments
-			if !helper.LicenseSPDXExists(licensePkg.ID) {
-				licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
-				// figure out why other license always fails to validate SPDX
-				//licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
-				//mod.OtherLicense = append(mod.OtherLicense, licensePkg)
-			}
-		}
-
-		mod.Modules = map[string]*models.Module{}
-		mod.Root = isRoot
-		modules = append(modules, mod)
-		isRoot = false
+func (m *mod) getModule(path string) (models.Module, error) {
+	if err := m.buildCmd(RootModuleCmd, path); err != nil {
+		return models.Module{}, err
 	}
-	return modules, nil
+
+	buffer := new(bytes.Buffer)
+	if err := m.command.Execute(buffer); err != nil {
+		return models.Module{}, err
+	}
+	defer buffer.Reset()
+
+	modules := []models.Module{}
+	if err := NewDecoder(buffer).ConvertJSONReaderToModules(&modules); err != nil {
+		return models.Module{}, err
+	}
+
+	if len(modules) == 0 {
+		return models.Module{}, errFailedToConvertModules
+	}
+
+	return modules[0], nil
 }
 
-// WIP ...
-func buildDependenciesGraph(modules []models.Module, reader io.Reader) error {
-	moduleMap := map[string]models.Module{}
-	moduleIndex := map[string]int{}
-	for idx, module := range modules {
-		moduleMap[module.Name] = module
-		moduleIndex[module.Name] = idx
+func (m *mod) buildCmd(cmd command, path string) error {
+	cmdArgs := cmd.Parse()
+	if cmdArgs[0] != "go" {
+		return errNoGoCommand
 	}
 
-	scanner := bufio.NewScanner(reader)
-	for scanner.Scan() {
-		modToken := scanner.Text()
-		mods := strings.Fields(strings.TrimSpace(modToken))
-		if len(mods) != 2 {
-			return errFaildtoReadMod
-		}
+	command := helper.NewCmd(helper.CmdOptions{
+		Name:      cmdArgs[0],
+		Args:      cmdArgs[1:],
+		Directory: path,
+	})
 
-		moduleName := strings.Split(mods[0], "@")[0]
-		if _, ok := moduleMap[moduleName]; !ok {
-			continue
-		}
+	m.command = command
 
-		depName := strings.Split(mods[1], "@")[0]
-		depModule, ok := moduleMap[depName]
-		if !ok {
-			continue
-		}
-
-		modules[moduleIndex[moduleName]].Modules[depName] = &models.Module{
-			Name:             depModule.Name,
-			Version:          depModule.Version,
-			Path:             depModule.Path,
-			LocalPath:        depModule.LocalPath,
-			Supplier:         depModule.Supplier,
-			PackageURL:       depModule.PackageURL,
-			CheckSum:         depModule.CheckSum,
-			PackageHomePage:  depModule.PackageHomePage,
-			LicenseConcluded: depModule.LicenseConcluded,
-			LicenseDeclared:  depModule.LicenseDeclared,
-			CommentsLicense:  depModule.CommentsLicense,
-			OtherLicense:     depModule.OtherLicense,
-			Copyright:        depModule.Copyright,
-			PackageComment:   depModule.PackageComment,
-			Root:             depModule.Root,
-		}
-	}
-
-	return nil
-}
-
-func genUrl(m models.Module) string {
-	path := m.Path + "@" + m.Version
-	if m.Version == "" {
-		path = m.Path
-	}
-
-	return "pkg:golang/" + path
+	return command.Build()
 }
 
 // this is just a test
@@ -225,11 +185,4 @@ func readCheckSum(content string) string {
 	h := sha1.New()
 	h.Write([]byte(content))
 	return hex.EncodeToString(h.Sum(nil))
-}
-
-func decoratePath(m models.Module) string {
-	if m.Version == "" {
-		return m.Path
-	}
-	return m.Path + "@" + m.Version
 }

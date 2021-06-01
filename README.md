@@ -97,38 +97,37 @@ The interface requires the following functions
 
 ```GO
 type IPlugin interface {
-	GetVersion() (string, error)
-	GetMetadata() PluginMetadata
-	GetModule(path string) ([]Module, error)
-	ListModules(path string) ([]Module, error)
-	ListAllModules(path string) ([]Module, error)
-	IsValid(path string) bool
-	HasModulesInstalled(path string) bool
-}
+  SetRootModule(path string) error
+  GetVersion() (string, error)
+  GetMetadata() PluginMetadata
+  GetRootModule(path string) (*Module, error)
+  ListUsedModules(path string) ([]Module, error)
+  ListModulesWithDeps(path string) ([]Module, error)
+  IsValid(path string) bool
+  
 ```
 
 `Module` model definition:
 
 ```GO
 type Module struct {
-    Version          string
-    Name             string
-    Path             string
-    LocalPath        string
-    Supplier         SupplierContact
-    PackageURL       string
-    CheckSum         *CheckSum
-    PackageHomePage  string
-    LicenseConcluded string
-    LicenseDeclared  string
-    CommentsLicense  string
-    OtherLicense     []*License
-    Copyright        string
-    PackageComment   string
-    Root             bool
-    Modules          map[string]*Module
-}
-```
+  Version          string `json:"Version,omitempty"`
+  Name             string
+  Path             string `json:"Path,omitempty"`
+  LocalPath        string `json:"Dir,noempty"`
+  Supplier         SupplierContact
+  PackageURL       string
+  CheckSum         *CheckSum
+  PackageHomePage  string
+  LicenseConcluded string
+  LicenseDeclared  string
+  CommentsLicense  string
+  OtherLicense     []*License
+  Copyright        string
+  PackageComment   string
+  Root             bool
+  Modules          map[string]*Module
+}```
 
 `PluginMetadata` model definition:
 ```GO
@@ -161,20 +160,25 @@ PluginMetadata{
     ModulePath: []string{"vendor"},
 }
 ```
+* `SetRootModule`: sets root package information base on path given
 
-* `GetModule`: c$returns root package information base on path given
+    **Input**: The working directory to read the package from
+
+    **Output**: returns error
+
+* `GetRootModule`: returns root package information base on path given
 
     **Input**: The working directory to read the package from
 
     **Output**: returns the Package Information of the root  Module
 
-* `ListModules`: fetches and lists all packages required by the project in the given project directory
+* `ListUsedModules`: fetches and lists all packages required by the project in the given project directory, this is a plain list of all used modules (no nested or tree view)
 
     **Input**: The working directory to read the package from
 
     **Output**: returns the Package Information of the root  Module, and its dependencies in flatten format
 
-* `ListAllModules`: fetches and lists all packages (root and direct dependencies) required by the project in the given project directory (side-by-side)
+* `ListModulesWithDeps`: fetches and lists all packages (root and direct dependencies) required by the project in the given project directory (side-by-side), this is a one level only list of all used modules, and each with its direct dependency only (similar output to `ListUsedModules` but with direct dependency only)
 
     **Input**: The working directory to read the package from
 
@@ -334,37 +338,57 @@ In `handler.go`, create the required interface function (Data contract definitio
 ```GO
 // GetMetadata ...
 func (m *npm) GetMetadata() models.PluginMetadata {
-	return m.metadata
+  return m.metadata
 }
 
 // IsValid ...
 func (m *npm) IsValid(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.Manifest))
+  for i := range m.metadata.Manifest {
+    if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+      return true
+    }
+  }
+  return false
 }
 
 // HasModulesInstalled ...
-func (m *npm) HasModulesInstalled(path string) bool {
-	return helper.FileExists(filepath.Join(path, m.metadata.ModulePath))
+func (m *npm) HasModulesInstalled(path string) error {
+  for i := range m.metadata.ModulePath {
+    if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+      return nil
+    }
+  }
+  return errDependenciesNotFound
 }
 
 // GetVersion ...
 func (m *npm) GetVersion() (string, error) {
-	return "NPM VERSION", nil
+  output, err := exec.Command("npm", "--version").Output()
+  if err != nil {
+    return "", err
+  }
+
+  return string(output), nil
 }
 
-// GetModule ...
-func (m *npm) GetModule(path string) ([]models.Module, error) {
-	return nil, nil
+// SetRootModule ...
+func (m *npm) SetRootModule(path string) error {
+  return nil
 }
 
-// ListModules ...
-func (m *npm) ListModules(path string) ([]models.Module, error) {
-	return nil, nil
+// GetRootModule ...
+func (m *npm) GetRootModule(path string) (*models.Module, error) {
+  return nil, nil
 }
 
-// ListAllModules ...
-func (m *npm) ListAllModules(path string) ([]models.Module, error) {
-	return nil, nil
+// ListUsedModules...
+func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
+  return nil, nil
+}
+
+// ListModulesWithDeps ...
+func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+  return nil, nil
 }
 ```
 
