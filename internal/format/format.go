@@ -173,16 +173,14 @@ func convertToPackage(module models.Module) (models.Package, error) {
 		return s
 	}
 	return models.Package{
-		PackageName:     module.Name,
-		SPDXID:          fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(module.Name)),
-		PackageVersion:  module.Version,
-		PackageSupplier: noAssertion,
-		//PackageDownloadLocation: module.PackageURL,
+		PackageName:             module.Name,
+		SPDXID:                  fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(module.Name)),
+		PackageVersion:          module.Version,
+		PackageSupplier:         noAssertion,
 		PackageDownloadLocation: noAssertion,
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
-		//PackageHomePage:         module.PackageURL,
-		PackageHomePage:         noAssertion,
+		PackageHomePage:         buildHomepageURL(module.PackageURL),
 		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
 		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
 		PackageCopyrightText:    setPkgValue(module.Copyright),
@@ -190,4 +188,12 @@ func convertToPackage(module models.Module) (models.Package, error) {
 		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
 	}, nil
+}
+
+// todo: complete build package homepage rules
+func buildHomepageURL(url string) string {
+	if url == "" {
+		return noAssertion
+	}
+	return fmt.Sprintf("https://%s", url)
 }
