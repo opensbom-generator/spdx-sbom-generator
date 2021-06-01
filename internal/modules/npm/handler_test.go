@@ -42,12 +42,12 @@ func TestNpm_HasModulesInstalled(t *testing.T) {
 func TestNpm_GetModule(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
-	mods, err := n.GetRootModule(path)
+	mod, err := n.GetRootModule(path)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "e-commerce", mods[0].Name)
-	assert.Equal(t, "ahmed saber", mods[0].Supplier.Name)
-	assert.Equal(t, "1.0.0", mods[0].Version)
+	assert.Equal(t, "e-commerce", mod.Name)
+	assert.Equal(t, "ahmed saber", mod.Supplier.Name)
+	assert.Equal(t, "1.0.0", mod.Version)
 
 }
 

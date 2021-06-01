@@ -42,13 +42,12 @@ func TestYarn_HasModulesInstalled(t *testing.T) {
 func TestYarn_GetModule(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
-	mods, err := n.GetRootModule(path)
+	mod, err := n.GetRootModule(path)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "create-react-app-lambda", mods[0].Name)
-	assert.Equal(t, "", mods[0].Supplier.Name)
-	assert.Equal(t, "0.5.0", mods[0].Version)
-
+	assert.Equal(t, "create-react-app-lambda", mod.Name)
+	assert.Equal(t, "", mod.Supplier.Name)
+	assert.Equal(t, "0.5.0", mod.Version)
 }
 
 func TestYarn_ListModules(t *testing.T) {
