@@ -2,6 +2,7 @@ package npm
 
 import (
 	"errors"
+	"os/exec"
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
@@ -34,7 +35,7 @@ func (m *npm) GetMetadata() models.PluginMetadata {
 // IsValid ...
 func (m *npm) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
-		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
 		}
 	}
@@ -44,7 +45,7 @@ func (m *npm) IsValid(path string) bool {
 // HasModulesInstalled ...
 func (m *npm) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
-		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
 			return nil
 		}
 	}
@@ -53,20 +54,30 @@ func (m *npm) HasModulesInstalled(path string) error {
 
 // GetVersion ...
 func (m *npm) GetVersion() (string, error) {
-	return "NPM VERSION", nil
+	output, err := exec.Command("npm", "--version").Output()
+	if err != nil {
+		return "", err
+	}
+
+	return string(output), nil
 }
 
-// GetModule ...
-func (m *npm) GetModule(path string) ([]models.Module, error) {
+// SetRootModule ...
+func (m *npm) SetRootModule(path string) error {
+	return nil
+}
+
+// GetRootModule ...
+func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	return nil, nil
 }
 
-// ListModules ...
-func (m *npm) ListModules(path string) ([]models.Module, error) {
+// ListUsedModules...
+func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
 	return nil, nil
 }
 
-// ListAllModules ...
-func (m *npm) ListAllModules(path string) ([]models.Module, error) {
+// ListModulesWithDeps ...
+func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	return nil, nil
 }

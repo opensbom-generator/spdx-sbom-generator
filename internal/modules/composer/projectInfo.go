@@ -3,7 +3,7 @@ package composer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+	"errors"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
@@ -15,16 +15,26 @@ type ComposerProjectInfo struct {
 }
 
 func getProjectInfo() (models.Module, error) {
-
-	buf := new(bytes.Buffer)
-	if err := helper.ExecCMD(".", buf, "composer", "show", "-s", "-f", "json"); err != nil {
-		return models.Module{}, fmt.Errorf("Get Project Info failed: %w", err)
+	cmdArgs := ShowModulesCmd.Parse()
+	if cmdArgs[0] != "composer" {
+		return models.Module{}, errors.New("no composer command")
 	}
-	defer buf.Reset()
+
+	command := helper.NewCmd(helper.CmdOptions{
+		Name:      cmdArgs[0],
+		Args:      cmdArgs[1:],
+		Directory: ".",
+	})
+
+	buffer := new(bytes.Buffer)
+	if err := command.Execute(buffer); err != nil {
+		return models.Module{}, err
+	}
+	defer buffer.Reset()
 
 	var projectInfo ComposerProjectInfo
 
-	err := json.NewDecoder(buf).Decode(&projectInfo)
+	err := json.NewDecoder(buffer).Decode(&projectInfo)
 	if err != nil {
 		return models.Module{}, err
 	}

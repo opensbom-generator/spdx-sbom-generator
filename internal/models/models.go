@@ -6,11 +6,12 @@ import (
 
 // IPlugin ...
 type IPlugin interface {
+	SetRootModule(path string) error
 	GetVersion() (string, error)
 	GetMetadata() PluginMetadata
-	GetModule(path string) ([]Module, error)
-	ListModules(path string) ([]Module, error)
-	ListAllModules(path string) ([]Module, error)
+	GetRootModule(path string) (*Module, error)
+	ListUsedModules(path string) ([]Module, error)
+	ListModulesWithDeps(path string) ([]Module, error)
 	IsValid(path string) bool
 	HasModulesInstalled(path string) error
 }

@@ -3,9 +3,7 @@ package composer
 import (
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
@@ -41,7 +39,7 @@ func (m *composer) GetMetadata() models.PluginMetadata {
 // IsValid ...
 func (m *composer) IsValid(path string) bool {
 	for i := range m.metadata.Manifest {
-		if helper.FileExists(filepath.Join(path, m.metadata.Manifest[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
 			return true
 		}
 	}
@@ -51,7 +49,7 @@ func (m *composer) IsValid(path string) bool {
 // HasModulesInstalled ...
 func (m *composer) HasModulesInstalled(path string) error {
 	for i := range m.metadata.ModulePath {
-		if helper.FileExists(filepath.Join(path, m.metadata.ModulePath[i])) {
+		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
 			return nil
 		}
 	}
@@ -60,34 +58,37 @@ func (m *composer) HasModulesInstalled(path string) error {
 
 // GetVersion ...
 func (m *composer) GetVersion() (string, error) {
-	cmd := exec.Command("composer", "--version")
-	output, err := cmd.Output()
-	if err != nil {
-		return "", err
+	cmdArgs := VersionCmd.Parse()
+	if cmdArgs[0] != "composer" {
+		return "", errors.New("no composer command")
 	}
 
-	fields := strings.Fields(string(output))
+	command := helper.NewCmd(helper.CmdOptions{
+		Name:      cmdArgs[0],
+		Args:      cmdArgs[1:],
+		Directory: ".",
+	})
 
-	if fields[0] != "Composer" || fields[1] != "version" {
-		return "", fmt.Errorf("unexpected output format: %s", output)
-	}
-
-	return fields[2], nil
+	return command.Output()
 }
 
-// GetModule ...
-func (m *composer) GetModule(path string) ([]models.Module, error) {
+// SetRootModule ...
+func (m *composer) SetRootModule(path string) error {
+	return nil
+}
+
+// GetRootModule ...
+func (m *composer) GetRootModule(path string) (*models.Module, error) {
 	return nil, nil
 }
 
-// ListAllModules ...
-func (m *composer) ListAllModules(path string) ([]models.Module, error) {
-	return m.ListModules(path)
+// ListModulesWithDeps ...
+func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
+	return m.ListUsedModules(path)
 }
 
-// ListModules ...
-func (m *composer) ListModules(path string) ([]models.Module, error) {
-
+// ListUsedModules...
+func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
 	modules, err := getModulesFromComposerLockFile()
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
