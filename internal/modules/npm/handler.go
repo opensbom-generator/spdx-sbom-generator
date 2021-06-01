@@ -86,14 +86,13 @@ func (m *npm) SetRootModule(path string) error {
 }
 
 // GetRootModule return root package information ex. Name, Version
-func (m *npm) GetRootModule(path string) ([]models.Module, error) {
+func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
 		return nil, err
 	}
-	modules := make([]models.Module, 0)
-	var mod models.Module
+	mod := &models.Module{}
 
 	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)
@@ -106,9 +105,8 @@ func (m *npm) GetRootModule(path string) ([]models.Module, error) {
 	}
 
 	mod.Modules = map[string]*models.Module{}
-	modules = append(modules, mod)
 
-	return modules, nil
+	return mod, nil
 }
 
 // ListUsedModules return brief info of installed modules, Name and Version
