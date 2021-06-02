@@ -7,12 +7,12 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"spdx-sbom-generator/internal/licenses"
-	"spdx-sbom-generator/internal/reader"
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
+	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/reader"
 )
 
 type yarn struct {
@@ -45,8 +45,8 @@ func (m *yarn) GetMetadata() models.PluginMetadata {
 // IsValid checks if module has a valid Manifest file
 // for yarn manifest file is package.json
 func (m *yarn) IsValid(path string) bool {
-	for i := range m.metadata.Manifest {
-		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+	for _, p := range m.metadata.Manifest {
+		if !helper.Exists(filepath.Join(path, p)) {
 			return false
 		}
 	}
@@ -55,14 +55,14 @@ func (m *yarn) IsValid(path string) bool {
 
 // HasModulesInstalled checks if modules of manifest file already installed
 func (m *yarn) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if !helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+	for _, p := range m.metadata.ModulePath {
+		if !helper.Exists(filepath.Join(path, p)) {
 			return errDependenciesNotFound
 		}
 	}
 
-	for i := range m.metadata.Manifest {
-		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+	for _, p := range m.metadata.Manifest {
+		if !helper.Exists(filepath.Join(path, p)) {
 			return errDependenciesNotFound
 		}
 	}
@@ -95,7 +95,7 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
-		return nil, err
+		return &models.Module{}, err
 	}
 	mod := &models.Module{}
 
@@ -119,7 +119,7 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
-		return nil, err
+		return []models.Module{}, err
 	}
 	modules := make([]models.Module, 0)
 	deps := pkResult["dependencies"].(map[string]interface{})

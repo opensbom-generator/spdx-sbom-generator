@@ -10,14 +10,14 @@ import (
 )
 
 func TestYarn(t *testing.T) {
-	t.Run("test is valid", TestYarn_IsValid)
-	t.Run("test has modules installed", TestYarn_HasModulesInstalled)
-	t.Run("test get module", TestYarn_GetModule)
-	t.Run("test list modules", TestYarn_ListModules)
-	t.Run("test list all modules", TestYarn_ListAllModules)
+	t.Run("test is valid", TestIsValid)
+	t.Run("test has modules installed", TestHasModulesInstalled)
+	t.Run("test get module", TestGetModule)
+	t.Run("test list modules", TestListModules)
+	t.Run("test list all modules", TestListAllModules)
 }
 
-func TestYarn_IsValid(t *testing.T) {
+func TestIsValid(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 
@@ -29,7 +29,7 @@ func TestYarn_IsValid(t *testing.T) {
 	assert.Equal(t, false, invalid)
 }
 
-func TestYarn_HasModulesInstalled(t *testing.T) {
+func TestHasModulesInstalled(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 
@@ -39,7 +39,7 @@ func TestYarn_HasModulesInstalled(t *testing.T) {
 	assert.Error(t, uninstalled)
 }
 
-func TestYarn_GetModule(t *testing.T) {
+func TestGetModule(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 	mod, err := n.GetRootModule(path)
@@ -50,7 +50,7 @@ func TestYarn_GetModule(t *testing.T) {
 	assert.Equal(t, "0.5.0", mod.Version)
 }
 
-func TestYarn_ListModules(t *testing.T) {
+func TestListModules(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 	mods, err := n.ListUsedModules(path)
@@ -84,7 +84,7 @@ func TestYarn_ListModules(t *testing.T) {
 	assert.Equal(t, 3, count)
 }
 
-func TestYarn_ListAllModules(t *testing.T) {
+func TestListAllModules(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 	mods, err := n.ListModulesWithDeps(path)
