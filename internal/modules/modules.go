@@ -10,6 +10,7 @@ import (
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/modules/composer"
 	"spdx-sbom-generator/internal/modules/gomod"
+	"spdx-sbom-generator/internal/modules/javamaven"
 	"spdx-sbom-generator/internal/modules/npm"
 )
 
@@ -26,6 +27,7 @@ func init() {
 		composer.New(),
 		gomod.New(),
 		npm.New(),
+		javamaven.New(),
 	)
 }
 
