@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
-	"errors"
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
@@ -18,11 +17,6 @@ type mod struct {
 	rootModule *models.Module
 	command    *helper.Cmd
 }
-
-var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
-var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
-var errNoGoCommand = errors.New("No Golang command")
-var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 // New ...
 func New() *mod {
