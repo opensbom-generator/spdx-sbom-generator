@@ -1,10 +1,10 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package composer
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
 
@@ -18,24 +18,31 @@ type ComposerTreeComponent struct {
 	Requires    []ComposerTreeComponent
 }
 
-func (m *composer) getTreeListFromComposerShowTree(path string) (ComposerTreeList, error) {
-	if err := m.buildCmd(ShowModulesCmd, path); err != nil {
-		return ComposerTreeList{}, err
+func getTreeListFromComposerShowTree(path string) (ComposerTreeList, error) {
+	cmdArgs := ShowModulesCmd.Parse()
+	if cmdArgs[0] != "composer" {
+		return ComposerTreeList{}, errors.New("no composer command")
 	}
 
+	command := helper.NewCmd(helper.CmdOptions{
+		Name:      cmdArgs[0],
+		Args:      cmdArgs[1:],
+		Directory: path,
+	})
+
 	buffer := new(bytes.Buffer)
-	if err := m.command.Execute(buffer); err != nil {
+	if err := command.Execute(buffer); err != nil {
 		return ComposerTreeList{}, err
 	}
 	defer buffer.Reset()
 
-	var tree ComposerTreeList
-	err := json.NewDecoder(buffer).Decode(&tree)
+	var graphModules ComposerTreeList
+	err := json.NewDecoder(buffer).Decode(&graphModules)
 	if err != nil {
 		return ComposerTreeList{}, err
 	}
 
-	return tree, nil
+	return graphModules, nil
 }
 
 func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []models.Module) bool {

@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package composer
 
 import (
@@ -17,11 +15,9 @@ var COMPOSER_VENDOR_FOLDER = "vendor"
 
 type composer struct {
 	metadata models.PluginMetadata
-	command  *helper.Cmd
 }
 
-var errDependenciesNotFound = errors.New("no dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install`")
-var errNoComposerCommand = errors.New("no Composer command")
+var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install` might solve the issue.")
 
 // New ...
 func New() *composer {
@@ -62,28 +58,18 @@ func (m *composer) HasModulesInstalled(path string) error {
 
 // GetVersion ...
 func (m *composer) GetVersion() (string, error) {
-	if err := m.buildCmd(VersionCmd, "."); err != nil {
-		return "", err
-	}
-
-	return m.command.Output()
-}
-
-func (m *composer) buildCmd(cmd command, path string) error {
-	cmdArgs := cmd.Parse()
+	cmdArgs := VersionCmd.Parse()
 	if cmdArgs[0] != "composer" {
-		return errNoComposerCommand
+		return "", errors.New("no composer command")
 	}
 
 	command := helper.NewCmd(helper.CmdOptions{
 		Name:      cmdArgs[0],
 		Args:      cmdArgs[1:],
-		Directory: path,
+		Directory: ".",
 	})
 
-	m.command = command
-
-	return command.Build()
+	return command.Output()
 }
 
 // SetRootModule ...
@@ -103,12 +89,12 @@ func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 // ListUsedModules...
 func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
-	modules, err := m.getModulesFromComposerLockFile()
+	modules, err := getModulesFromComposerLockFile()
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
 	}
 
-	treeList, err := m.getTreeListFromComposerShowTree(path)
+	treeList, err := getTreeListFromComposerShowTree(path)
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
 	}

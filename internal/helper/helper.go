@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package helper
 
 import (
@@ -7,13 +5,15 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"spdx-sbom-generator/internal/licenses"
-	"spdx-sbom-generator/internal/models"
+	"path/filepath"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
+	"spdx-sbom-generator/internal/licenses"
+	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/reader"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
+	log "github.com/sirupsen/logrus"
 )
 
 // Exists ...
@@ -81,7 +81,8 @@ func extractLicenseContent(path, filename string) string {
 	return string(bytes)
 }
 
-// GetCopyright ...
+// GetCopyright parses the license file found at node_modules/{PackageName}
+// Extract the text found starting with the keyword 'Copyright (c)' and until the newline
 func GetCopyright(content string) string {
 	// split by paragraph
 	paragraphs := strings.Split(content, "\n\n")
@@ -102,4 +103,69 @@ func GetCopyright(content string) string {
 	}
 
 	return ""
+}
+
+// GetCopyrightText ...
+func GetCopyrightText(path string) string {
+	r := reader.New(path)
+	c := r.StringFromFile()
+	ind := strings.Index(c, "Copyright (c)")
+	if ind < 0 {
+		return ""
+	}
+	copyWrite := strings.Split(c[ind:], "\n")
+	return strings.TrimSuffix(copyWrite[0], "\r")
+}
+
+
+func GetJSLicense(path string, pkName string, licenses map[string]string, modPath string, modManifest string) string {
+	licenseDeclared := ""
+	r := reader.New(filepath.Join(path, modPath, pkName, modManifest))
+	pkResult, err := r.ReadJson()
+	if err != nil {
+		return ""
+	}
+	pkLic := ""
+	if pkResult["licenses"] != nil {
+		l := pkResult["licenses"].([]interface{})
+
+		for i := range l {
+			if i > 0 {
+				pkLic += " OR"
+				pkLic += l[i].(map[string]interface{})["type"].(string)
+				continue
+			}
+			pkLic += l[i].(map[string]interface{})["type"].(string)
+		}
+	}
+	if pkResult["license"] != nil {
+		licenseString, ok := pkResult["license"].(string)
+		if !ok{
+			licenseMap := pkResult["license"].(map[string]interface{})
+			pkLic = licenseMap["type"].(string)
+		}else {
+			pkLic = licenseString
+		}
+	}
+
+	if pkLic != "" {
+		for k, _ := range licenses {
+			if pkLic == k {
+				licenseDeclared = pkLic
+				break
+			}
+		}
+	}
+	if pkLic != "" && licenseDeclared == "" && strings.HasSuffix(pkLic, "or later") {
+		licenseDeclared = strings.Replace(pkLic, "or later", "+", 1)
+	}
+	if pkLic != "" && licenseDeclared == "" {
+		licenseDeclared = pkLic
+	}
+	if pkLic == "" {
+		licenseDeclared = "NONE"
+	}
+
+	return licenseDeclared
+
 }

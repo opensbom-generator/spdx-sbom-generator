@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package composer
 
 import (
@@ -16,13 +14,20 @@ type ComposerProjectInfo struct {
 	Versions    []string
 }
 
-func (m *composer) getProjectInfo() (models.Module, error) {
-	if err := m.buildCmd(projectInfoCmd, "."); err != nil {
-		return models.Module{}, err
+func getProjectInfo() (models.Module, error) {
+	cmdArgs := ShowModulesCmd.Parse()
+	if cmdArgs[0] != "composer" {
+		return models.Module{}, errors.New("no composer command")
 	}
 
+	command := helper.NewCmd(helper.CmdOptions{
+		Name:      cmdArgs[0],
+		Args:      cmdArgs[1:],
+		Directory: ".",
+	})
+
 	buffer := new(bytes.Buffer)
-	if err := m.command.Execute(buffer); err != nil {
+	if err := command.Execute(buffer); err != nil {
 		return models.Module{}, err
 	}
 	defer buffer.Reset()
@@ -32,9 +37,6 @@ func (m *composer) getProjectInfo() (models.Module, error) {
 	err := json.NewDecoder(buffer).Decode(&projectInfo)
 	if err != nil {
 		return models.Module{}, err
-	}
-	if projectInfo.Name == "" {
-		return models.Module{}, errors.New("root project info not found")
 	}
 
 	module, err := convertProjectInfoToModule(projectInfo)
@@ -50,7 +52,7 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 	packageUrl := genComposerUrl(project.Name, version)
 	checkSumValue := readCheckSum(packageUrl)
 	name := getName(project.Name)
-	module := models.Module{
+	nodule := models.Module{
 		Name:       name,
 		Version:    version,
 		Root:       true,
@@ -59,15 +61,19 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 			Algorithm: models.HashAlgoSHA1,
 			Value:     checkSumValue,
 		},
+		LicenseConcluded: getProjectLicense(),
+		LicenseDeclared:  getProjectLicense(),
 	}
 
-	licensePkg, err := helper.GetLicenses(".")
-	if err == nil {
-		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
-		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
-		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
-		module.CommentsLicense = licensePkg.Comments
+	return nodule, nil
+}
+
+func getProjectLicense() string {
+	path := "."
+	lic, err := helper.GetLicenses(path)
+	if err != nil {
+		return ""
 	}
 
-	return module, nil
+	return lic.Name
 }

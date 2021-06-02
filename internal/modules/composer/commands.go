@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package composer
 
 import (
@@ -11,7 +9,6 @@ type command string
 var (
 	VersionCmd     command = "composer --version"
 	ShowModulesCmd command = "composer show -t -f json"
-	projectInfoCmd command = "composer show -s -f json"
 )
 
 // Parse ...

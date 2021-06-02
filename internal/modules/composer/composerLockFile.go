@@ -1,5 +1,3 @@
-// SPDX-License-Identifier: Apache-2.0
-
 package composer
 
 import (
@@ -61,7 +59,7 @@ func getComposerLockFileData() (ComposerLockFile, error) {
 	return fileData, nil
 }
 
-func (m *composer) getModulesFromComposerLockFile() ([]models.Module, error) {
+func getModulesFromComposerLockFile() ([]models.Module, error) {
 
 	modules := make([]models.Module, 0)
 
@@ -70,7 +68,7 @@ func (m *composer) getModulesFromComposerLockFile() ([]models.Module, error) {
 		return nil, err
 	}
 
-	mainMod, err := m.getProjectInfo()
+	mainMod, err := getProjectInfo()
 	if err != nil {
 		return nil, err
 	}
@@ -96,29 +94,23 @@ func (m *composer) getModulesFromComposerLockFile() ([]models.Module, error) {
 
 func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 
-	module := models.Module{
-		Version:    normalizePackageVersion(dep.Version),
-		Name:       getName(dep.Name),
-		Root:       false,
-		PackageURL: genUrlFromComposerPackage(dep),
+	license := getLicenseDeclared(dep)
+	modules := models.Module{
+		Version: normalizePackageVersion(dep.Version),
+		Name:    getName(dep.Name),
+		Root:    true, PackageURL: genUrlFromComposerPackage(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     getCheckSumValue(dep),
 		},
-		Supplier:  getAuthor(dep),
-		LocalPath: getLocalPath(dep),
-		Modules:   map[string]*models.Module{},
-	}
-	path := getLocalPath(dep)
-	licensePkg, err := helper.GetLicenses(path)
-	if err == nil {
-		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
-		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
-		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
-		module.CommentsLicense = licensePkg.Comments
+		Modules:          map[string]*models.Module{},
+		LicenseDeclared:  license,
+		LicenseConcluded: license,
+		Supplier:         getAuthor(dep),
+		LocalPath:        getLocalPath(dep),
 	}
 
-	return module
+	return modules
 }
 
 func getAuthor(dep ComposerLockPackage) models.SupplierContact {
@@ -189,7 +181,36 @@ func readCheckSum(content string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+func getOtherLicense(module ComposerLockPackage) []*models.License {
+
+	licenses := module.License
+
+	var collection []*models.License
+
+	if len(licenses) > 0 {
+		return collection
+	}
+
+	for _, lib := range licenses {
+		collection = append(collection, &models.License{
+			Name: lib,
+		})
+	}
+
+	return collection
+}
+
 func getLocalPath(module ComposerLockPackage) string {
 	path := "./vendor/" + module.Name
 	return path
+}
+
+func getLicenseDeclared(module ComposerLockPackage) string {
+	path := getLocalPath(module)
+	lic, err := helper.GetLicenses(path)
+	if err != nil {
+		return ""
+	}
+
+	return lic.Name
 }
