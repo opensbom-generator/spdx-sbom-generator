@@ -11,6 +11,7 @@ import (
 	"spdx-sbom-generator/internal/modules/composer"
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/npm"
+	"spdx-sbom-generator/internal/modules/pip"
 )
 
 var (
@@ -26,6 +27,7 @@ func init() {
 		composer.New(),
 		gomod.New(),
 		npm.New(),
+		pip.New(),
 	)
 }
 
