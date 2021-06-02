@@ -9,3 +9,6 @@ bin/
 
 # output
 bom*
+
+# IDE file
+.swp

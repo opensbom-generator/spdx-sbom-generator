@@ -3,7 +3,6 @@
 package npm
 
 import (
-	"errors"
 	"os/exec"
 	"path/filepath"
 
@@ -14,8 +13,6 @@ import (
 type npm struct {
 	metadata models.PluginMetadata
 }
-
-var errDependenciesNotFound = errors.New("Please install dependencies by running go mod vendor")
 
 // New ...
 func New() *npm {
