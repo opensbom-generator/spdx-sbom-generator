@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package composer
 
 import (
@@ -59,7 +64,11 @@ func getComposerLockFileData() (ComposerLockFile, error) {
 	return fileData, nil
 }
 
+<<<<<<< HEAD
 func getModulesFromComposerLockFile() ([]models.Module, error) {
+=======
+func (m *composer) getModulesFromComposerLockFile() ([]models.Module, error) {
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 
 	modules := make([]models.Module, 0)
 
@@ -68,7 +77,11 @@ func getModulesFromComposerLockFile() ([]models.Module, error) {
 		return nil, err
 	}
 
+<<<<<<< HEAD
 	mainMod, err := getProjectInfo()
+=======
+	mainMod, err := m.getProjectInfo()
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	if err != nil {
 		return nil, err
 	}
@@ -94,15 +107,24 @@ func getModulesFromComposerLockFile() ([]models.Module, error) {
 
 func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 
+<<<<<<< HEAD
 	license := getLicenseDeclared(dep)
 	modules := models.Module{
 		Version: normalizePackageVersion(dep.Version),
 		Name:    getName(dep.Name),
 		Root:    true, PackageURL: genUrlFromComposerPackage(dep),
+=======
+	module := models.Module{
+		Version:    normalizePackageVersion(dep.Version),
+		Name:       getName(dep.Name),
+		Root:       false,
+		PackageURL: genUrlFromComposerPackage(dep),
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     getCheckSumValue(dep),
 		},
+<<<<<<< HEAD
 		Modules:          map[string]*models.Module{},
 		LicenseDeclared:  license,
 		LicenseConcluded: license,
@@ -111,6 +133,22 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 	}
 
 	return modules
+=======
+		Supplier:  getAuthor(dep),
+		LocalPath: getLocalPath(dep),
+		Modules:   map[string]*models.Module{},
+	}
+	path := getLocalPath(dep)
+	licensePkg, err := helper.GetLicenses(path)
+	if err == nil {
+		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
+		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+		module.CommentsLicense = licensePkg.Comments
+	}
+
+	return module
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 }
 
 func getAuthor(dep ComposerLockPackage) models.SupplierContact {
@@ -181,6 +219,7 @@ func readCheckSum(content string) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
+<<<<<<< HEAD
 func getOtherLicense(module ComposerLockPackage) []*models.License {
 
 	licenses := module.License
@@ -200,10 +239,13 @@ func getOtherLicense(module ComposerLockPackage) []*models.License {
 	return collection
 }
 
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 func getLocalPath(module ComposerLockPackage) string {
 	path := "./vendor/" + module.Name
 	return path
 }
+<<<<<<< HEAD
 
 func getLicenseDeclared(module ComposerLockPackage) string {
 	path := getLocalPath(module)
@@ -214,3 +256,5 @@ func getLicenseDeclared(module ComposerLockPackage) string {
 
 	return lic.Name
 }
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb

@@ -10,4 +10,9 @@ bin/
 # output
 bom*
 
+<<<<<<< HEAD
 .idea
+=======
+# IDE file
+.swp
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb

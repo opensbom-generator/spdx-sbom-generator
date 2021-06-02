@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package format
 
 import (
@@ -8,6 +13,10 @@ import (
 
 	"github.com/google/uuid"
 
+<<<<<<< HEAD
+=======
+	"spdx-sbom-generator/internal/helper"
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	"spdx-sbom-generator/internal/models"
 )
 
@@ -21,6 +30,10 @@ var replacer *strings.Replacer
 // Format ...
 type Format struct {
 	Config Config
+<<<<<<< HEAD
+=======
+	Client *helper.Client
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 }
 
 // Config ...
@@ -38,6 +51,10 @@ func init() {
 func New(cfg Config) (Format, error) {
 	return Format{
 		Config: cfg,
+<<<<<<< HEAD
+=======
+		Client: helper.NewClient(),
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	}, nil
 }
 
@@ -51,7 +68,11 @@ func (f *Format) Render() error {
 		return err
 	}
 
+<<<<<<< HEAD
 	packages, otherLicenses, err := buildPackages(modules)
+=======
+	packages, otherLicenses, err := f.buildPackages(modules)
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	if err != nil {
 		return err
 	}
@@ -92,8 +113,13 @@ func (f *Format) Render() error {
 		file.WriteString("##### Non-standard license\n\n")
 		for lic := range otherLicenses {
 			file.WriteString(fmt.Sprintf("LicenseID: %s\n", lic))
+<<<<<<< HEAD
 			file.WriteString(fmt.Sprintf("LicenseName: %s\n", otherLicenses[lic].Name))
 			file.WriteString(fmt.Sprintf("LicenseText: %s\n", otherLicenses[lic].ExtractedText))
+=======
+			file.WriteString(fmt.Sprintf("ExtractedText: %s\n", otherLicenses[lic].ExtractedText))
+			file.WriteString(fmt.Sprintf("LicenseName: %s\n", otherLicenses[lic].Name))
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 			file.WriteString(fmt.Sprintf("LicenseComment: %s\n\n", otherLicenses[lic].Comments))
 		}
 	}
@@ -134,11 +160,19 @@ func buildDocument(module models.Module) (*models.Document, error) {
 }
 
 // WIP
+<<<<<<< HEAD
 func buildPackages(modules []models.Module) ([]models.Package, map[string]*models.License, error) {
 	packages := make([]models.Package, len(modules))
 	otherLicenses := map[string]*models.License{}
 	for i, module := range modules {
 		pkg, err := convertToPackage(module)
+=======
+func (f *Format) buildPackages(modules []models.Module) ([]models.Package, map[string]*models.License, error) {
+	packages := make([]models.Package, len(modules))
+	otherLicenses := map[string]*models.License{}
+	for i, module := range modules {
+		pkg, err := f.convertToPackage(module)
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to convert module %w", err)
 		}
@@ -146,7 +180,11 @@ func buildPackages(modules []models.Module) ([]models.Package, map[string]*model
 		subPackages := make([]models.Package, len(module.Modules))
 		idx := 0
 		for _, subMod := range module.Modules {
+<<<<<<< HEAD
 			subPkg, err := convertToPackage(*subMod)
+=======
+			subPkg, err := f.convertToPackage(*subMod)
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 			if err != nil {
 				return nil, nil, err
 			}
@@ -164,7 +202,11 @@ func buildPackages(modules []models.Module) ([]models.Package, map[string]*model
 }
 
 // WIP
+<<<<<<< HEAD
 func convertToPackage(module models.Module) (models.Package, error) {
+=======
+func (f *Format) convertToPackage(module models.Module) (models.Package, error) {
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	setPkgValue := func(s string) string {
 		if s == "" {
 			return noAssertion
@@ -173,10 +215,18 @@ func convertToPackage(module models.Module) (models.Package, error) {
 		return s
 	}
 	return models.Package{
+<<<<<<< HEAD
 		PackageName:             module.Name,
 		SPDXID:                  fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(module.Name)),
 		PackageVersion:          module.Version,
 		PackageSupplier:         noAssertion,
+=======
+		PackageName:     module.Name,
+		SPDXID:          fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(module.Name)),
+		PackageVersion:  module.Version,
+		PackageSupplier: noAssertion,
+		//PackageDownloadLocation: f.buildDownloadURL(module.PackageURL, module.Version),
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 		PackageDownloadLocation: noAssertion,
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
@@ -190,6 +240,32 @@ func convertToPackage(module models.Module) (models.Package, error) {
 	}, nil
 }
 
+<<<<<<< HEAD
+=======
+func (f *Format) buildDownloadURL(url, version string) string {
+	if url == "" {
+		return noAssertion
+	}
+
+	u := f.Client.ParseURL(url)
+	if u == nil {
+		return noAssertion
+	}
+
+	if !f.Client.CheckURL(u.String()) {
+		return noAssertion
+	}
+
+	if u.Host == "github.com" {
+		if version != "" {
+			return fmt.Sprintf("%s/releases/tag/%s", u.String(), version)
+		}
+	}
+
+	return u.String()
+}
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 // todo: complete build package homepage rules
 func buildHomepageURL(url string) string {
 	if url == "" {

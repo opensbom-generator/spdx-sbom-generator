@@ -1,7 +1,15 @@
+<<<<<<< HEAD
 package composer
 
 import (
 	"errors"
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+package composer
+
+import (
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	"fmt"
 	"path/filepath"
 
@@ -15,10 +23,16 @@ var COMPOSER_VENDOR_FOLDER = "vendor"
 
 type composer struct {
 	metadata models.PluginMetadata
+<<<<<<< HEAD
 }
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install` might solve the issue.")
 
+=======
+	command  *helper.Cmd
+}
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 // New ...
 func New() *composer {
 	return &composer{
@@ -58,18 +72,41 @@ func (m *composer) HasModulesInstalled(path string) error {
 
 // GetVersion ...
 func (m *composer) GetVersion() (string, error) {
+<<<<<<< HEAD
 	cmdArgs := VersionCmd.Parse()
 	if cmdArgs[0] != "composer" {
 		return "", errors.New("no composer command")
+=======
+	if err := m.buildCmd(VersionCmd, "."); err != nil {
+		return "", err
+	}
+
+	return m.command.Output()
+}
+
+func (m *composer) buildCmd(cmd command, path string) error {
+	cmdArgs := cmd.Parse()
+	if cmdArgs[0] != "composer" {
+		return errNoComposerCommand
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	}
 
 	command := helper.NewCmd(helper.CmdOptions{
 		Name:      cmdArgs[0],
 		Args:      cmdArgs[1:],
+<<<<<<< HEAD
 		Directory: ".",
 	})
 
 	return command.Output()
+=======
+		Directory: path,
+	})
+
+	m.command = command
+
+	return command.Build()
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 }
 
 // SetRootModule ...
@@ -89,6 +126,7 @@ func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 // ListUsedModules...
 func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
+<<<<<<< HEAD
 	modules, err := getModulesFromComposerLockFile()
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
@@ -97,6 +135,16 @@ func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
 	treeList, err := getTreeListFromComposerShowTree(path)
 	if err != nil {
 		return nil, fmt.Errorf("parsing modules failed: %w", err)
+=======
+	modules, err := m.getModulesFromComposerLockFile()
+	if err != nil {
+		return nil, fmt.Errorf("%w due to %w", errFailedToReadComposerFile, err)
+	}
+
+	treeList, err := m.getTreeListFromComposerShowTree(path)
+	if err != nil {
+		return nil, fmt.Errorf("%w due to %w", errFailedToShowComposerTree, err)
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	}
 
 	for _, treeComponent := range treeList.Installed {

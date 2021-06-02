@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package helper
 
 import (
@@ -5,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+<<<<<<< HEAD
 	"path/filepath"
 	"strings"
 
@@ -14,6 +20,15 @@ import (
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 	log "github.com/sirupsen/logrus"
+=======
+	"spdx-sbom-generator/internal/licenses"
+	"spdx-sbom-generator/internal/models"
+	"strings"
+
+	log "github.com/sirupsen/logrus"
+
+	"github.com/go-enry/go-license-detector/v4/licensedb"
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 )
 
 // Exists ...
@@ -81,8 +96,12 @@ func extractLicenseContent(path, filename string) string {
 	return string(bytes)
 }
 
+<<<<<<< HEAD
 // GetCopyright parses the license file found at node_modules/{PackageName}
 // Extract the text found starting with the keyword 'Copyright (c)' and until the newline
+=======
+// GetCopyright ...
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 func GetCopyright(content string) string {
 	// split by paragraph
 	paragraphs := strings.Split(content, "\n\n")
@@ -104,6 +123,7 @@ func GetCopyright(content string) string {
 
 	return ""
 }
+<<<<<<< HEAD
 
 // GetCopyrightText ...
 func GetCopyrightText(path string) string {
@@ -169,3 +189,5 @@ func GetJSLicense(path string, pkName string, licenses map[string]string, modPat
 	return licenseDeclared
 
 }
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 package npm
 
 import (
@@ -11,12 +12,25 @@ import (
 	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/reader"
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+package npm
+
+import (
+	"os/exec"
+	"path/filepath"
+
+	"spdx-sbom-generator/internal/helper"
+	"spdx-sbom-generator/internal/models"
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 )
 
 type npm struct {
 	metadata models.PluginMetadata
 }
 
+<<<<<<< HEAD
 var (
 	errDependenciesNotFound = errors.New("please install dependencies by running npm install")
 	shrink                  = "npm-shrinkwrap.json"
@@ -25,22 +39,34 @@ var (
 )
 
 // New creates a new npm manager instance
+=======
+// New ...
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 func New() *npm {
 	return &npm{
 		metadata: models.PluginMetadata{
 			Name:       "Node Package Manager",
 			Slug:       "npm",
+<<<<<<< HEAD
 			Manifest:   []string{"package.json", lockFile},
+=======
+			Manifest:   []string{"package.json"},
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 			ModulePath: []string{"node_modules"},
 		},
 	}
 }
 
+<<<<<<< HEAD
 // GetMetadata returns metadata descriptions Name, Slug, Manifest, ModulePath
+=======
+// GetMetadata ...
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 func (m *npm) GetMetadata() models.PluginMetadata {
 	return m.metadata
 }
 
+<<<<<<< HEAD
 // IsValid checks if module has a valid Manifest file
 // for npm manifest file is package.json
 func (m *npm) IsValid(path string) bool {
@@ -72,14 +98,42 @@ func (m *npm) HasModulesInstalled(path string) error {
 func (m *npm) GetVersion() (string, error) {
 	cmd := exec.Command("npm", "--v")
 	output, err := cmd.Output()
+=======
+// IsValid ...
+func (m *npm) IsValid(path string) bool {
+	for i := range m.metadata.Manifest {
+		if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+			return true
+		}
+	}
+	return false
+}
+
+// HasModulesInstalled ...
+func (m *npm) HasModulesInstalled(path string) error {
+	for i := range m.metadata.ModulePath {
+		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+			return nil
+		}
+	}
+	return errDependenciesNotFound
+}
+
+// GetVersion ...
+func (m *npm) GetVersion() (string, error) {
+	output, err := exec.Command("npm", "--version").Output()
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	if err != nil {
 		return "", err
 	}
 
+<<<<<<< HEAD
 	if len(strings.Split(string(output), ".")) != 3 {
 		return "", fmt.Errorf("unexpected version format: %s", output)
 	}
 
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	return string(output), nil
 }
 
@@ -88,6 +142,7 @@ func (m *npm) SetRootModule(path string) error {
 	return nil
 }
 
+<<<<<<< HEAD
 // GetRootModule return root package information ex. Name, Version
 func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
@@ -185,4 +240,19 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 		modules = append(modules, mod)
 	}
 	return modules
+=======
+// GetRootModule ...
+func (m *npm) GetRootModule(path string) (*models.Module, error) {
+	return nil, nil
+}
+
+// ListUsedModules...
+func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
+	return nil, nil
+}
+
+// ListModulesWithDeps ...
+func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+	return nil, nil
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 }

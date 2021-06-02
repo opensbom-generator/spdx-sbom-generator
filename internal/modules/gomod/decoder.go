@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package gomod
 
 import (
@@ -116,9 +121,14 @@ func buildModule(module *models.Module) error {
 		module.CommentsLicense = licensePkg.Comments
 		if !helper.LicenseSPDXExists(licensePkg.ID) {
 			licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
+<<<<<<< HEAD
 			// figure out why other license always fails to validate SPDX
 			//licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
 			//module.OtherLicense = append(module.OtherLicense, licensePkg)
+=======
+			licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
+			module.OtherLicense = append(module.OtherLicense, licensePkg)
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 		}
 	}
 

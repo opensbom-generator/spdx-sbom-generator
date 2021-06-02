@@ -1,10 +1,18 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package gomod
 
 import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+<<<<<<< HEAD
 	"errors"
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
@@ -17,11 +25,14 @@ type mod struct {
 	command    *helper.Cmd
 }
 
+<<<<<<< HEAD
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `go mod vendor` or `go get` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoGoCommand = errors.New("No Golang command")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 // New ...
 func New() *mod {
 	return &mod{

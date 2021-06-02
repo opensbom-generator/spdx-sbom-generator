@@ -1,3 +1,8 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package composer
 
 import (
@@ -14,6 +19,7 @@ type ComposerProjectInfo struct {
 	Versions    []string
 }
 
+<<<<<<< HEAD
 func getProjectInfo() (models.Module, error) {
 	cmdArgs := ShowModulesCmd.Parse()
 	if cmdArgs[0] != "composer" {
@@ -28,6 +34,15 @@ func getProjectInfo() (models.Module, error) {
 
 	buffer := new(bytes.Buffer)
 	if err := command.Execute(buffer); err != nil {
+=======
+func (m *composer) getProjectInfo() (models.Module, error) {
+	if err := m.buildCmd(projectInfoCmd, "."); err != nil {
+		return models.Module{}, err
+	}
+
+	buffer := new(bytes.Buffer)
+	if err := m.command.Execute(buffer); err != nil {
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 		return models.Module{}, err
 	}
 	defer buffer.Reset()
@@ -38,6 +53,12 @@ func getProjectInfo() (models.Module, error) {
 	if err != nil {
 		return models.Module{}, err
 	}
+<<<<<<< HEAD
+=======
+	if projectInfo.Name == "" {
+		return models.Module{}, errors.New("root project info not found")
+	}
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 
 	module, err := convertProjectInfoToModule(projectInfo)
 	if err != nil {
@@ -52,7 +73,11 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 	packageUrl := genComposerUrl(project.Name, version)
 	checkSumValue := readCheckSum(packageUrl)
 	name := getName(project.Name)
+<<<<<<< HEAD
 	nodule := models.Module{
+=======
+	module := models.Module{
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 		Name:       name,
 		Version:    version,
 		Root:       true,
@@ -61,6 +86,7 @@ func convertProjectInfoToModule(project ComposerProjectInfo) (models.Module, err
 			Algorithm: models.HashAlgoSHA1,
 			Value:     checkSumValue,
 		},
+<<<<<<< HEAD
 		LicenseConcluded: getProjectLicense(),
 		LicenseDeclared:  getProjectLicense(),
 	}
@@ -76,4 +102,17 @@ func getProjectLicense() string {
 	}
 
 	return lic.Name
+=======
+	}
+
+	licensePkg, err := helper.GetLicenses(".")
+	if err == nil {
+		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
+		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+		module.CommentsLicense = licensePkg.Comments
+	}
+
+	return module, nil
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 }

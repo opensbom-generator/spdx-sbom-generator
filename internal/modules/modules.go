@@ -1,13 +1,25 @@
+<<<<<<< HEAD
+=======
+// SPDX-License-Identifier: Apache-2.0
+
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 package modules
 
 import (
 	"errors"
+<<<<<<< HEAD
 	"spdx-sbom-generator/internal/modules/composer"
 	"spdx-sbom-generator/internal/modules/yarn"
+=======
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 
 	log "github.com/sirupsen/logrus"
 
 	"spdx-sbom-generator/internal/models"
+<<<<<<< HEAD
+=======
+	"spdx-sbom-generator/internal/modules/composer"
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/npm"
 )
@@ -22,10 +34,16 @@ var registeredPlugins []models.IPlugin
 
 func init() {
 	registeredPlugins = append(registeredPlugins,
+<<<<<<< HEAD
 		gomod.New(),
 		npm.New(),
 		composer.New(),
 		yarn.New(),
+=======
+		composer.New(),
+		gomod.New(),
+		npm.New(),
+>>>>>>> 5072eeb001df6167e0477590fd617b5aa3bd45cb
 	)
 }
 
