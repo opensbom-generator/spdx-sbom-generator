@@ -1,8 +1,10 @@
 package yarn
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"spdx-sbom-generator/internal/licenses"
@@ -20,7 +22,7 @@ type yarn struct {
 var (
 	errDependenciesNotFound = errors.New("please install dependencies by running yarn install")
 	yarnRegistry            = "https://registry.yarnpkg.com"
-	lockFile = "yarn.lock"
+	lockFile                = "yarn.lock"
 )
 
 // New creates a new yarn instance
@@ -87,7 +89,6 @@ func (m *yarn) SetRootModule(path string) error {
 	return nil
 }
 
-
 // GetRootModule return
 //root package information ex. Name, Version
 func (m *yarn) GetRootModule(path string) (*models.Module, error) {
@@ -98,7 +99,7 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 	}
 	mod := &models.Module{}
 
-	if pkResult["name"] !=nil {
+	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)
 	}
 	if pkResult["author"] != nil {
@@ -135,7 +136,7 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 
 // ListModulesWithDeps return all info of installed modules
 func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
-	deps, err := helper.ReadLockFile(filepath.Join(path, lockFile))
+	deps, err := readLockFile(filepath.Join(path, lockFile))
 	if err != nil {
 		return nil, err
 	}
@@ -144,9 +145,9 @@ func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
 	return m.buildDependencies(path, deps, lic), nil
 }
 
-func (m *yarn) buildDependencies(path string, deps []helper.Package, licenses map[string]string) []models.Module {
+func (m *yarn) buildDependencies(path string, deps []dependency, licenses map[string]string) []models.Module {
 	modules := make([]models.Module, 0)
-	for _,d := range deps {
+	for _, d := range deps {
 		var mod models.Module
 		mod.Name = d.Name
 		mod.Version = d.Version
@@ -173,4 +174,81 @@ func (m *yarn) buildDependencies(path string, deps []helper.Package, licenses ma
 		modules = append(modules, mod)
 	}
 	return modules
+}
+
+func readLockFile(path string) ([]dependency, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return []dependency{}, err
+	}
+	defer file.Close()
+	p := make([]dependency, 0)
+	i := -1
+	scanner := bufio.NewScanner(file)
+
+	isPk := false
+	isDep := false
+	for scanner.Scan() {
+		text := scanner.Text()
+		if strings.HasPrefix(scanner.Text(), "#") {
+			continue
+		}
+		if strings.TrimSpace(text) == "" {
+			isPk = false
+			isDep = false
+			continue
+		}
+		if isDep {
+			p[i].Dependencies = append(p[i].Dependencies, text)
+			continue
+		}
+		if isPk {
+			if strings.HasPrefix(text, "  version ") {
+				p[i].Version = strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(text, "  version "), "\""), "\"")
+				n := p[i].Name[:strings.Index(p[i].Name, "@")]
+				p[i].Name = fmt.Sprintf("%s-%s", n, p[i].Version)
+				p[i].PkPath = p[i].PkPath[:strings.LastIndex(p[i].PkPath, "@")]
+				continue
+			}
+			if strings.HasPrefix(text, "  resolved ") {
+				p[i].Resolved = strings.TrimPrefix(text, "  resolved ")
+				continue
+			}
+			if strings.HasPrefix(text, "  integrity ") {
+				p[i].Integrity = strings.TrimPrefix(text, "  integrity ")
+				continue
+			}
+			if strings.HasPrefix(text, "  dependencies:") {
+				isDep = true
+				continue
+			}
+		}
+
+		if !strings.HasPrefix(scanner.Text(), "  ") {
+			isPk = true
+			i++
+			var dep dependency
+			name := text
+			name = strings.TrimSpace(name)
+			if strings.Contains(name, ",") {
+				s := strings.Split(name, ",")
+				name = s[0]
+			}
+			name = strings.TrimPrefix(name, "\"")
+			name = strings.TrimSuffix(name, ":")
+
+			dep.PkPath = strings.TrimSuffix(name, "\"")
+			name = strings.TrimPrefix(name, "@")
+
+			dep.Name = name
+			p = append(p, dep)
+			continue
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return []dependency{}, err
+	}
+
+	return p, nil
 }

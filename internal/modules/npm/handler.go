@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"spdx-sbom-generator/internal/licenses"
-	"spdx-sbom-generator/internal/reader"
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
+	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/reader"
 )
 
 type npm struct {
@@ -24,7 +24,7 @@ var (
 	lockFile                = "package-lock.json"
 )
 
-// New creates a new npm instance
+// New creates a new npm manager instance
 func New() *npm {
 	return &npm{
 		metadata: models.PluginMetadata{
@@ -54,14 +54,14 @@ func (m *npm) IsValid(path string) bool {
 
 // HasModulesInstalled checks if modules of manifest file already installed
 func (m *npm) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if !helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+	for _, p := range m.metadata.ModulePath {
+		if !helper.Exists(filepath.Join(path, p)) {
 			return errDependenciesNotFound
 		}
 	}
 
-	for i := range m.metadata.Manifest {
-		if !helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+	for _, p := range m.metadata.Manifest {
+		if !helper.Exists(filepath.Join(path, p)) {
 			return errDependenciesNotFound
 		}
 	}
@@ -117,8 +117,9 @@ func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
 	r := reader.New(filepath.Join(path, m.metadata.Manifest[0]))
 	pkResult, err := r.ReadJson()
 	if err != nil {
-		return nil, err
+		return []models.Module{}, err
 	}
+
 	modules := make([]models.Module, 0)
 	deps := pkResult["dependencies"].(map[string]interface{})
 
@@ -138,10 +139,11 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if helper.Exists(filepath.Join(path, shrink)) {
 		pk = shrink
 	}
+
 	r := reader.New(filepath.Join(path, pk))
 	pkResults, err := r.ReadJson()
 	if err != nil {
-		return nil, err
+		return []models.Module{}, err
 	}
 
 	deps, ok := pkResults["packages"].(map[string]interface{})
@@ -178,10 +180,9 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 			mod.Copyright = helper.GetCopyrightText(licensePath)
 		}
 
-		mod.LicenseDeclared = helper.GetJSLicense(path, key, licenses, m.metadata.ModulePath[0], m.metadata.Manifest[0] )
+		mod.LicenseDeclared = helper.GetJSLicense(path, key, licenses, m.metadata.ModulePath[0], m.metadata.Manifest[0])
 
 		modules = append(modules, mod)
 	}
 	return modules
 }
-
