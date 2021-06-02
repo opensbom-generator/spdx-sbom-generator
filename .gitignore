@@ -11,3 +11,7 @@ bin/
 bom*
 
 .idea
+
+
+# IDE file
+.swp

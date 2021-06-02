@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package npm
 
 import (
-	"errors"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -18,7 +19,6 @@ type npm struct {
 }
 
 var (
-	errDependenciesNotFound = errors.New("please install dependencies by running npm install")
 	shrink                  = "npm-shrinkwrap.json"
 	npmRegistry             = "https://registry.npmjs.org"
 	lockFile                = "package-lock.json"

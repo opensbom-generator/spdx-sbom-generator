@@ -118,9 +118,8 @@ func buildModule(module *models.Module) error {
 		module.CommentsLicense = licensePkg.Comments
 		if !helper.LicenseSPDXExists(licensePkg.ID) {
 			licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
-			// figure out why other license always fails to validate SPDX
-			//licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
-			//module.OtherLicense = append(module.OtherLicense, licensePkg)
+			licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
+			module.OtherLicense = append(module.OtherLicense, licensePkg)
 		}
 	}
 

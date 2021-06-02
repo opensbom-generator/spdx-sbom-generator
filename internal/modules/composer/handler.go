@@ -3,7 +3,6 @@
 package composer
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 
@@ -19,9 +18,6 @@ type composer struct {
 	metadata models.PluginMetadata
 	command  *helper.Cmd
 }
-
-var errDependenciesNotFound = errors.New("no dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `composer install`")
-var errNoComposerCommand = errors.New("no Composer command")
 
 // New ...
 func New() *composer {
@@ -105,12 +101,12 @@ func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
 func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
 	modules, err := m.getModulesFromComposerLockFile()
 	if err != nil {
-		return nil, fmt.Errorf("parsing modules failed: %w", err)
+		return nil, fmt.Errorf("%w due to %w", errFailedToReadComposerFile, err)
 	}
 
 	treeList, err := m.getTreeListFromComposerShowTree(path)
 	if err != nil {
-		return nil, fmt.Errorf("parsing modules failed: %w", err)
+		return nil, fmt.Errorf("%w due to %w", errFailedToShowComposerTree, err)
 	}
 
 	for _, treeComponent := range treeList.Installed {
