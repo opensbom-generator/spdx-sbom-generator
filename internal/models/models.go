@@ -67,6 +67,9 @@ type CheckSum struct {
 }
 
 func (c *CheckSum) String() string {
+	if c == nil {
+		return ""
+	}
 	return fmt.Sprintf("%v: %s", c.Algorithm, c.Value)
 }
 
