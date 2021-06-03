@@ -12,7 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"spdx-sbom-generator/internal/licenses"
+	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 	"strings"
 )
@@ -101,10 +101,43 @@ func getDependencyList() ([]string, error) {
 	return s, err
 }
 
-func convertPOMReaderToModules() ([]models.Module, error) {
+func convertMavenPackageToModule(project MavenPomProject) models.Module {
+	// package to module
+	var mod models.Module
+	if len(project.Name) == 0 {
+		mod.Name = strings.Replace(project.ArtifactId, " ", "-", -1)
+	} else {
+		mod.Name = strings.Replace(project.Name, " ", "-", -1)
+	}
+	mod.Version = project.Version
+	mod.Root = true
+	updatePackageSuppier(mod, project.Developers)
+	updatePackageDownloadLocation(mod, project.DistributionManagement)
+	if len(project.Url) > 0 {
+		mod.PackageHomePage = project.Url
+	}
+	mod.Modules = map[string]*models.Module{}
+	mod.CheckSum = &models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Value:     readCheckSum(mod.Path),
+	}
+
+	licensePkg, err := helper.GetLicenses(".")
+	if err == nil {
+		mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
+		mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+		mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+		mod.CommentsLicense = licensePkg.Comments
+	}
+
+	return mod
+}
+
+func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 
-	pomFile, err := os.Open("pom.xml")
+	filePath := fpath + "/pom.xml"
+	pomFile, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println(err)
 		return modules, err
@@ -127,44 +160,7 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 		return modules, err
 	}
 
-	var licenseInfomation string
-	// ***** TODO Code works for handling multiple license tag, but restricted it for single license tag
-	if len(project.Licenses) == 1 {
-		for i, license := range project.Licenses {
-			for key, x := range licenses.DB {
-				if x == license.Name {
-					licenseID := key
-					if i == 0 {
-						licenseInfomation = licenseID
-					} else {
-						licenseInfomation = licenseInfomation + " AND " + licenseID
-					}
-				}
-			}
-		}
-	}
-
-	var mod models.Module
-	if len(project.Name) == 0 {
-		mod.Name = strings.Replace(project.ArtifactId, " ", "-", -1)
-	} else {
-		mod.Name = strings.Replace(project.Name, " ", "-", -1)
-	}
-	mod.Version = project.Version
-	mod.Root = true
-	updatePackageSuppier(mod, project.Developers)
-	updatePackageDownloadLocation(mod, project.DistributionManagement)
-	mod.LicenseDeclared = licenseInfomation
-	mod.LicenseConcluded = mod.LicenseDeclared
-	if len(project.Url) > 0 {
-		mod.PackageHomePage = project.Url
-	}
-	mod.Modules = map[string]*models.Module{}
-	mod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Value:     readCheckSum(mod.Path),
-	}
-
+	mod := convertMavenPackageToModule(project)
 	modules = append(modules, mod)
 
 	// iterate over Modules

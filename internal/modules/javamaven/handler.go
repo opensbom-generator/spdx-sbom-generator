@@ -102,7 +102,7 @@ func (m *javamaven) GetRootModule(path string) (*models.Module, error) {
 
 // ListUsedModules...
 func (m *javamaven) ListUsedModules(path string) ([]models.Module, error) {
-	modules, err := convertPOMReaderToModules()
+	modules, err := convertPOMReaderToModules(path)
 
 	if err != nil {
 		log.Println(err)
@@ -133,7 +133,7 @@ func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
 }
 
 func (m *javamaven) getModule(path string) (models.Module, error) {
-	modules, err := convertPOMReaderToModules()
+	modules, err := convertPOMReaderToModules(path)
 
 	if err != nil {
 		log.Println(err)
