@@ -26,6 +26,7 @@ const manifestLockFile = "Pipfile.lock"
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pipenv install` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoPipCommand = errors.New("No pipenv command")
+var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 // New ...
@@ -42,7 +43,6 @@ func New() *pipenv {
 
 // Get Metadata ...
 func (m *pipenv) GetMetadata() models.PluginMetadata {
-	fmt.Println("In GetMetadata")
 	return m.metadata
 }
 
@@ -68,13 +68,19 @@ func (m *pipenv) HasModulesInstalled(path string) error {
 
 // Get Version ...
 func (m *pipenv) GetVersion() (string, error) {
-	fmt.Println("In GetVersion")
-	return "", nil
+	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
+		return "", err
+	}
+	version, err := m.command.Output()
+	if err != nil {
+		return "Python", errVersionNotFound
+	}
+	return version, err
 }
 
 // Set Root Module ...
 func (m *pipenv) SetRootModule(path string) error {
-	fmt.Println("In SetRootModule")
+	m.basepath = path
 	return nil
 }
 
