@@ -26,7 +26,7 @@ const manifestLockFile = "Pipfile.lock"
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pipenv install` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoPipCommand = errors.New("No pipenv command")
-var errVersionNotFound = errors.New("version not found")
+var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 // New ...
