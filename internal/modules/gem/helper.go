@@ -61,6 +61,7 @@ const (
 	CACHE_DEFAULT_DIR       = "cache"
 	GEM_DEFAULT_DIR         = "gems"
 	RAKEFILE_DEFAULT_NAME   = "Rakefile"
+	PLATFORMS_DEFAULT_NAME  = "PLATFORMS"
 	LEGACY_LOCK_EXTENSION   = ".lock"
 	LICENSE_DEFAULT_FILE    = "LICENSE"
 	COPYRIGHT_DEFAULT_LABEL = "Copyright (c)"
@@ -937,10 +938,75 @@ func DetectManifest(path, mode string) (string, error) {
 // Auto create Rakefile if not detected
 func HasRakefile(path string) bool {
 
-	filename := filepath.Join(path,RAKEFILE_DEFAULT_NAME)
+	filename := filepath.Join(path, RAKEFILE_DEFAULT_NAME)
 	if _, err := os.Stat(filename); err == nil {
 		return true
-	} 
+	}
 	return ioutil.WriteFile(filename, []byte("require \"bundler/gem_tasks\" \ntask :default => :spec"), 0644) == nil
-	
+
+}
+
+// Detect whether current OS is added in the Gemfile.lock PLATFORMS section
+// Add if not detected for better user experience
+func EnsurePlatform(path string) bool {
+	manifest, err := DetectManifest(path, DETECTION_MODE_LOCK)
+	if err != nil {
+		return false
+	}
+	path = fmt.Sprintf("%s%s", path, manifest)
+	beginChar := path[0:1]
+	followedByChar := path[1:2]
+	if beginChar == "." && followedByChar != "/" {
+		path = strings.Replace(path, ".", "./", 1)
+	}
+
+	lines := Content(path)
+
+	fileContent := ""
+	index, indent := GetInsertIndex(lines)
+	space := ""
+	for i := 0; i < indent; i++ {
+		space += " "
+	}
+	str := fmt.Sprintf("%s%s\n", space, runtime.GOOS)
+	for i, line := range lines {
+		if strings.TrimLeft(line, " ") == runtime.GOOS {
+			return false
+		}
+		if i == index {
+			fileContent += str
+		}
+		fileContent += line
+		fileContent += "\n"
+	}
+	return ioutil.WriteFile(path, []byte(fileContent), 0644) == nil
+}
+
+// Get exact index in file to append current OS value
+func GetInsertIndex(rows []string) (int, int) {
+
+	var index, position, currentPosition int
+	var PlatformFound bool
+
+	for i, line := range rows {
+
+		value := strings.Trim(line, " ")
+
+		currentPosition = len(line) - len(strings.TrimLeft(line, " "))
+
+		if value == PLATFORMS_DEFAULT_NAME {
+			PlatformFound = true
+		}
+
+		if PlatformFound && value == "" {
+			index = i
+			break
+		}
+
+		position = currentPosition
+
+	}
+
+	return index, position
+
 }

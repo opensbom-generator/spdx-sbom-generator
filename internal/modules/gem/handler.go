@@ -42,7 +42,7 @@ func (g *gem) GetMetadata() models.PluginMetadata {
 
 // IsValid ...
 func (g *gem) IsValid(path string) bool {
-	 
+
 	for i := range g.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, g.metadata.Manifest[i])) {
 			return true
@@ -54,6 +54,7 @@ func (g *gem) IsValid(path string) bool {
 // HasModulesInstalled ...
 func (g *gem) HasModulesInstalled(path string) error {
 	hasRake := HasRakefile(path)
+	_ = EnsurePlatform(path)
 	hasModule := false
 	for i := range g.metadata.ModulePath {
 		if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
@@ -68,7 +69,7 @@ func (g *gem) HasModulesInstalled(path string) error {
 
 // GetVersion ...
 func (g *gem) GetVersion() (string, error) {
-	
+
 	cmd := exec.Command("Bundler", "version")
 	output, err := cmd.Output()
 	if err != nil {
