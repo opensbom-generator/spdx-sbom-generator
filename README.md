@@ -92,6 +92,19 @@ PackageComment: NOASSERTION
 Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 ```
 
+## Docker Images
+
+We currently provide a few Docker images:
+
+[spdx/spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator) - Alpine image and spdx-sbom-generator binary installed
+
+```shell
+$ docker run -it --rm \
+    -v "/path/to/repository:/repository" \
+    -v "$(pwd)/out:/out" \
+    spdx/spdx-sbom-generator -p /repository -o /out/bom.spdx
+```
+
 ## Data Contract
 The interface requires the following functions
 
@@ -104,7 +117,7 @@ type IPlugin interface {
   ListUsedModules(path string) ([]Module, error)
   ListModulesWithDeps(path string) ([]Module, error)
   IsValid(path string) bool
-  
+
 ```
 
 `Module` model definition:
@@ -430,3 +443,9 @@ make build-mac
 ```BASH
 make build-win
 ```
+
+Licensing
+=========
+docker/cli is licensed under the Apache License, Version 2.0. See
+[LICENSE](https://github.com/spdx/spdx-sbom-generator/blob/master/LICENSE) for the full
+license text.
