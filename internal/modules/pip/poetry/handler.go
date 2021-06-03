@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/modules/pip/worker"
 )
 
 type poetry struct {
@@ -26,6 +27,7 @@ const manifestLockFile = "Poetry.lock"
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoPipCommand = errors.New("No poetry command")
+var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 // New ...
@@ -42,7 +44,6 @@ func New() *poetry {
 
 // Get Metadata ...
 func (m *poetry) GetMetadata() models.PluginMetadata {
-	fmt.Println("In GetMetadata")
 	return m.metadata
 }
 
@@ -58,23 +59,31 @@ func (m *poetry) IsValid(path string) bool {
 
 // Has Modules Installed ...
 func (m *poetry) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
-			return nil
-		}
+	if err := m.buildCmd(ModulesCmd, m.basepath); err != nil {
+		return err
+	}
+	result, err := m.command.Output()
+	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
+		return nil
 	}
 	return errDependenciesNotFound
 }
 
 // Get Version ...
 func (m *poetry) GetVersion() (string, error) {
-	fmt.Println("In GetVersion")
-	return "", nil
+	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
+		return "", err
+	}
+	version, err := m.command.Output()
+	if err != nil {
+		return "Python", errVersionNotFound
+	}
+	return version, err
 }
 
 // Set Root Module ...
 func (m *poetry) SetRootModule(path string) error {
-	fmt.Println("In SetRootModule")
+	m.basepath = path
 	return nil
 }
 

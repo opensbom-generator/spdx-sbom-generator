@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/modules/pip/worker"
+	"strings"
 )
 
 type pyenv struct {
@@ -17,7 +19,7 @@ type pyenv struct {
 	basepath   string
 }
 
-const cmdName = "pyenv"
+const cmdName = "python"
 const manifestSetupPy = "setup.py"
 const manifestSetupCfg = "setup.cfg"
 const manifestFile = "requirements.txt"
@@ -25,6 +27,7 @@ const manifestFile = "requirements.txt"
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoPipCommand = errors.New("No pyenv command")
+var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
 // New ...
@@ -41,7 +44,6 @@ func New() *pyenv {
 
 // Get Metadata ...
 func (m *pyenv) GetMetadata() models.PluginMetadata {
-	fmt.Println("In GetMetadata")
 	return m.metadata
 }
 
@@ -57,8 +59,22 @@ func (m *pyenv) IsValid(path string) bool {
 
 // Has Modules Installed ...
 func (m *pyenv) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+	runme := false
+	dir := m.basepath
+
+	state, venv, venvpath := worker.SearchVenv(path)
+	if state && len(venv) > 0 {
+		runme = true
+		m.metadata.ModulePath = append(m.metadata.ModulePath, venvpath)
+		dir = m.metadata.ModulePath[0]
+	}
+
+	if runme {
+		if err := m.buildCmd(ModulesCmd, dir); err != nil {
+			return err
+		}
+		result, err := m.command.Output()
+		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
 			return nil
 		}
 	}
@@ -67,13 +83,19 @@ func (m *pyenv) HasModulesInstalled(path string) error {
 
 // Get Version ...
 func (m *pyenv) GetVersion() (string, error) {
-	fmt.Println("In GetVersion")
-	return "", nil
+	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
+		return "", err
+	}
+	version, err := m.command.Output()
+	if err != nil {
+		return "Python", errVersionNotFound
+	}
+	return version, err
 }
 
 // Set Root Module ...
 func (m *pyenv) SetRootModule(path string) error {
-	fmt.Println("In SetRootModule")
+	m.basepath = path
 	return nil
 }
 
@@ -97,7 +119,7 @@ func (m *pyenv) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 func (m *pyenv) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
-	if cmdArgs[0] != cmdName {
+	if !strings.Contains(cmdArgs[0], cmdName) {
 		return errNoPipCommand
 	}
 
