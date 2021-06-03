@@ -20,7 +20,7 @@ type yarn struct {
 }
 
 var (
-	errDependenciesNotFound = errors.New("please install dependencies by running yarn install")
+	errDependenciesNotFound = errors.New("unable to generate SPDX file, no modules founded. Please install them before running spdx-sbom-generator, e.g.: `yarn install`")
 	yarnRegistry            = "https://registry.yarnpkg.com"
 	lockFile                = "yarn.lock"
 )
