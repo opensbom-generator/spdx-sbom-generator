@@ -49,7 +49,7 @@ var (
 		"s.required_ruby_version":         true,
 		"spec.required_ruby_version":      true,
 	}
-	spec = Spec{}
+	spec     = Spec{}
 	rootPath *string
 )
 
@@ -60,6 +60,7 @@ const (
 	SPEC_DEFAULT_DIR        = "specifications"
 	CACHE_DEFAULT_DIR       = "cache"
 	GEM_DEFAULT_DIR         = "gems"
+	RAKEFILE_DEFAULT_NAME   = "Rakefile"
 	LEGACY_LOCK_EXTENSION   = ".lock"
 	LICENSE_DEFAULT_FILE    = "LICENSE"
 	COPYRIGHT_DEFAULT_LABEL = "Copyright (c)"
@@ -101,8 +102,10 @@ type (
 		Specifications          []Spec
 	}
 )
+
 // Returns the root module
 func GetGemRootModule(path string) (*models.Module, error) {
+
 	rootPath = &path
 	rootModule := models.Module{}
 	rootModule.Modules = make(map[string]*models.Module)
@@ -137,8 +140,10 @@ func GetGemRootModule(path string) (*models.Module, error) {
 
 	return &rootModule, nil
 }
+
 // Returns the root module,dependencies and associations
 func ListGemRootModule(path string) ([]models.Module, error) {
+
 	rootPath = &path
 	modules := make([]models.Module, 0)
 	childGems := make([]models.Module, 0)
@@ -631,34 +636,32 @@ func ExtractRootLicense(path string, filename string) (string, string, string, e
 	var text string
 	var licensePath string
 
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		fmt.Println("error extreacting licence from :" + path)
+		log.Fatal(err)
+	}
+	licensePath = path
+	for _, f := range files {
+		if strings.Contains(f.Name(), LICENSE_DEFAULT_FILE) {
+			path = filepath.Join(path, f.Name())
+			break
+		}
+	}
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		fmt.Println("File reading error", err)
+		return "", "", "", err
+	}
+	text = string(data)
+	rows := Content(path)
+	for _, row := range rows {
+		if strings.Contains(row, COPYRIGHT_DEFAULT_LABEL) {
+			copyright = row
+			break
+		}
+	}
 
-		files, err := ioutil.ReadDir(path)
-		if err != nil {
-			fmt.Println("error extreacting licence from :"+path)
-			log.Fatal(err)
-		}
-		licensePath = path
-		for _, f := range files {
-			if strings.Contains(f.Name(), LICENSE_DEFAULT_FILE) {
-				path = filepath.Join(path, f.Name())
-				break
-			}
-		}
-		data, err := ioutil.ReadFile(path)
-		if err != nil {
-			fmt.Println("File reading error", err)
-			return "", "", "", err
-		}
-		text = string(data)
-		rows := Content(path)
-		for _, row := range rows {
-			if strings.Contains(row, COPYRIGHT_DEFAULT_LABEL) {
-				copyright = row
-				break
-			}
-		}
-
-	
 	return copyright, text, licensePath, nil
 
 }
@@ -689,7 +692,7 @@ func ExtractLicense(path string, filename string, isFullPath bool) (string, stri
 		}
 		files, err := ioutil.ReadDir(path)
 		if err != nil {
-			fmt.Println("error extreacting licence from :"+path)
+			fmt.Println("error extreacting licence from :" + path)
 			log.Fatal(err)
 		}
 		licensePath = path
@@ -771,13 +774,15 @@ func BuildTree(linesToRead []Line) {
 	}
 
 }
+
 // Sanitize names from unknown chars
-func CleanName(name string) string{
-	s := strings.ReplaceAll(name,"=","") 
-    s = strings.ReplaceAll(s,"\"","") 
-    s = strings.ReplaceAll(s,"“","")
+func CleanName(name string) string {
+	s := strings.ReplaceAll(name, "=", "")
+	s = strings.ReplaceAll(s, "\"", "")
+	s = strings.ReplaceAll(s, "“", "")
 	return s
 }
+
 // Scans and return file content
 func Content(path string) []string {
 
@@ -927,4 +932,15 @@ func DetectManifest(path, mode string) (string, error) {
 		return manifest, err
 	}
 	return manifest, nil
+}
+
+// Auto create Rakefile if not detected
+func HasRakefile(path string) bool {
+
+	filename := filepath.Join(path,RAKEFILE_DEFAULT_NAME)
+	if _, err := os.Stat(filename); err == nil {
+		return true
+	} 
+	return ioutil.WriteFile(filename, []byte("require \"bundler/gem_tasks\" \ntask :default => :spec"), 0644) == nil
+	
 }

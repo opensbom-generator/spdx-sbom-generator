@@ -18,13 +18,10 @@ type gem struct {
 }
 
 var errDependenciesNotFound = errors.New(
-	`* Please install dependencies by running the following commands :
-	1) bundle install
-	2) bundle install --deployment
-	3) bundle exec rake install
-	4) run the spdx-sbom-generator tool command
+	`* Please install dependencies by running the following command :
+	1) bundle config set --local path 'vendor/bundle' && bundle install && bundle exec rake install
+	2) run the spdx-sbom-generator tool command
 `)
-
 
 // New ...
 func New() *gem {
@@ -45,6 +42,7 @@ func (g *gem) GetMetadata() models.PluginMetadata {
 
 // IsValid ...
 func (g *gem) IsValid(path string) bool {
+	 
 	for i := range g.metadata.Manifest {
 		if helper.Exists(filepath.Join(path, g.metadata.Manifest[i])) {
 			return true
@@ -55,16 +53,22 @@ func (g *gem) IsValid(path string) bool {
 
 // HasModulesInstalled ...
 func (g *gem) HasModulesInstalled(path string) error {
+	hasRake := HasRakefile(path)
+	hasModule := false
 	for i := range g.metadata.ModulePath {
 		if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
-			return nil
+			hasModule = true
 		}
+	}
+	if hasRake && hasModule {
+		return nil
 	}
 	return errDependenciesNotFound
 }
 
 // GetVersion ...
 func (g *gem) GetVersion() (string, error) {
+	
 	cmd := exec.Command("Bundler", "version")
 	output, err := cmd.Output()
 	if err != nil {
@@ -82,6 +86,7 @@ func (g *gem) GetVersion() (string, error) {
 
 // SetRootModule ...
 func (g *gem) SetRootModule(path string) error {
+
 	module, err := g.GetRootModule(path)
 	if err != nil {
 		return err
@@ -94,8 +99,8 @@ func (g *gem) SetRootModule(path string) error {
 
 // GetRootModule...
 func (g *gem) GetRootModule(path string) (*models.Module, error) {
-	if err := g.HasModulesInstalled(path); err != nil{
-		return &models.Module{},err
+	if err := g.HasModulesInstalled(path); err != nil {
+		return &models.Module{}, err
 	}
 	return GetGemRootModule(path)
 }
@@ -112,8 +117,8 @@ func (g *gem) ListUsedModules(path string) ([]models.Module, error) {
 
 // ListModulesWithDeps ...
 func (g *gem) ListModulesWithDeps(path string) ([]models.Module, error) {
-	if err := g.HasModulesInstalled(path); err != nil{
-		return []models.Module{},err
+	if err := g.HasModulesInstalled(path); err != nil {
+		return []models.Module{}, err
 	}
 	return ListGemRootModule(path)
 }
