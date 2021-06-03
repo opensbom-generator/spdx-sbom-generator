@@ -9,6 +9,7 @@ import (
 
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/modules/composer"
+	"spdx-sbom-generator/internal/modules/gem"
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/npm"
 )
@@ -25,6 +26,7 @@ func init() {
 	registeredPlugins = append(registeredPlugins,
 		composer.New(),
 		gomod.New(),
+		gem.New(),
 		npm.New(),
 	)
 }
