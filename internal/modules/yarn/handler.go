@@ -2,6 +2,7 @@ package yarn
 
 import (
 	"bufio"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"os"
@@ -147,6 +148,18 @@ func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 func (m *yarn) buildDependencies(path string, deps []dependency, licenses map[string]string) []models.Module {
 	modules := make([]models.Module, 0)
+	de, err := m.GetRootModule(path)
+	if err != nil {
+		return modules
+	}
+	h := sha256.New()
+	h.Write([]byte(path))
+
+	de.CheckSum = &models.CheckSum{
+		Algorithm: "sha256",
+		Value: string(h.Sum(nil)),
+	}
+	modules = append(modules, *de)
 	for _, d := range deps {
 		var mod models.Module
 		mod.Name = d.Name

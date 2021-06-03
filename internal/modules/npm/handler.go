@@ -3,6 +3,7 @@
 package npm
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"os/exec"
 	"path/filepath"
@@ -157,6 +158,18 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 func (m *npm) buildDependencies(path string, deps map[string]interface{}, licenses map[string]string) []models.Module {
 	modules := make([]models.Module, 0)
+	de, err := m.GetRootModule(path)
+	if err != nil {
+		return modules
+	}
+	h := sha256.New()
+	h.Write([]byte(path))
+
+	de.CheckSum = &models.CheckSum{
+		Algorithm: "sha256",
+		Value: string(h.Sum(nil)),
+	}
+	modules = append(modules, *de)
 	for key, dd := range deps {
 		d := dd.(map[string]interface{})
 		var mod models.Module

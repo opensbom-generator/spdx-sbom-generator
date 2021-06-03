@@ -9,15 +9,15 @@ import (
 	"testing"
 )
 
-func TestProcessNPM(t *testing.T) {
-	t.Run("test is valid", TestNpm_IsValid)
-	t.Run("test has modules installed", TestNpm_HasModulesInstalled)
-	t.Run("test get module", TestNpm_GetModule)
-	t.Run("test list modules", TestNpm_ListModules)
-	t.Run("test list all modules", TestNpm_ListAllModules)
+func TestNPM(t *testing.T) {
+	t.Run("test is valid", TestIsValid)
+	t.Run("test has modules installed", TestHasModulesInstalled)
+	t.Run("test get module", TestGetModule)
+	t.Run("test list modules", TestListModules)
+	t.Run("test list all modules", TestListAllModules)
 }
 
-func TestNpm_IsValid(t *testing.T) {
+func TestIsValid(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 
@@ -29,7 +29,7 @@ func TestNpm_IsValid(t *testing.T) {
 	assert.Equal(t, false, invalid)
 }
 
-func TestNpm_HasModulesInstalled(t *testing.T) {
+func TestHasModulesInstalled(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 
@@ -39,7 +39,7 @@ func TestNpm_HasModulesInstalled(t *testing.T) {
 	assert.Error(t, uninstalled)
 }
 
-func TestNpm_GetModule(t *testing.T) {
+func TestGetModule(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 	mod, err := n.GetRootModule(path)
@@ -51,7 +51,7 @@ func TestNpm_GetModule(t *testing.T) {
 
 }
 
-func TestNpm_ListModules(t *testing.T) {
+func TestListModules(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 	mods, err := n.ListUsedModules(path)
@@ -92,7 +92,7 @@ func TestNpm_ListModules(t *testing.T) {
 	assert.Equal(t, 4, count)
 }
 
-func TestNpm_ListAllModules(t *testing.T) {
+func TestListAllModules(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
 	mods, err := n.ListModulesWithDeps(path)
