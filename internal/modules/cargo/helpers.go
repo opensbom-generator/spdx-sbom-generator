@@ -3,6 +3,7 @@ package cargo
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"strings"
 )
 
 func readCheckSum(content string) string {
@@ -12,4 +13,10 @@ func readCheckSum(content string) string {
 	h := sha1.New()
 	h.Write([]byte(content))
 	return hex.EncodeToString(h.Sum(nil))
+}
+
+func removeURLProtocol(str string) string {
+	value := strings.ReplaceAll(str, "https://", "")
+	value = strings.ReplaceAll(value, "http://", "")
+	return value
 }

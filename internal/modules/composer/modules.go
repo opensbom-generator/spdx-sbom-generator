@@ -247,7 +247,7 @@ func getName(moduleName string) string {
 }
 
 func genUrlFromComposerPackage(dep ComposerLockPackage) string {
-	URL := dep.Dist.URL
+	URL := removeURLProtocol(dep.Source.URL)
 	if URL != "" {
 		return URL
 	}
@@ -255,7 +255,7 @@ func genUrlFromComposerPackage(dep ComposerLockPackage) string {
 	return genComposerUrl(dep.Name, dep.Version)
 }
 func genComposerUrl(name string, version string) string {
-	return "https://github.com/" + name + ".git"
+	return "github.com/" + name + ".git"
 }
 
 func normalizePackageVersion(version string) string {

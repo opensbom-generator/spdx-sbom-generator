@@ -82,7 +82,7 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       false,
-		PackageURL: getPackageURl(dep),
+		PackageURL: getPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
@@ -145,13 +145,13 @@ func convertCargoPackageToPluginModule(dep CargoPackage) models.Module {
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       true,
-		PackageURL: getPackageURl(dep),
+		PackageURL: getPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
 		},
 		LocalPath:       localPath,
-		PackageHomePage: dep.Homepage,
+		PackageHomePage: removeURLProtocol(dep.Homepage),
 		Supplier:        getSupplier(dep.Authors),
 		Modules:         map[string]*models.Module{},
 	}
@@ -172,12 +172,17 @@ func convertToLocalPath(manifestPath string) string {
 	return localPath
 }
 
-func getPackageURl(dep CargoPackage) string {
+func getPackageURL(dep CargoPackage) string {
+	var value string
 	if dep.Source != "" {
-		return dep.Source
+		value = dep.Source
+	} else {
+		value = dep.Repository
 	}
 
-	return dep.Repository
+	value = removeURLProtocol(value)
+
+	return value
 }
 
 func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {
