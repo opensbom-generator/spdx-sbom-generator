@@ -321,10 +321,8 @@ func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 
 func handlePkg(text []string, tdList map[string][]string, pkgName string) int {
 	i := 0
-	cnt := 0
-	newSubPkgCnt := 0
-	subPkgs := make([]string, 5)
-	subLevelPkgs := make([]string, 5)
+	subPkgs := make([]string, 0)
+	subLevelPkgs := make([]string, 0)
 	currentTextVal := pkgName
 	var subpkg string
 
@@ -338,13 +336,11 @@ func handlePkg(text []string, tdList map[string][]string, pkgName string) int {
 			return i
 		} else {
 			if level == 1 {
-				subPkgs[cnt] = subpkg
+				subPkgs = append(subPkgs, subpkg)
 				tdList[pkgName] = subPkgs
-				cnt++
 			} else if level == 2 {
-				subLevelPkgs[newSubPkgCnt] = subpkg
+				subLevelPkgs = append(subLevelPkgs, subpkg)
 				tdList[currentTextVal] = subLevelPkgs
-				newSubPkgCnt++
 			}
 		}
 		// store previous line item
