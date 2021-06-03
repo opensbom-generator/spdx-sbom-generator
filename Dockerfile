@@ -10,7 +10,7 @@ RUN go mod download
 
 COPY / .
 
-RUN GO111MODULE=on GOFLAGS=-mod=vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+RUN GO111MODULE=on GOFLAGS=-mod=vendor go mod vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -a -ldflags "-s -w -X github.com/spdx/spdx-sbom-generator/version.Version=${VERSION} -X github.com/spdx/spdx-sbom-generator/version.GitHash=${GIT_HASH}" \
     -o spdx-sbom-generator ./cmd/generator/generator.go
 
