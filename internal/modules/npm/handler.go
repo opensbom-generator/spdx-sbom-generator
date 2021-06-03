@@ -19,10 +19,9 @@ type npm struct {
 }
 
 var (
-	shrink                  = "npm-shrinkwrap.json"
-	npmRegistry             = "https://registry.npmjs.org"
-	lockFile                = "package-lock.json"
-
+	shrink      = "npm-shrinkwrap.json"
+	npmRegistry = "https://registry.npmjs.org"
+	lockFile    = "package-lock.json"
 )
 
 // New creates a new npm manager instance
@@ -161,10 +160,10 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 	if err != nil {
 		return modules, err
 	}
-	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)) )
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)))
 	de.CheckSum = &models.CheckSum{
 		Algorithm: "sha256",
-		Value: h,
+		Value:     h,
 	}
 	modules = append(modules, *de)
 	for key, dd := range deps {
@@ -172,8 +171,6 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		var mod models.Module
 		mod.Name = fmt.Sprintf("%s-%s", key, d["version"].(string))
 		mod.Version = d["version"].(string)
-
-		// todo: handle mod.supplier
 
 		r := ""
 		if d["resolved"] != nil {
@@ -184,19 +181,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		}
 
 		mod.PackageURL = r
-		if d["integrity"] != nil {
-			rArr := strings.Split(d["integrity"].(string), "-")
-			mod.CheckSum = &models.CheckSum{
-				Value:     rArr[1],
-				Algorithm: models.HashAlgorithm(rArr[0]),
-			}
-		} else {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
-			mod.CheckSum = &models.CheckSum{
-				Value:     h,
-				Algorithm: "sha256",
-			}
-		}
+		mod.CheckSum = getCheckSum(d, mod.Name)
 
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
 		if helper.Exists(licensePath) {
@@ -205,7 +190,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 			mod.Copyright = helper.GetCopyright(s)
 		}
 
-		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key ))
+		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key))
 		if err != nil {
 			continue
 		}
@@ -218,4 +203,19 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		modules = append(modules, mod)
 	}
 	return modules, nil
+}
+
+func getCheckSum(dep map[string]interface{}, name string) *models.CheckSum {
+	if dep["integrity"] != nil {
+		rArr := strings.Split(dep["integrity"].(string), "-")
+		return &models.CheckSum{
+			Value:     rArr[1],
+			Algorithm: models.HashAlgorithm(rArr[0]),
+		}
+	}
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
+	return &models.CheckSum{
+		Value:     h,
+		Algorithm: "sha256",
+	}
 }
