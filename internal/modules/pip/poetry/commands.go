@@ -11,6 +11,7 @@ type command string
 // assume poetry will take care of python version might be python2 or python3
 var (
 	VersionCmd command = "poetry run python -V"
+	ModulesCmd command = "poetry run pip list --exclude-editable --format json"
 )
 
 // Parse ...
