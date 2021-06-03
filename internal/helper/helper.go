@@ -5,6 +5,7 @@ package helper
 import (
 	"errors"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,8 +13,6 @@ import (
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/reader"
 	"strings"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 )
@@ -75,7 +74,7 @@ func BuildLicenseConcluded(license string) string {
 func extractLicenseContent(path, filename string) string {
 	bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", path, filename))
 	if err != nil {
-		log.Errorf("Could not read license file: %w", err)
+		log.Errorf("Could not read license file: %v", err)
 		return ""
 	}
 
@@ -102,21 +101,15 @@ func GetCopyright(content string) string {
 		if strings.Contains(strings.ToLower(tokens[0]), "copyright") {
 			return line
 		}
+		for  _,l :=  range lines {
+			if strings.HasPrefix( strings.TrimSpace(strings.ToLower(l)),"copyright") {
+				return l
+			}
+
+		}
 	}
 
 	return ""
-}
-
-// GetCopyrightText ...
-func GetCopyrightText(path string) string {
-	r := reader.New(path)
-	c := r.StringFromFile()
-	ind := strings.Index(c, "Copyright (c)")
-	if ind < 0 {
-		return ""
-	}
-	copyWrite := strings.Split(c[ind:], "\n")
-	return strings.TrimSuffix(copyWrite[0], "\r")
 }
 
 // GetJSLicense ...

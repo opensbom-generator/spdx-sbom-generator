@@ -8,4 +8,7 @@ import (
 
 type errType error
 
-var errDependenciesNotFound errType = errors.New("Unable to generate SPDX file, no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `npm install`")
+var (
+	errDependenciesNotFound errType = errors.New("unable to generate SPDX file, no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `npm install`")
+	errNoNpmCommand errType = errors.New("no npm command")
+)

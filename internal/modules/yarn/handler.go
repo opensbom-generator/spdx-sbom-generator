@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/reader"
 )
@@ -141,16 +140,15 @@ func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	lic := licenses.DB
 
-	return m.buildDependencies(path, deps, lic), nil
+	return m.buildDependencies(path, deps)
 }
 
-func (m *yarn) buildDependencies(path string, deps []dependency, licenses map[string]string) []models.Module {
+func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	de, err := m.GetRootModule(path)
 	if err != nil {
-		return modules
+		return modules, err
 	}
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)) )
 	de.CheckSum = &models.CheckSum{
@@ -167,6 +165,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency, licenses map[st
 
 		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
 		if strings.Contains(r, yarnRegistry) {
+			mod.Supplier.Name = "NOASSERTION"
 		}
 
 		mod.PackageURL = r
@@ -177,14 +176,25 @@ func (m *yarn) buildDependencies(path string, deps []dependency, licenses map[st
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, "LICENSE")
 		if helper.Exists(licensePath) {
-			mod.Copyright = helper.GetCopyrightText(licensePath)
+			r := reader.New(licensePath)
+			s := r.StringFromFile()
+			mod.Copyright = helper.GetCopyright(s)
 		}
 
-		mod.LicenseDeclared = helper.GetJSLicense(path, d.PkPath, licenses, m.metadata.ModulePath[0], m.metadata.Manifest[0])
+		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath ))
+		if err != nil {
+			continue
+		}
+		mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
+		mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
+		mod.CommentsLicense = modLic.Comments
+		if !helper.LicenseSPDXExists(modLic.ID) {
+			mod.OtherLicense = append(mod.OtherLicense, modLic)
+		}
 
 		modules = append(modules, mod)
 	}
-	return modules
+	return modules, nil
 }
 
 func readLockFile(path string) ([]dependency, error) {

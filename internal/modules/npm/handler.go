@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/reader"
 )
@@ -23,6 +22,7 @@ var (
 	shrink                  = "npm-shrinkwrap.json"
 	npmRegistry             = "https://registry.npmjs.org"
 	lockFile                = "package-lock.json"
+
 )
 
 // New creates a new npm manager instance
@@ -78,7 +78,7 @@ func (m *npm) GetVersion() (string, error) {
 	}
 
 	if len(strings.Split(string(output), ".")) != 3 {
-		return "", fmt.Errorf("unexpected version format: %s", output)
+		return "", errNoNpmCommand
 	}
 
 	return string(output), nil
@@ -151,16 +151,15 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if !ok {
 		deps = pkResults["dependencies"].(map[string]interface{})
 	}
-	lic := licenses.DB
 
-	return m.buildDependencies(path, deps, lic), nil
+	return m.buildDependencies(path, deps)
 }
 
-func (m *npm) buildDependencies(path string, deps map[string]interface{}, licenses map[string]string) []models.Module {
+func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	de, err := m.GetRootModule(path)
 	if err != nil {
-		return modules
+		return modules, err
 	}
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)) )
 	de.CheckSum = &models.CheckSum{
@@ -176,24 +175,47 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}, licens
 
 		// todo: handle mod.supplier
 
-		r := d["resolved"].(string)
-		if strings.Contains(r, npmRegistry) {
+		r := ""
+		if d["resolved"] != nil {
+			r = d["resolved"].(string)
+			if strings.Contains(r, npmRegistry) {
+				mod.Supplier.Name = "NOASSERTION"
+			}
 		}
 
 		mod.PackageURL = r
-		rArr := strings.Split(d["integrity"].(string), "-")
-		mod.CheckSum = &models.CheckSum{
-			Value:     rArr[1],
-			Algorithm: models.HashAlgorithm(rArr[0]),
+		if d["integrity"] != nil {
+			rArr := strings.Split(d["integrity"].(string), "-")
+			mod.CheckSum = &models.CheckSum{
+				Value:     rArr[1],
+				Algorithm: models.HashAlgorithm(rArr[0]),
+			}
+		} else {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
+			mod.CheckSum = &models.CheckSum{
+				Value:     h,
+				Algorithm: "sha256",
+			}
 		}
+
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
 		if helper.Exists(licensePath) {
-			mod.Copyright = helper.GetCopyrightText(licensePath)
+			r := reader.New(licensePath)
+			s := r.StringFromFile()
+			mod.Copyright = helper.GetCopyright(s)
 		}
 
-		mod.LicenseDeclared = helper.GetJSLicense(path, key, licenses, m.metadata.ModulePath[0], m.metadata.Manifest[0])
-
+		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key ))
+		if err != nil {
+			continue
+		}
+		mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
+		mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
+		mod.CommentsLicense = modLic.Comments
+		if !helper.LicenseSPDXExists(modLic.ID) {
+			mod.OtherLicense = append(mod.OtherLicense, modLic)
+		}
 		modules = append(modules, mod)
 	}
-	return modules
+	return modules, nil
 }
