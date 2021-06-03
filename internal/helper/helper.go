@@ -103,3 +103,7 @@ func GetCopyright(content string) string {
 
 	return ""
 }
+
+func ReadEnvValue(name string) string {
+	return os.Getenv(name)
+}

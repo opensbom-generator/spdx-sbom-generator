@@ -8,6 +8,12 @@ import (
 
 type command string
 
+// assume pipenv will take care of python version might be python2 or python3
+var (
+	VersionCmd command = "pipenv run python -V"
+	ModulesCmd command = "pipenv run pip list --exclude-editable --format json"
+)
+
 // Parse ...
 func (c command) Parse() []string {
 	cmd := strings.TrimSpace(string(c))
