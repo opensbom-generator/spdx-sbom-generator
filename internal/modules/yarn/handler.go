@@ -152,12 +152,10 @@ func (m *yarn) buildDependencies(path string, deps []dependency, licenses map[st
 	if err != nil {
 		return modules
 	}
-	h := sha256.New()
-	h.Write([]byte(path))
-
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)) )
 	de.CheckSum = &models.CheckSum{
 		Algorithm: "sha256",
-		Value: string(h.Sum(nil)),
+		Value: h,
 	}
 	modules = append(modules, *de)
 	for _, d := range deps {
