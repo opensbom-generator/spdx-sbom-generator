@@ -18,19 +18,25 @@ generate: mod
 
 .PHONY: build
 build: mod
-	@echo "Building spdx-sbom-generator version:$(VERSION)"
+	@echo "Building spdx-sbom-generator for Linux Intel/AMD 64-bit version:$(VERSION)"
 	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=linux go build -o bin/spdx-sbom-generator cmd/generator/generator.go
 	@chmod +x bin/spdx-sbom-generator
 
 .PHONY: build-mac
 build-mac: mod
-	@echo "Building spdx-sbom-generator version:$(VERSION)"
+	@echo "Building spdx-sbom-generator for Mac Intel/AMD 64-bit version:$(VERSION)"
 	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=darwin GOARCH=amd64 go build -o bin/spdx-sbom-generator cmd/generator/generator.go
+	@chmod +x bin/spdx-sbom-generator
+
+.PHONY: build-mac-arm64
+build-mac-arm64: mod
+	@echo "Building spdx-sbom-generator for Mac ARM 64-bit version:$(VERSION)"
+	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=darwin GOARCH=arm64 go build -o bin/spdx-sbom-generator cmd/generator/generator.go
 	@chmod +x bin/spdx-sbom-generator
 
 .PHONY: build-win
 build-win: mod
-	@echo "Building spdx-sbom-generator version:$(VERSION)"
+	@echo "Building spdx-sbom-generator for Windows Intel/AMD 64-bit version:$(VERSION)"
 	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=win GOARCH=amd64 go build -o bin/spdx-sbom-generator.exe cmd/generator/generator.go
 	@chmod +x bin/spdx-sbom-generator.exe
 

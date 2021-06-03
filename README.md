@@ -429,17 +429,22 @@ you can provide the CLI parameters that will be passed along the comamnd, e.g.:
 ARGS="--path /home/ubuntu/projects/expressjs" make generate
 ```
 
-* Build linux binary
+* Build linux Intel/AMD 64-bit binary
 ```BASH
 make build
 ```
 
-* Build Mac binary
+* Build Mac Intel/AMD 64-bit binary
 ```BASH
 make build-mac
 ```
 
-* Build Windows binary
+* Build Mac ARM 64-bit binary
+```BASH
+make build-mac-arm64
+```
+
+* Build Windows Intel/AMD 64-bit binary
 ```BASH
 make build-win
 ```
