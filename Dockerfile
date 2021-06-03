@@ -10,8 +10,8 @@ RUN go mod download
 
 COPY / .
 
-RUN GO111MODULE=on GOFLAGS=-mod=vendor go mod vendor \
-    GO111MODULE=on GOFLAGS=-mod=vendor go mod tidy
+RUN GO111MODULE=on GOFLAGS=-mod=vendor go mod vendor
+RUN GO111MODULE=on GOFLAGS=-mod=vendor go mod tidy
 
 RUN GO111MODULE=on GOFLAGS=-mod=vendor CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
     go build -o spdx-sbom-generator ./cmd/generator/generator.go
