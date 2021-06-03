@@ -22,7 +22,7 @@ const manifestSetupPy = "setup.py"
 const manifestSetupCfg = "setup.cfg"
 const manifestFile = "requirements.txt"
 
-var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt`.")
+var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoPipCommand = errors.New("No pyenv command")
 var errFailedToConvertModules = errors.New("Failed to convert modules")

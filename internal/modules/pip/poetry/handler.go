@@ -23,7 +23,7 @@ const manifestSetupCfg = "setup.cfg"
 const manifestFile = "pyproject.toml"
 const manifestLockFile = "Poetry.lock"
 
-var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update`.")
+var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
 var errNoPipCommand = errors.New("No poetry command")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
