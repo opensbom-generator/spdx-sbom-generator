@@ -5,7 +5,6 @@ package helper
 import (
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"spdx-sbom-generator/internal/licenses"
@@ -13,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
+	log "github.com/sirupsen/logrus"
 )
 
 // Exists ...
