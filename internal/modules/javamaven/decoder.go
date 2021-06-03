@@ -19,7 +19,6 @@ import (
 
 // Update package supplier information
 func updatePackageSuppier(mod models.Module, developer Developer) {
-	//log.Println(" ****** developer.Name: "+developer.Name+" developer.Email: "+developer.Email+"  developer.Organization: ", developer.Organization)
 	if len(developer.Name) > 0 && len(developer.Email) > 0 {
 		mod.Supplier.Type = "Person"
 		mod.Supplier.Name = developer.Name
@@ -37,10 +36,10 @@ func updatePackageSuppier(mod models.Module, developer Developer) {
 
 // Update package download location
 func updatePackageDownloadLocation(mod models.Module, distManagement DistributionManagement) {
-	//log.Println(" ****** distManagement.DownloadUrl: ", distManagement.DownloadUrl)
 	if len(distManagement.DownloadUrl) > 0 && (strings.HasPrefix(distManagement.DownloadUrl, "http") ||
 		strings.HasPrefix(distManagement.DownloadUrl, "https")) {
-		mod.PackageHomePage = distManagement.DownloadUrl
+		// ******** TODO Module has only PackageHomePage, it does not have PackageDownloadLocation field
+		//mod.PackageHomePage = distManagement.DownloadUrl
 	}
 }
 
@@ -98,7 +97,6 @@ func getDependencyList() ([]string, error) {
 		return nil, err
 	}
 
-	//log.Println("***** capturedOutput: \n", capturedOutput)
 	s := strings.Split(capturedOutput, "\n")
 	return s, err
 }
@@ -129,32 +127,28 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 		return modules, err
 	}
 
-	//log.Println(" ***** len(project.Licenses): ", len(project.Licenses))
-
 	var licenseInfomation string
-	// Print License information
-	for i, license := range project.Licenses {
-		//log.Println(" license.name", license.Name)
-		for key, x := range licenses.DB {
-
-			if x == license.Name {
-				licenseID := key
-				//log.Println("  licenseID: " + licenseID)
-				if i == 0 {
-					licenseInfomation = licenseInfomation + licenseID
-				} else {
-					licenseInfomation = licenseInfomation + " AND " + licenseID
+	// ***** TODO Code works for handling multiple license tag, but restricted it for single license tag
+	if len(project.Licenses) == 1 {
+		for i, license := range project.Licenses {
+			for key, x := range licenses.DB {
+				if x == license.Name {
+					licenseID := key
+					if i == 0 {
+						licenseInfomation = licenseID
+					} else {
+						licenseInfomation = licenseInfomation + " AND " + licenseID
+					}
 				}
 			}
 		}
 	}
 
-	//log.Println(" ****** licenseInfomation: ", licenseInfomation)
 	var mod models.Module
 	if len(project.Name) == 0 {
-		mod.Name = project.ArtifactId
+		mod.Name = strings.Replace(project.ArtifactId, " ", "-", -1)
 	} else {
-		mod.Name = project.Name
+		mod.Name = strings.Replace(project.Name, " ", "-", -1)
 	}
 	mod.Version = project.Version
 	mod.Root = true
@@ -175,11 +169,11 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 
 	// iterate over Modules
 	for _, module := range project.Modules {
-		//log.Println("	1111111111 module: ", module)
 		var mod models.Module
 		mod.Name = module
 		mod.Modules = map[string]*models.Module{}
-		//mod.Version = modules.Version
+		// set package version as module version
+		mod.Version = project.Version
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(module),
@@ -189,7 +183,6 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 
 	// iterate over dependencies
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
-		//log.Println("	2222222222 dependencyManagement.ArtifactId: ", dependencyManagement.ArtifactId)
 		var mod models.Module
 		mod.Name = path.Base(dependencyManagement.ArtifactId)
 		if len(project.Properties) > 0 {
@@ -206,7 +199,6 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 
 	// iterate over dependencies
 	for _, dep := range project.Dependencies {
-		//log.Println("	333333333 dep.ArtifactId: ", dep.ArtifactId)
 		var mod models.Module
 		mod.Name = path.Base(dep.ArtifactId)
 		mod.Version = dep.Version
@@ -218,18 +210,15 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 		modules = append(modules, mod)
 	}
 
-	//	fmt.Println(" ******* len(dependencyList): ", len(dependencyList))
 	// Add additional dependency from mvn dependency list to pom.xml dependency list
 	var i int
 	for i < len(dependencyList)-2 { // skip 1 empty line and Finished statement line
-		//fmt.Println(dependencyList[i])
 		dependencyItem := strings.Split(dependencyList[i], ":")[1]
 
 		found := false
 		// iterate over dependencies
 		for _, dep := range project.Dependencies {
 			if dep.ArtifactId == dependencyItem {
-				//log.Println("dependency " + dependencyItem + ":" + strings.Split(dependencyList[i], ":")[3] + " already exists")
 				found = true
 				break
 			}
@@ -237,9 +226,7 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 
 		if !found {
 			for _, dependencyManagement := range project.DependencyManagement.Dependencies {
-				//fmt.Println(" dependencyManagement.ArtifactId", dependencyManagement.ArtifactId)
 				if dependencyManagement.ArtifactId == dependencyItem {
-					//log.Println("dependency " + dependencyItem + ":" + strings.Split(dependencyList[i], ":")[3] + " already exists")
 					found = true
 					break
 				}
@@ -250,7 +237,6 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 			var mod models.Module
 			mod.Name = path.Base(dependencyItem)
 			mod.Version = strings.Split(dependencyList[i], ":")[3]
-			//log.Println("	**** Adding dependency: " + strings.Split(dependencyList[i], ":")[1] + ":" + strings.Split(dependencyList[i], ":")[3])
 			mod.Modules = map[string]*models.Module{}
 			mod.CheckSum = &models.CheckSum{
 				Algorithm: models.HashAlgoSHA1,
@@ -278,13 +264,14 @@ func convertPOMReaderToModules() ([]models.Module, error) {
 }
 
 func getTransitiveDependencyList() (map[string][]string, error) {
-	// TODO Remove hardcoded file path
-	command := exec.Command("mvn", "dependency:tree", "-DappendOutput=true", "-DoutputFile=/tmp/TodayOutput.txt")
+	path := "/tmp/JavaMavenTDListOutput.txt"
+	os.Remove(path)
+
+	command := exec.Command("mvn", "dependency:tree", "-DappendOutput=true", "-DoutputFile=/tmp/JavaMavenTDListOutput.txt")
 	_, err := command.Output()
 	if err != nil {
 		return nil, err
 	}
-	//	fmt.Printf("%s", output)
 
 	tdList, err1 := readAndgetTransitiveDependencyList()
 	if err1 != nil {
@@ -295,7 +282,7 @@ func getTransitiveDependencyList() (map[string][]string, error) {
 
 func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 
-	file, err := os.Open("/tmp/TodayOutput.txt")
+	file, err := os.Open("/tmp/JavaMavenTDListOutput.txt")
 
 	if err != nil {
 		fmt.Println(err)
@@ -310,20 +297,16 @@ func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 	for scanner.Scan() {
 		text = append(text, scanner.Text())
 	}
-
 	file.Close()
 
 	j := 0
 	tdList := map[string][]string{}
 
 	for j < len(text) {
-		if !isSubPackage(text[j]) {
-			//log.Println("line number "+strconv.Itoa(j)+" PKG Name:", text[j])
+		_, isTrue := isSubPackage(text[j])
+		if !isTrue {
 			dependencyItem := strings.Split(text[j], ":")[1]
-			//log.Println("				PKG " + dependencyItem + ":" + strings.Split(text[j], ":")[3])
-
 			pkgName := dependencyItem
-			//pkgName := dependencyItem + ":" + strings.Split(text[j], ":")[3]
 
 			val := handlePkg(text[j+1:], tdList, pkgName)
 			if val == -1 {
@@ -337,49 +320,56 @@ func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 }
 
 func handlePkg(text []string, tdList map[string][]string, pkgName string) int {
-	//log.Println(" Handle pkg: ", text)
 	i := 0
 	cnt := 0
+	newSubPkgCnt := 0
 	subPkgs := make([]string, 5)
+	subLevelPkgs := make([]string, 5)
+	currentTextVal := pkgName
+	var subpkg string
+
 	for i < len(text) {
 		dependencyItem := strings.Split(text[i], ":")[1]
-		//log.Println("			" + subPackage + " is subpackage")
-		subpkg := dependencyItem
-		//subpkg := dependencyItem + ":" + strings.Split(text[i], ":")[3]
+		subpkg = dependencyItem
 
-		if !isSubPackage(text[i]) {
+		level, isTrue := isSubPackage(text[i])
+
+		if !isTrue {
 			return i
 		} else {
-			subPkgs[cnt] = subpkg
-			tdList[pkgName] = subPkgs
-			cnt++
+			if level == 1 {
+				subPkgs[cnt] = subpkg
+				tdList[pkgName] = subPkgs
+				cnt++
+			} else if level == 2 {
+				subLevelPkgs[newSubPkgCnt] = subpkg
+				tdList[currentTextVal] = subLevelPkgs
+				newSubPkgCnt++
+			}
 		}
+		// store previous line item
+		currentTextVal = subpkg
 		i++
 	}
 	return -1
 }
 
-func isSubPackage(name string) bool {
-	if strings.HasPrefix(name, "\\-") || strings.HasPrefix(name, "   \\-") || strings.HasPrefix(name, "+-") || strings.HasPrefix(name, "|  \\- ") {
-		//log.Println("			" + name + " is subpackage")
-		//dependencyItem := strings.Split(name, ":")[1]
-		//fmt.Println("			" + subPackage + " is subpackage")
-		//log.Println("				SubPKG " + dependencyItem + ":" + strings.Split(name, ":")[3])
-		return true
+func isSubPackage(name string) (int, bool) {
+	if strings.HasPrefix(name, "\\-") || strings.HasPrefix(name, "+-") {
+		return 1, true
+	} else if strings.Contains(name, "   \\-") || strings.Contains(name, "|  \\- ") {
+		return 2, true
 	}
-	//fmt.Println("	@@@@@ name " + name + " is PKG")
-	return false
+	return 0, false
 }
 
 func buildDependenciesGraph(modules []models.Module, tdList map[string][]string) error {
 	moduleMap := map[string]models.Module{}
 	moduleIndex := map[string]int{}
 
-	//log.Println(" len(modules): ", len(modules))
 	for idx, module := range modules {
 		moduleMap[module.Name] = module
 		moduleIndex[module.Name] = idx
-		//fmt.Println("		Module Name: " + module.Name + "  length: " + strconv.Itoa(len(module.Name)) + "  idx: " + strconv.Itoa(idx))
 	}
 
 	for i := range tdList {
@@ -396,10 +386,7 @@ func buildDependenciesGraph(modules []models.Module, tdList map[string][]string)
 				if !ok {
 					continue
 				}
-				// fmt.Println(" 444444 depModule.Name: ", depModule.Name)
-				// fmt.Println(" 55555555 moduleName: " + moduleName + "  length: " + strconv.Itoa(len(moduleName)) + "   depName: " + depName + "  length: " + strconv.Itoa(len(depName)))
-				// fmt.Println("  moduleIndex[moduleName]: " + strconv.Itoa(moduleIndex[moduleName]))
-				// fmt.Println(" 66666666 len(modules[moduleIndex[moduleName]].Modules): ", len(modules[moduleIndex[moduleName]].Modules))
+
 				modules[moduleIndex[moduleName]].Modules[depName] = &models.Module{
 					Name:             depModule.Name,
 					Version:          depModule.Version,

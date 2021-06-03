@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"os/exec"
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
@@ -62,12 +63,18 @@ func (m *javamaven) IsValid(path string) bool {
 
 // HasModulesInstalled ...
 func (m *javamaven) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
-			return nil
-		}
+	// TODO: How to verify is java project is build
+	// Enforcing mvn path to be set in PATH variable
+	fname, err := exec.LookPath("mvn")
+	if err == nil {
+		fname, err = filepath.Abs(fname)
 	}
-	return errDependenciesNotFound
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+
+	return nil
 }
 
 // GetVersion...
@@ -117,20 +124,6 @@ func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
 		fmt.Println("error in getting mvn transitive dependency tree and parsing it")
 		return nil, err1
 	}
-	// Loop over string slice at key.
-	//log.Println("  ******** len(tdList): ", len(tdList))
-	// for i := range tdList {
-	// 	//fmt.Println(i, tdList[i])
-	// 	//fmt.Println(i, tdList[i])
-	// 	if len(tdList[i]) > 0 {
-	// 		fmt.Println(i)
-	// 		for j := range tdList[i] {
-	// 			if len(tdList[i][j]) > 0 {
-	// 				fmt.Println("	" + tdList[i][j])
-	// 			}
-	// 		}
-	// 	}
-	// }
 
 	if err := buildDependenciesGraph(modules, tdList); err != nil {
 		return nil, errBuildlingModuleDependencies

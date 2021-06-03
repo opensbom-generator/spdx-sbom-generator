@@ -9,7 +9,7 @@ import (
 type command string
 
 var (
-	VersionCmd command = "java -version"
+	VersionCmd command = "mvn -v"
 )
 
 // Parse ...
