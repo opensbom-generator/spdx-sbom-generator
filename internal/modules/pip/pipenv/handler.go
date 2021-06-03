@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/modules/pip/worker"
 )
 
 type pipenv struct {
@@ -58,10 +59,12 @@ func (m *pipenv) IsValid(path string) bool {
 
 // Has Modules Installed ...
 func (m *pipenv) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
-			return nil
-		}
+	if err := m.buildCmd(ModulesCmd, m.basepath); err != nil {
+		return err
+	}
+	result, err := m.command.Output()
+	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
+		return nil
 	}
 	return errDependenciesNotFound
 }
