@@ -3,16 +3,11 @@
 package composer
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
-
-var COMPOSER_LOCK_FILE_NAME = "composer.lock"
-var COMPOSER_JSON_FILE_NAME = "composer.json"
-var COMPOSER_VENDOR_FOLDER = "vendor"
 
 type composer struct {
 	metadata models.PluginMetadata
@@ -65,23 +60,6 @@ func (m *composer) GetVersion() (string, error) {
 	return m.command.Output()
 }
 
-func (m *composer) buildCmd(cmd command, path string) error {
-	cmdArgs := cmd.Parse()
-	if cmdArgs[0] != "composer" {
-		return errNoComposerCommand
-	}
-
-	command := helper.NewCmd(helper.CmdOptions{
-		Name:      cmdArgs[0],
-		Args:      cmdArgs[1:],
-		Directory: path,
-	})
-
-	m.command = command
-
-	return command.Build()
-}
-
 // SetRootModule ...
 func (m *composer) SetRootModule(path string) error {
 	return nil
@@ -99,14 +77,14 @@ func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 // ListUsedModules...
 func (m *composer) ListUsedModules(path string) ([]models.Module, error) {
-	modules, err := m.getModulesFromComposerLockFile()
+	modules, err := m.getModulesFromComposerLockFile(path)
 	if err != nil {
-		return nil, fmt.Errorf("%w due to %w", errFailedToReadComposerFile, err)
+		return nil, errFailedToReadComposerFile
 	}
 
 	treeList, err := m.getTreeListFromComposerShowTree(path)
 	if err != nil {
-		return nil, fmt.Errorf("%w due to %w", errFailedToShowComposerTree, err)
+		return nil, errFailedToShowComposerTree
 	}
 
 	for _, treeComponent := range treeList.Installed {

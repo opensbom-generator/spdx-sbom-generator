@@ -3,17 +3,24 @@
 package helper
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
+
 	"strings"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 	log "github.com/sirupsen/logrus"
 )
+
+type FileInfo struct {
+	Path string `json:"path,omitempty"`
+}
 
 // Exists ...
 func Exists(filepath string) bool {
@@ -48,6 +55,16 @@ func LicenseSPDXExists(license string) bool {
 		return false
 	}
 	return true
+}
+
+// BuildModuleName ...
+func BuildModuleName(path, replacePath, DirReplace string) string {
+	if replacePath != "" {
+		if !Exists(DirReplace) {
+			return replacePath
+		}
+	}
+	return path
 }
 
 // BuildLicenseDeclared ...
@@ -108,4 +125,26 @@ func GetCopyright(content string) string {
 	}
 
 	return ""
+}
+
+// BuildManifestContent builds a content with directory tree
+func BuildManifestContent(path string) []byte {
+	manifest := []FileInfo{}
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return nil
+		}
+		manifest = append(manifest, FileInfo{
+			Path: path,
+		})
+		return nil
+	})
+
+	if err == nil && len(manifest) > 0 {
+		manifestBytes, err := json.Marshal(manifest)
+		if err == nil {
+			return manifestBytes
+		}
+	}
+	return nil
 }

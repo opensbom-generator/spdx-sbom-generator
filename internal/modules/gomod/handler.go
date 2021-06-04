@@ -4,19 +4,11 @@ package gomod
 
 import (
 	"bytes"
-	"crypto/sha1"
-	"encoding/hex"
 	"path/filepath"
 
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
-
-type mod struct {
-	metadata   models.PluginMetadata
-	rootModule *models.Module
-	command    *helper.Cmd
-}
 
 // New ...
 func New() *mod {
@@ -172,11 +164,4 @@ func (m *mod) buildCmd(cmd command, path string) error {
 	m.command = command
 
 	return command.Build()
-}
-
-// this is just a test
-func readCheckSum(content string) string {
-	h := sha1.New()
-	h.Write([]byte(content))
-	return hex.EncodeToString(h.Sum(nil))
 }
