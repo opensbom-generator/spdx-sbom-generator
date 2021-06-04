@@ -8,6 +8,11 @@ import (
 
 type command string
 
+// assume pipenv will take care of python version might be python2 or python3
+var (
+	VersionCmd command = "pipenv run python -V"
+)
+
 // Parse ...
 func (c command) Parse() []string {
 	cmd := strings.TrimSpace(string(c))
