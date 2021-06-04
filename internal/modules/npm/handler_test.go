@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os/exec"
-	"path/filepath"
-	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
-	"spdx-sbom-generator/internal/reader"
 	"strings"
 	"testing"
 )
@@ -135,12 +132,11 @@ func TestListAllModules(t *testing.T) {
 			continue
 		}
 		if mod.Name == "bcryptjs-2.4.3" {
-			fmt.Println("bcrypt: ", mod)
 			assert.Equal(t, "2.4.3", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/bcryptjs/-/bcryptjs-2.4.3.tgz", mod.PackageURL)
 			assert.Equal(t, models.HashAlgorithm("sha1"), mod.CheckSum.Algorithm)
 			assert.Equal(t, "mrVie5PmBiH/fNrF2pczAn3x0Ms=", mod.CheckSum.Value)
-			assert.Equal(t, "Copyright (c) 2012 Nevins Bartolomeo <nevins.bartolomeo@gmail.com>", mod.Copyright)
+			assert.Equal(t, "Copyright (c) 2012 Nevins Bartolomeo <nevins.bartolomeo@gmail.com>", strings.TrimSpace(mod.Copyright))
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++
 			continue
@@ -150,25 +146,6 @@ func TestListAllModules(t *testing.T) {
 	assert.Equal(t, 4, count)
 }
 
-
-func TestGetCopyright(t *testing.T) {
-	path := fmt.Sprintf("%s/test", getPath())
-	licensePath := filepath.Join(path, "node_modules", "bcryptjs", "LICENSE")
-	if helper.Exists(licensePath) {
-		r := reader.New(licensePath)
-		s := r.StringFromFile()
-		res := helper.GetCopyright(s)
-		assert.Equal(t, "Copyright (c) 2012 Nevins Bartolomeo <nevins.bartolomeo@gmail.com>", res)
-	}
-
-	licensePath2 := filepath.Join(path, "node_modules", "shortid", "LICENSE")
-	if helper.Exists(licensePath2) {
-		r := reader.New(licensePath2)
-		s := r.StringFromFile()
-		res := helper.GetCopyright(s)
-		assert.Equal(t, "Copyright (c) Dylan Greene", res)
-	}
-}
 
 func getPath() string {
 	cmd := exec.Command("pwd")
