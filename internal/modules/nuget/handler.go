@@ -3,8 +3,6 @@
 package nuget
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -33,7 +31,7 @@ var (
 	sha512Ext              = ".nupkg.sha512"
 	nugetBaseUrl           = "https://api.nuget.org/v3-flatcontainer/"
 	manifestExtensions     = []string{".sln", ".csproj", ".vbproj"}
-	directoryFilterPattern = "*.??proj"
+	directoryFilterPattern = "*.[^d-u][^c-r]proj"
 	assetDirectoryJoinPath = "obj"
 	assetModuleFile        = "project.assets.json"
 	assetTargets           = "targets"
@@ -114,7 +112,7 @@ func (m *nuget) HasModulesInstalled(path string) error {
 		return err
 	}
 
-	log.Infof("looking for the project using location: %s", path)
+	log.Infof("looking for the project modules using location: %s", path)
 
 	projectPaths, err := getProjectPaths(path)
 	if err != nil {
@@ -141,6 +139,7 @@ func (m *nuget) HasModulesInstalled(path string) error {
 	if len(projectArray) == 0 {
 		return nil
 	}
+	log.Infof("no modules found for project:%s", projectArray)
 	return errDependenciesNotFound
 }
 
@@ -161,6 +160,7 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 			pathExtension := filepath.Ext(path)
 			if strings.ToLower(pathExtension) == m.metadata.Manifest[i] {
 				if helper.Exists(path) {
+					// TODO: WIP for root module
 					fileName := filepath.Base(path)
 					rootProjectName := fileName[0 : len(fileName)-len(pathExtension)]
 					module.Name = rootProjectName
@@ -193,11 +193,13 @@ func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 				return modules, err
 			}
 			modules = append(modules, packages...)
+			log.Infof("dependency tree completed for project(a): %s", project)
 		} else if helper.Exists(filepath.Join(projectDirectory, configModuleFile)) {
 			packages, err := parsePackagesConfigModules(filepath.Join(projectDirectory, configModuleFile))
 			if err != nil {
 				return modules, err
 			}
+			log.Infof("dependency tree completed for project(c): %s", project)
 			modules = append(modules, packages...)
 		}
 	}
@@ -311,19 +313,6 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 	return modules, nil
 }
 
-func genUrl(packageName string, packageVersion string) string {
-	if packageName == "" || packageVersion == "" {
-		return ""
-	}
-	return fmt.Sprintf("pkg:nuget/%s@%s", packageName, packageVersion)
-}
-
-func readCheckSum(content string) string {
-	h := sha1.New()
-	h.Write([]byte(content))
-	return hex.EncodeToString(h.Sum(nil))
-}
-
 // getProjectPaths
 func getProjectPaths(path string) ([]string, error) {
 	var projectPath []string
@@ -350,49 +339,20 @@ func getProjectPaths(path string) ([]string, error) {
 
 // buildModule .. set the properties
 func buildModule(module *models.Module) error {
-	var hashCheckSum string
-	nuSpecFile := &NugetSpec{}
-	specFileName := getCachedSpecFilename(module.Name, module.Version)
-	if specFileName == "" {
-		specFile, err := getNugetSpec(module.Name, module.Version)
-		if err != nil {
-			return err
-		}
-		nuSpecFile = specFile
-	} else {
-		raw, err := ioutil.ReadFile(specFileName)
-		if err != nil {
-			return err
-		}
-		specFile, err := ConvertFromBytes(raw)
-		if err != nil {
-			return err
-		}
-		nuSpecFile = specFile
+	// get nuget spec file details
+	nuSpecFile, err := getNugetSpec(module.Name, module.Version)
+	if err != nil {
+		return err
+	}
+	// get the hash checksum
+	checkSum, err := getHashCheckSum(module.Name, module.Version)
+	if err != nil {
+		return err
+	}
+	if checkSum != nil {
+		module.CheckSum = checkSum
 	}
 	if nuSpecFile != nil {
-		extension := filepath.Ext(specFileName)
-		// extract the file name
-		fileName := specFileName[0 : len(specFileName)-len(extension)]
-		// change the extension - sha512Ext
-		shaName := fmt.Sprintf("%s.%s%s", fileName, module.Version, sha512Ext)
-		// change the extension - pkgExt
-		pkgName := fileName + fmt.Sprintf("%s.%s%s", fileName, module.Version, pkgExt)
-		if helper.Exists(shaName) {
-			shaFileData, err := ioutil.ReadFile(shaName)
-			if err != nil {
-				return err
-			}
-			hashCheckSum = string(shaFileData)
-		} else if helper.Exists(pkgName) {
-			// TODO .. come back later
-		}
-		if hashCheckSum != "" {
-			module.CheckSum = &models.CheckSum{
-				Algorithm: models.HashAlgoSHA1,
-				Value:     readCheckSum(hashCheckSum),
-			}
-		}
 		module.PackageHomePage = nuSpecFile.Meta.ProjectURL
 		module.LicenseDeclared = nuSpecFile.Meta.LicenseURL
 		module.Copyright = nuSpecFile.Meta.Copyright
@@ -422,8 +382,99 @@ func getCachedSpecFilename(name string, version string) string {
 }
 
 // getNugetSpec ...
-func getNugetSpec(packageName string, version string) (*NugetSpec, error) {
+func getNugetSpec(name string, version string) (*NugetSpec, error) {
 	nuSpecFile := NugetSpec{}
-	// TODO:  https://api.nuget.org/v3-flatcontainer/ for getting the properties
+	specFileName := getCachedSpecFilename(name, version)
+	if specFileName != "" {
+		raw, err := ioutil.ReadFile(specFileName)
+		if err != nil {
+			return nil, err
+		}
+		specFile, err := ConvertFromBytes(raw)
+		if err != nil {
+			return nil, err
+		}
+		return specFile, nil
+	}
+	nugetUrlPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseUrl, name, version, name)
+	nuspecUrl := fmt.Sprintf("%s%s", nugetUrlPrefix, specExt)
+	resp, err := getHttpResponseWithHeaders(nuspecUrl, map[string]string{"content-type": "application/xml"})
+	if err != nil {
+		return nil, err
+	}
+
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			log.Error(fmt.Sprintf("%#v", err))
+		}
+	}()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = xml.Unmarshal(body, &nuSpecFile)
+	if err != nil {
+		return nil, err
+	}
 	return &nuSpecFile, nil
+}
+
+// getHashCheckSum ...
+func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
+	var fileData []byte
+	specFileName := getCachedSpecFilename(name, version)
+	if specFileName != "" {
+		extension := filepath.Ext(specFileName)
+		// extract the file name
+		fileName := specFileName[0 : len(specFileName)-len(extension)]
+		// change the extension - sha512Ext
+		shaName := fmt.Sprintf("%s.%s%s", fileName, version, sha512Ext)
+		// change the extension - pkgExt
+		pkgName := fileName + fmt.Sprintf("%s.%s%s", fileName, version, pkgExt)
+		if helper.Exists(shaName) {
+			shaFileData, err := ioutil.ReadFile(shaName)
+			if err != nil {
+				return nil, err
+			}
+			fileData = shaFileData
+		} else if helper.Exists(pkgName) {
+			shaFileData, err := ioutil.ReadFile(pkgName)
+			if err != nil {
+				return nil, err
+			}
+			fileData = shaFileData
+		}
+	}
+	if fileData != nil {
+		return &models.CheckSum{
+			Algorithm: models.HashAlgoSHA1,
+			Value:     readCheckSum(fileData),
+		}, nil
+	}
+	nugetUrlPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseUrl, name, version, name)
+	nuPkgUrl := fmt.Sprintf("%s.%s%s", nugetUrlPrefix, version, pkgExt)
+	resp, err := getHttpResponseWithHeaders(nuPkgUrl, map[string]string{"content-type": "application/xml"})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		closeErr := resp.Body.Close()
+		if closeErr != nil {
+			log.Error(fmt.Sprintf("%#v", err))
+		}
+	}()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if body != nil {
+		return &models.CheckSum{
+			Algorithm: models.HashAlgoSHA1,
+			Value:     readCheckSum(body),
+		}, nil
+	}
+	return nil, nil
 }
