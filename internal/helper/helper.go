@@ -14,9 +14,8 @@ import (
 
 	"strings"
 
-	log "github.com/sirupsen/logrus"
-
 	"github.com/go-enry/go-license-detector/v4/licensedb"
+	log "github.com/sirupsen/logrus"
 )
 
 type FileInfo struct {
@@ -90,7 +89,7 @@ func BuildLicenseConcluded(license string) string {
 func extractLicenseContent(path, filename string) string {
 	bytes, err := ioutil.ReadFile(fmt.Sprintf("%s/%s", path, filename))
 	if err != nil {
-		log.Errorf("Could not read license file: %w", err)
+		log.Errorf("Could not read license file: %v", err)
 		return ""
 	}
 
@@ -98,7 +97,8 @@ func extractLicenseContent(path, filename string) string {
 	return string(bytes)
 }
 
-// GetCopyright ...
+// GetCopyright parses the license file found at node_modules/{PackageName}
+// Extract the text found starting with the keyword 'Copyright (c)' and until the newline
 func GetCopyright(content string) string {
 	// split by paragraph
 	paragraphs := strings.Split(content, "\n\n")
@@ -115,6 +115,12 @@ func GetCopyright(content string) string {
 		}
 		if strings.Contains(strings.ToLower(tokens[0]), "copyright") {
 			return line
+		}
+		for  _,l :=  range lines {
+			if strings.HasPrefix( strings.TrimSpace(strings.ToLower(l)),"copyright") {
+				return l
+			}
+
 		}
 	}
 
