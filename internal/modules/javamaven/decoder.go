@@ -39,13 +39,13 @@ func updatePackageDownloadLocation(mod models.Module, distManagement Distributio
 	if len(distManagement.DownloadUrl) > 0 && (strings.HasPrefix(distManagement.DownloadUrl, "http") ||
 		strings.HasPrefix(distManagement.DownloadUrl, "https")) {
 		// ******** TODO Module has only PackageHomePage, it does not have PackageDownloadLocation field
-		//mod.PackageHomePage = distManagement.DownloadUrl
+		//mod.PackageDownloadLocation = distManagement.DownloadUrl
 	}
 }
 
 // captures os.Stdout data and writes buffers
 func stdOutCapture() func() (string, error) {
-	read, write, err := os.Pipe()
+	readFromPipe, writeToPipe, err := os.Pipe()
 	if err != nil {
 		panic(err)
 	}
@@ -53,21 +53,21 @@ func stdOutCapture() func() (string, error) {
 	done := make(chan error, 1)
 
 	save := os.Stdout
-	os.Stdout = write
+	os.Stdout = writeToPipe
 
-	var buf strings.Builder
+	var buffer strings.Builder
 
 	go func() {
-		_, err := io.Copy(&buf, read)
-		read.Close()
+		_, err := io.Copy(&buffer, readFromPipe)
+		readFromPipe.Close()
 		done <- err
 	}()
 
 	return func() (string, error) {
 		os.Stdout = save
-		write.Close()
+		writeToPipe.Close()
 		err := <-done
-		return buf.String(), err
+		return buffer.String(), err
 	}
 }
 
@@ -75,21 +75,21 @@ func getDependencyList() ([]string, error) {
 	done := stdOutCapture()
 
 	// TODO add error handling
-	c1 := exec.Command("mvn", "-o", "dependency:list")
-	c2 := exec.Command("grep", ":.*:.*:.*")
-	c3 := exec.Command("cut", "-d]", "-f2-")
-	c4 := exec.Command("sort", "-u")
-	c2.Stdin, _ = c1.StdoutPipe()
-	c3.Stdin, _ = c2.StdoutPipe()
-	c4.Stdin, _ = c3.StdoutPipe()
-	c4.Stdout = os.Stdout
-	_ = c4.Start()
-	_ = c3.Start()
-	_ = c2.Start()
-	_ = c1.Run()
-	_ = c2.Wait()
-	_ = c3.Wait()
-	_ = c4.Wait()
+	cmd1 := exec.Command("mvn", "-o", "dependency:list")
+	cmd2 := exec.Command("grep", ":.*:.*:.*")
+	cmd3 := exec.Command("cut", "-d]", "-f2-")
+	cmd4 := exec.Command("sort", "-u")
+	cmd2.Stdin, _ = cmd1.StdoutPipe()
+	cmd3.Stdin, _ = cmd2.StdoutPipe()
+	cmd4.Stdin, _ = cmd3.StdoutPipe()
+	cmd4.Stdout = os.Stdout
+	_ = cmd4.Start()
+	_ = cmd3.Start()
+	_ = cmd2.Start()
+	_ = cmd1.Run()
+	_ = cmd2.Wait()
+	_ = cmd3.Wait()
+	_ = cmd4.Wait()
 
 	capturedOutput, err := done()
 	if err != nil {
@@ -150,7 +150,7 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 	// Load project from string
 	var project MavenPomProject
 	if err := xml.Unmarshal([]byte(pomStr), &project); err != nil {
-		log.Println("unable to unmarshal pom file. Reason: %s", err)
+		fmt.Println("unable to unmarshal pom file. Reason: %s", err)
 		return modules, err
 	}
 
@@ -177,7 +177,7 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 		modules = append(modules, mod)
 	}
 
-	// iterate over dependencies
+	// iterate over dependencyManagement
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
 		var mod models.Module
 		mod.Name = path.Base(dependencyManagement.ArtifactId)
@@ -260,10 +260,10 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 }
 
 func getTransitiveDependencyList() (map[string][]string, error) {
-	path := "/tmp/JavaMavenTDListOutput.txt"
+	path := "/tmp/JavaMavenTDTreeOutput.txt"
 	os.Remove(path)
 
-	command := exec.Command("mvn", "dependency:tree", "-DappendOutput=true", "-DoutputFile=/tmp/JavaMavenTDListOutput.txt")
+	command := exec.Command("mvn", "dependency:tree", "-DappendOutput=true", "-DoutputFile=/tmp/JavaMavenTDTreeOutput.txt")
 	_, err := command.Output()
 	if err != nil {
 		return nil, err
@@ -278,10 +278,10 @@ func getTransitiveDependencyList() (map[string][]string, error) {
 
 func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 
-	file, err := os.Open("/tmp/JavaMavenTDListOutput.txt")
+	file, err := os.Open("/tmp/JavaMavenTDTreeOutput.txt")
 
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return nil, err
 	}
 
@@ -295,55 +295,9 @@ func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 	}
 	file.Close()
 
-	j := 0
 	tdList := map[string][]string{}
-
-	for j < len(text) {
-		_, isTrue := isSubPackage(text[j])
-		if !isTrue {
-			dependencyItem := strings.Split(text[j], ":")[1]
-			pkgName := dependencyItem
-
-			val := handlePkg(text[j+1:], tdList, pkgName)
-			if val == -1 {
-				break
-			}
-			j = j + val
-		}
-		j++
-	}
+	handlePkgs(text, tdList)
 	return tdList, nil
-}
-
-func handlePkg(text []string, tdList map[string][]string, pkgName string) int {
-	i := 0
-	subPkgs := make([]string, 0)
-	subLevelPkgs := make([]string, 0)
-	currentTextVal := pkgName
-	var subpkg string
-
-	for i < len(text) {
-		dependencyItem := strings.Split(text[i], ":")[1]
-		subpkg = dependencyItem
-
-		level, isTrue := isSubPackage(text[i])
-
-		if !isTrue {
-			return i
-		} else {
-			if level == 1 {
-				subPkgs = append(subPkgs, subpkg)
-				tdList[pkgName] = subPkgs
-			} else if level == 2 {
-				subLevelPkgs = append(subLevelPkgs, subpkg)
-				tdList[currentTextVal] = subLevelPkgs
-			}
-		}
-		// store previous line item
-		currentTextVal = subpkg
-		i++
-	}
-	return -1
 }
 
 func isSubPackage(name string) (int, bool) {
@@ -353,6 +307,32 @@ func isSubPackage(name string) (int, bool) {
 		return 2, true
 	}
 	return 0, false
+}
+
+func handlePkgs(text []string, tdList map[string][]string) {
+	i := 0
+	var pkgName, subpkg, currentTextVal string
+	subPkgs := make([]string, 0)
+
+	for i < len(text) {
+		level, isTrue := isSubPackage(text[i])
+
+		if !isTrue {
+			pkgName = strings.Split(text[i], ":")[1]
+			subPkgs = nil
+		} else {
+			subpkg = strings.Split(text[i], ":")[1]
+			if level == 1 {
+				subPkgs = append(subPkgs, subpkg)
+				tdList[pkgName] = subPkgs
+			} else if level == 2 {
+				tdList[currentTextVal] = []string{subpkg}
+			}
+		}
+		// store previous line item
+		currentTextVal = subpkg
+		i++
+	}
 }
 
 func buildDependenciesGraph(modules []models.Module, tdList map[string][]string) error {
