@@ -1,0 +1,27 @@
+{
+  "name": "e-commerce",
+  "version": "1.0.0",
+  "description": "e-commerce using MERN stack",
+  "main": "nodemon app.mjs --experimental-modules",
+  "scripts": {
+    "front-install": "npm install --prefix admin",
+    "front": "npm start --prefix admin",
+    "dev": "concurrently \"npm run start\"  \"npm run front\" ",
+    "start": "nodemon --experimental-modules app.mjs"
+  },
+  "author": "ahmed saber",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.18.3",
+    "shortid": "^2.2.13",
+    "validator": "^10.7.1"
+  },
+  "devDependencies": {
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0"
+  },
+  "engines": {
+    "node": "10.5.0"
+  }
+}

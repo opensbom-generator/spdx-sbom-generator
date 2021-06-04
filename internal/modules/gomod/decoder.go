@@ -28,7 +28,7 @@ func NewDecoder(r io.Reader) *Decoder {
 	}
 }
 
-// ConvertJSONReaderToModules ...
+// ConvertPlainReaderToModules...
 // todo: improve code below
 func (d *Decoder) ConvertPlainReaderToModules(modules []models.Module) error {
 	moduleMap := map[string]models.Module{}
@@ -82,7 +82,8 @@ func (d *Decoder) ConvertJSONReaderToModules(modules *[]models.Module) error {
 	decoder := json.NewDecoder(d.reader)
 	isRoot := true
 	for {
-		var m models.Module
+		//var m models.Module
+		var m MOD
 		if err := decoder.Decode(&m); err != nil {
 			if err == io.EOF {
 				break
@@ -91,26 +92,31 @@ func (d *Decoder) ConvertJSONReaderToModules(modules *[]models.Module) error {
 			return err
 		}
 
-		if err := buildModule(&m); err != nil {
+		md, err := buildModule(&m)
+		if err != nil {
 			return err
 		}
 
-		m.Root = isRoot
+		md.Root = isRoot
 		isRoot = false
-		*modules = append(*modules, m)
+		*modules = append(*modules, *md)
 	}
 
 	return nil
 }
 
-func buildModule(module *models.Module) error {
-	module.Name = module.Path
-	module.PackageURL = module.Path
+func buildModule(m *MOD) (*models.Module, error) {
+	var module models.Module
+	module.Name = helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir)
+	module.Version = m.Version
+	module.LocalPath = m.Dir
+	module.PackageURL = m.Path
+	contentCheckSum := helper.BuildManifestContent(m.Dir)
 	module.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Value:     readCheckSum(module.Path),
+		Algorithm: models.HashAlgoSHA256,
+		Content:   contentCheckSum,
 	}
-	licensePkg, err := helper.GetLicenses(module.LocalPath)
+	licensePkg, err := helper.GetLicenses(m.Dir)
 	if err == nil {
 		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
@@ -122,9 +128,8 @@ func buildModule(module *models.Module) error {
 			module.OtherLicense = append(module.OtherLicense, licensePkg)
 		}
 	}
-
 	module.Modules = map[string]*models.Module{}
-	return nil
+	return &module, nil
 }
 
 func readMod(token string) ([]string, error) {

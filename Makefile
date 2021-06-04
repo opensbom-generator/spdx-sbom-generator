@@ -1,6 +1,7 @@
 # It's necessary to set this because some environments don't link sh -> bash.
 SHELL := /usr/bin/env bash
 VERSION=$(shell cat version.txt)
+PKG_LIST := $(shell go list ./... | grep -v mock)
 
 .PHONY: help
 help:           ## Show this help.
@@ -39,5 +40,11 @@ lint:
 	@echo "Define linter"
 
 .PHONY: test
-test:
+test: prepare-test
 	@echo "IMPLEMENT TEST"
+	@go test -v $(PKG_LIST)
+
+.PHONY: prepare-test
+prepare-test:
+	@cd internal/modules/npm/test && npm install
+	@cd internal/modules/yarn/test && yarn install

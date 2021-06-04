@@ -8,10 +8,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/modules/cargo"
 	"spdx-sbom-generator/internal/modules/composer"
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/npm"
 	"spdx-sbom-generator/internal/modules/nuget"
+	"spdx-sbom-generator/internal/modules/yarn"
 )
 
 var (
@@ -24,10 +26,12 @@ var registeredPlugins []models.IPlugin
 
 func init() {
 	registeredPlugins = append(registeredPlugins,
+		cargo.New(),
 		composer.New(),
 		gomod.New(),
 		npm.New(),
 		nuget.New(),
+		yarn.New(),
 	)
 }
 
