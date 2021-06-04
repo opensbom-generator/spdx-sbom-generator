@@ -65,7 +65,14 @@ func (m *poetry) HasModulesInstalled(path string) error {
 
 // Get Version ...
 func (m *poetry) GetVersion() (string, error) {
-	return "Python", errVersionNotFound
+	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
+		return "", err
+	}
+	version, err := m.command.Output()
+	if err != nil {
+		return "Python", errVersionNotFound
+	}
+	return version, err
 }
 
 // Set Root Module ...
