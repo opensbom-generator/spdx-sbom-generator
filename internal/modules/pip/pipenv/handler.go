@@ -8,11 +8,13 @@ import (
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/modules/pip/worker"
+	"strings"
 )
 
 const cmdName = "pipenv"
 const manifestFile = "Pipfile"
 const manifestLockFile = "Pipfile.lock"
+const placeholderPkgName = "{PACKAGE}"
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pipenv install` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
@@ -25,6 +27,8 @@ type pipenv struct {
 	rootModule *models.Module
 	command    *helper.Cmd
 	basepath   string
+	pkgs       []worker.Packages
+	metainfo   map[string]worker.Metadata
 }
 
 // New ...
@@ -61,6 +65,7 @@ func (m *pipenv) HasModulesInstalled(path string) error {
 	}
 	result, err := m.command.Output()
 	if err == nil && len(result) > 0 && worker.IsRequirementMeet(false, result) {
+		m.pkgs = worker.LoadModules(result)
 		return nil
 	}
 	return errDependenciesNotFound
@@ -91,12 +96,16 @@ func (m *pipenv) GetRootModule(path string) (*models.Module, error) {
 
 // List Used Modules...
 func (m *pipenv) ListUsedModules(path string) ([]models.Module, error) {
-	return nil, nil
+	var modules []models.Module
+	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
+	m.metainfo = decoder.ConvertMetadataToModules(false, m.pkgs, &modules)
+	return modules, nil
 }
 
 // List Modules With Deps ...
 func (m *pipenv) ListModulesWithDeps(path string) ([]models.Module, error) {
-	return nil, nil
+	modules, err := m.ListUsedModules(path)
+	return modules, err
 }
 
 func (m *pipenv) buildCmd(cmd command, path string) error {
@@ -114,4 +123,16 @@ func (m *pipenv) buildCmd(cmd command, path string) error {
 	m.command = command
 
 	return command.Build()
+}
+
+func (m *pipenv) GetPackageDetails(packageName string) (string, error) {
+	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
+
+	m.buildCmd(metatdataCmd, m.basepath)
+	result, err := m.command.Output()
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
