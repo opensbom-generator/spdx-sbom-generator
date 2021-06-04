@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
+	"spdx-sbom-generator/internal/modules/pip/worker"
 	"strings"
 )
 
@@ -55,8 +56,19 @@ func (m *pyenv) IsValid(path string) bool {
 
 // Has Modules Installed ...
 func (m *pyenv) HasModulesInstalled(path string) error {
-	for i := range m.metadata.Manifest {
-		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+	runme := false
+	state, venv, venvpath := worker.SearchVenv(path)
+	if state && len(venv) > 0 {
+		runme = true
+		m.metadata.ModulePath = append(m.metadata.ModulePath, venvpath)
+	}
+	if runme {
+		dir := m.GetExecutableDir()
+		if err := m.buildCmd(ModulesCmd, dir); err != nil {
+			return err
+		}
+		result, err := m.command.Output()
+		if err == nil && len(result) > 0 && worker.IsRequirementMeet(false, result) {
 			return nil
 		}
 	}
@@ -111,4 +123,11 @@ func (m *pyenv) buildCmd(cmd command, path string) error {
 	m.command = command
 
 	return command.Build()
+}
+
+func (m *pyenv) GetExecutableDir() string {
+	if len(m.metadata.ModulePath[0]) > 0 {
+		return m.metadata.ModulePath[0]
+	}
+	return m.basepath
 }
