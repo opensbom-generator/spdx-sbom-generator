@@ -13,6 +13,7 @@ import (
 
 const cmdName = "python"
 const manifestFile = "requirements.txt"
+const placeholderPkgName = "{PACKAGE}"
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pyenv install` might solve the issue.")
 var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
@@ -25,6 +26,8 @@ type pyenv struct {
 	rootModule *models.Module
 	command    *helper.Cmd
 	basepath   string
+	pkgs       []worker.Packages
+	metainfo   map[string]worker.Metadata
 }
 
 // New ...
@@ -69,6 +72,7 @@ func (m *pyenv) HasModulesInstalled(path string) error {
 		}
 		result, err := m.command.Output()
 		if err == nil && len(result) > 0 && worker.IsRequirementMeet(false, result) {
+			m.pkgs = worker.LoadModules(result)
 			return nil
 		}
 	}
@@ -100,12 +104,16 @@ func (m *pyenv) GetRootModule(path string) (*models.Module, error) {
 
 // List Used Modules...
 func (m *pyenv) ListUsedModules(path string) ([]models.Module, error) {
-	return nil, nil
+	var modules []models.Module
+	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
+	m.metainfo = decoder.ConvertMetadataToModules(false, m.pkgs, &modules)
+	return modules, nil
 }
 
 // List Modules With Deps ...
 func (m *pyenv) ListModulesWithDeps(path string) ([]models.Module, error) {
-	return nil, nil
+	modules, err := m.ListUsedModules(path)
+	return modules, err
 }
 
 func (m *pyenv) buildCmd(cmd command, path string) error {
@@ -130,4 +138,17 @@ func (m *pyenv) GetExecutableDir() string {
 		return m.metadata.ModulePath[0]
 	}
 	return m.basepath
+}
+
+func (m *pyenv) GetPackageDetails(packageName string) (string, error) {
+	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
+	dir := m.GetExecutableDir()
+
+	m.buildCmd(metatdataCmd, dir)
+	result, err := m.command.Output()
+	if err != nil {
+		return "", err
+	}
+
+	return result, nil
 }
