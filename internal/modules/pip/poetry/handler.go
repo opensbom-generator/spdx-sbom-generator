@@ -105,6 +105,12 @@ func (m *poetry) ListUsedModules(path string) ([]models.Module, error) {
 // List Modules With Deps ...
 func (m *poetry) ListModulesWithDeps(path string) ([]models.Module, error) {
 	modules, err := m.ListUsedModules(path)
+	if err != nil {
+		return nil, err
+	}
+	if err := worker.BuildDependencyGraph(&modules, &m.metainfo); err != nil {
+		return nil, err
+	}
 	return modules, err
 }
 
