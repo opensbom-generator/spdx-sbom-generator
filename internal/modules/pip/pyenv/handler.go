@@ -7,9 +7,10 @@ import (
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
+	"strings"
 )
 
-const cmdName = "pyenv"
+const cmdName = "python"
 const manifestFile = "requirements.txt"
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `pyenv install` might solve the issue.")
@@ -64,7 +65,14 @@ func (m *pyenv) HasModulesInstalled(path string) error {
 
 // Get Version ...
 func (m *pyenv) GetVersion() (string, error) {
-	return "Python", errVersionNotFound
+	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
+		return "", err
+	}
+	version, err := m.command.Output()
+	if err != nil {
+		return "Python", errVersionNotFound
+	}
+	return version, err
 }
 
 // Set Root Module ...
@@ -90,7 +98,7 @@ func (m *pyenv) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 func (m *pyenv) buildCmd(cmd command, path string) error {
 	cmdArgs := cmd.Parse()
-	if cmdArgs[0] != cmdName {
+	if !strings.Contains(cmdArgs[0], cmdName) {
 		return errNoPipCommand
 	}
 
