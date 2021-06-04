@@ -36,7 +36,6 @@ func init() {
 	rootCmd.Flags().StringVarP(&version, "version", "v", "", "output the version number")
 	rootCmd.Flags().StringP("path", "p", ".", "the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.')")
 	rootCmd.Flags().BoolP("include-license-text", "i", false, " Include full license text (default: false)")
-	rootCmd.Flags().StringP("include-depth", "d", "all", "Dependency level (default: all) i.e 0,1,2,3,4 etc")
 	rootCmd.Flags().StringP("output", "o", "bom.spdx", "<output> Write SPDX to file (default: '.spdx')")
 	rootCmd.Flags().StringP("schema", "s", "2.2", "<version> Target schema version (default: '2.2')")
 	//rootCmd.MarkFlagRequired("path")
@@ -77,7 +76,6 @@ func generate(cmd *cobra.Command, args []string) {
 		return cmdOpt
 	}
 	path := checkOpt("path")
-	depth := checkOpt("include-depth")
 	output := checkOpt("output")
 	schema := checkOpt("schema")
 	license, err := cmd.Flags().GetBool("include-license-text")
@@ -89,7 +87,6 @@ func generate(cmd *cobra.Command, args []string) {
 		Version: version,
 		Path:    path,
 		License: license,
-		Depth:   depth,
 		Output:  output,
 		Schema:  schema,
 	})
