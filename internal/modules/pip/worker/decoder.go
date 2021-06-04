@@ -164,3 +164,37 @@ func (d *MetadataDecoder) ConvertMetadataToModules(isRoot bool, pkgs []Packages,
 	}
 	return metainfo
 }
+
+func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Metadata) error {
+	moduleMap := map[string]models.Module{}
+
+	for _, module := range *modules {
+		moduleMap[strings.ToLower(module.Name)] = module
+	}
+
+	for _, pkgmeta := range *pkgsMetadata {
+		mod := moduleMap[strings.ToLower(pkgmeta.Name)]
+		for _, modname := range pkgmeta.Modules {
+			depModule := moduleMap[strings.ToLower(modname)]
+			mod.Modules[depModule.Name] = &models.Module{
+				Version:          depModule.Version,
+				Name:             depModule.Name,
+				Path:             depModule.Path,
+				LocalPath:        depModule.LocalPath,
+				Supplier:         depModule.Supplier,
+				PackageURL:       depModule.PackageURL,
+				CheckSum:         depModule.CheckSum,
+				PackageHomePage:  depModule.PackageHomePage,
+				LicenseConcluded: depModule.LicenseConcluded,
+				LicenseDeclared:  depModule.LicenseDeclared,
+				CommentsLicense:  depModule.CommentsLicense,
+				OtherLicense:     depModule.OtherLicense,
+				Copyright:        depModule.Copyright,
+				PackageComment:   depModule.PackageComment,
+				Root:             depModule.Root,
+			}
+		}
+	}
+
+	return nil
+}
