@@ -170,16 +170,9 @@ func (f *Format) buildPackages(modules []models.Module) ([]models.Package, map[s
 
 // WIP
 func (f *Format) convertToPackage(module models.Module) (models.Package, error) {
-	setPkgValue := func(s string) string {
-		if s == "" {
-			return noAssertion
-		}
-
-		return s
-	}
 	return models.Package{
 		PackageName:     module.Name,
-		SPDXID:          fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(module.Name)),
+		SPDXID:          setPkgSPDXID(module.Name, module.Version, module.Root),
 		PackageVersion:  module.Version,
 		PackageSupplier: noAssertion,
 		//PackageDownloadLocation: f.buildDownloadURL(module.PackageURL, module.Version),
@@ -225,4 +218,20 @@ func buildHomepageURL(url string) string {
 		return noAssertion
 	}
 	return fmt.Sprintf("https://%s", url)
+}
+
+func setPkgValue(s string) string {
+	if s == "" {
+		return noAssertion
+	}
+
+	return s
+}
+
+func setPkgSPDXID(s, v string, root bool) string {
+	if root {
+		return fmt.Sprintf("SPDXRef-Package-%s", replacer.Replace(s))
+	}
+
+	return fmt.Sprintf("SPDXRef-Package-%s-%s", replacer.Replace(s), v)
 }

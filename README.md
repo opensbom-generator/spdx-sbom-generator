@@ -24,7 +24,6 @@ Usage:
 
 Flags:
   -h, --help                   help for spdx-sbom-generator
-  -d, --include-depth string   Dependency level (default: all) i.e 0,1,2,3,4 etc (default "all")
   -i, --include-license-text    Include full license text (default: false)
   -o, --output string          <output> Write SPDX to file (default format: 'spdx' - default output "bom.spdx")
   -p, --path string            the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.') (default ".")
@@ -138,6 +137,14 @@ type PluginMetadata struct {
     ModulePath []string
 }
 ```
+
+### How to Generate Module values
+
+* `CheckSum`: we have built an internal method that calculates CheckSum for a given content (in bytes) using Algorithm defined on `models.CheckSum`,
+you now have the option to provide `Content` field for `models.CheckSum{}` and CheckSum will calculate automatically, but if you want to calculate CheckSum  on your own
+you still can provide `Value` field for `models.CheckSum{}`.
+
+Also, we can generate a manifest from a given directory tree using utility/helper method `BuildManifestContent`, and that's what we used for gomod plugin as `Content` value
 
 ### Interface definitions:
 
@@ -256,6 +263,12 @@ PluginMetadata{
 For a more complete JSON example look at [modules.json](./examples/modules.json)
 
 ### Utility methods:
+
+* `BuildManifestContent` walks through a given directory tree, and generates a content based on file paths
+
+    **Input**: Directory to walk through
+
+    **Output**: directory tree in bytes
 
 * `GetLicenses`: returns the detected license object
 
