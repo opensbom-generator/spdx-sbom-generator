@@ -11,6 +11,9 @@ import (
 	"strings"
 )
 
+// Virtual env constants
+const manifestSetupPy = "setup.py"
+const manifestSetupCfg = "setup.cfg"
 const ModuleDotVenv = ".venv"
 const ModuleVenv = "venv"
 const PyvenvCfg = "pyvenv.cfg"
@@ -97,4 +100,14 @@ func SearchVenv(path string) (bool, string, string) {
 	}
 
 	return false, venv, venvfullpath
+}
+
+func IsValidRootModule(path string) bool {
+	modules := []string{manifestSetupCfg, manifestSetupPy}
+	for i := range modules {
+		if helper.Exists(filepath.Join(path, modules[i])) {
+			return true
+		}
+	}
+	return false
 }
