@@ -199,11 +199,21 @@ func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Met
 	return nil
 }
 
-type m map[string]Metadata
-
 func MergeMetadataMap(root map[string]Metadata, nonroot map[string]Metadata) map[string]Metadata {
 	for key, value := range root {
 		nonroot[key] = value
 	}
 	return nonroot
+}
+
+func RemoveDuplicateRootModule(modules []models.Module) []models.Module {
+	var updatedModules []models.Module
+	rootMod := modules[0]
+	for i, mod := range modules {
+		if i > 0 && mod.Name == rootMod.Name {
+			continue
+		}
+		updatedModules = append(updatedModules, mod)
+	}
+	return updatedModules
 }
