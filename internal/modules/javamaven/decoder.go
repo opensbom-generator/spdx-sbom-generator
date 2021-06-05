@@ -133,7 +133,103 @@ func convertMavenPackageToModule(project MavenPomProject) models.Module {
 	return mod
 }
 
-func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
+func FindInDependency(slice []Dependency, val string) (int, bool) {
+	for i, item := range slice {
+		if item.ArtifactId == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+func FindInPlugins(slice []Plugin, val string) (int, bool) {
+	for i, item := range slice {
+		if item.ArtifactId == val {
+			return i, true
+		}
+	}
+	return -1, false
+}
+
+// If parent pom.xml has modules information in it, go to individual modules pom.xml
+func convertPkgModulesToModule(fpath string, moduleName string, parentPom MavenPomProject) ([]models.Module, error) {
+	filePath := fpath + "/" + moduleName + "/pom.xml"
+	pomFile, err := os.Open(filePath)
+	if err != nil {
+		fmt.Println(err)
+		return []models.Module{}, err
+	}
+	defer pomFile.Close()
+
+	var modules []models.Module
+	// read our opened xmlFile as a byte array.
+	pomStr, _ := ioutil.ReadAll(pomFile)
+
+	// Load project from string
+	var project MavenPomProject
+	if err := xml.Unmarshal([]byte(pomStr), &project); err != nil {
+		fmt.Println("unable to unmarshal Module %s pom file. Reason: %s", moduleName, err)
+		return []models.Module{}, err
+	}
+
+	var parentMod models.Module
+	parentMod.Name = project.Name
+	parentMod.Modules = map[string]*models.Module{}
+	if len(project.Version) == 0 {
+		// set package version as module version
+		parentMod.Version = parentPom.Version
+	} else {
+		parentMod.Version = project.Version
+	}
+	parentMod.CheckSum = &models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Value:     readCheckSum(project.Name),
+	}
+	modules = append(modules, parentMod)
+
+	// Include dependecy from module pom.xml if it is not existing in ParentPom
+	for _, element := range project.Dependencies {
+		_, found := FindInDependency(parentPom.Dependencies, element.ArtifactId)
+		if !found {
+			_, found1 := FindInDependency(parentPom.DependencyManagement.Dependencies, element.ArtifactId)
+			if !found1 {
+				var mod models.Module
+				mod.Name = path.Base(element.ArtifactId)
+				mod.Version = element.Version
+				mod.Modules = map[string]*models.Module{}
+				mod.CheckSum = &models.CheckSum{
+					Algorithm: models.HashAlgoSHA1,
+					Value:     readCheckSum(element.ArtifactId),
+				}
+				modules = append(modules, mod)
+				parentMod.Modules[mod.Name] = &mod
+			}
+		}
+	}
+
+	// Include plugins from module pom.xml if it is not existing in ParentPom
+	for _, element := range project.Build.Plugins {
+		_, found := FindInPlugins(parentPom.Build.Plugins, element.ArtifactId)
+		if !found {
+			_, found1 := FindInPlugins(parentPom.Build.PluginManagement, element.ArtifactId)
+			if !found1 {
+				var mod models.Module
+				mod.Name = path.Base(element.ArtifactId)
+				mod.Version = element.Version
+				mod.Modules = map[string]*models.Module{}
+				mod.CheckSum = &models.CheckSum{
+					Algorithm: models.HashAlgoSHA1,
+					Value:     readCheckSum(element.ArtifactId),
+				}
+				modules = append(modules, mod)
+				parentMod.Modules[mod.Name] = &mod
+			}
+		}
+	}
+	return modules, nil
+}
+
+func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 
 	filePath := fpath + "/pom.xml"
@@ -154,28 +250,8 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 		return modules, err
 	}
 
-	dependencyList, err := getDependencyList()
-	if err != nil {
-		fmt.Println("error in getting mvn dependency list and parsing it")
-		return modules, err
-	}
-
-	mod := convertMavenPackageToModule(project)
-	modules = append(modules, mod)
-
-	// iterate over Modules
-	for _, module := range project.Modules {
-		var mod models.Module
-		mod.Name = module
-		mod.Modules = map[string]*models.Module{}
-		// set package version as module version
-		mod.Version = project.Version
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(module),
-		}
-		modules = append(modules, mod)
-	}
+	parentMod := convertMavenPackageToModule(project)
+	modules = append(modules, parentMod)
 
 	// iterate over dependencyManagement
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
@@ -191,6 +267,7 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 			Value:     readCheckSum(dependencyManagement.ArtifactId),
 		}
 		modules = append(modules, mod)
+		parentMod.Modules[mod.Name] = &mod
 	}
 
 	// iterate over dependencies
@@ -204,6 +281,13 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 			Value:     readCheckSum(dep.ArtifactId),
 		}
 		modules = append(modules, mod)
+		parentMod.Modules[mod.Name] = &mod
+	}
+
+	dependencyList, err := getDependencyList()
+	if err != nil {
+		fmt.Println("error in getting mvn dependency list and parsing it")
+		return modules, err
 	}
 
 	// Add additional dependency from mvn dependency list to pom.xml dependency list
@@ -239,6 +323,7 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 				Value:     readCheckSum(dependencyItem),
 			}
 			modules = append(modules, mod)
+			parentMod.Modules[mod.Name] = &mod
 		}
 		i++
 	}
@@ -254,6 +339,7 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 			Value:     readCheckSum(plugin.ArtifactId),
 		}
 		modules = append(modules, mod)
+		parentMod.Modules[mod.Name] = &mod
 	}
 
 	// iterate over PluginManagement
@@ -267,6 +353,19 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 			Value:     readCheckSum(plugin.ArtifactId),
 		}
 		modules = append(modules, mod)
+		parentMod.Modules[mod.Name] = &mod
+	}
+
+	if lookForDepenent {
+		// iterate over Modules
+		for _, module := range project.Modules {
+			additionalModules, err := convertPkgModulesToModule(fpath, module, project)
+			if err != nil {
+				// continue reading other module pom.xml file
+				continue
+			}
+			modules = append(modules, additionalModules...)
+		}
 	}
 
 	return modules, nil
