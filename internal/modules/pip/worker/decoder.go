@@ -198,3 +198,12 @@ func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Met
 
 	return nil
 }
+
+type m map[string]Metadata
+
+func MergeMetadataMap(root map[string]Metadata, nonroot map[string]Metadata) map[string]Metadata {
+	for key, value := range root {
+		nonroot[key] = value
+	}
+	return nonroot
+}
