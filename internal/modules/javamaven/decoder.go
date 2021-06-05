@@ -256,6 +256,19 @@ func convertPOMReaderToModules(fpath string) ([]models.Module, error) {
 		modules = append(modules, mod)
 	}
 
+	// iterate over PluginManagement
+	for _, plugin := range project.Build.PluginManagement {
+		var mod models.Module
+		mod.Name = path.Base(plugin.ArtifactId)
+		mod.Version = plugin.Version
+		mod.Modules = map[string]*models.Module{}
+		mod.CheckSum = &models.CheckSum{
+			Algorithm: models.HashAlgoSHA1,
+			Value:     readCheckSum(plugin.ArtifactId),
+		}
+		modules = append(modules, mod)
+	}
+
 	return modules, nil
 }
 

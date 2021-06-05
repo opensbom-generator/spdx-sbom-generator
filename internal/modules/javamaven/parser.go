@@ -38,7 +38,8 @@ type Parent struct {
 
 // Build
 type Build struct {
-	Plugins []Plugin `xml:"plugins>plugin"`
+	Plugins          []Plugin `xml:"plugins>plugin"`
+	PluginManagement []Plugin `xml:"pluginManagement>plugins>plugin"`
 }
 
 // dependency of the project
