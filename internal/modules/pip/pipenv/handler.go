@@ -91,14 +91,26 @@ func (m *pipenv) SetRootModule(path string) error {
 
 // Get Root Module ...
 func (m *pipenv) GetRootModule(path string) (*models.Module, error) {
-	return nil, nil
+	if m.rootModule == nil {
+		module, err := m.fetchRootModule(path)
+		if err != nil {
+			return nil, err
+		}
+		m.rootModule = &module
+	}
+	return m.rootModule, nil
 }
 
 // List Used Modules...
 func (m *pipenv) ListUsedModules(path string) ([]models.Module, error) {
 	var modules []models.Module
+	mod, err := m.GetRootModule(path)
+	if err == nil {
+		modules = append(modules, *mod)
+	}
 	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-	m.metainfo = decoder.ConvertMetadataToModules(false, m.pkgs, &modules)
+	nonroot := decoder.ConvertMetadataToModules(false, m.pkgs, &modules)
+	m.metainfo = worker.MergeMetadataMap(m.metainfo, nonroot)
 	return modules, nil
 }
 
@@ -141,4 +153,35 @@ func (m *pipenv) GetPackageDetails(packageName string) (string, error) {
 	}
 
 	return result, nil
+}
+
+func (m *pipenv) PushRootModuleToVenv() bool {
+	if err := m.buildCmd(InstallRootModuleCmd, m.basepath); err != nil {
+		return false
+	}
+	result, err := m.command.Output()
+	if err == nil && len(result) > 0 {
+		return true
+	}
+	return false
+}
+
+func (m *pipenv) fetchRootModule(path string) (models.Module, error) {
+	var pkgs []worker.Packages
+	var modules []models.Module
+	var rootModuleState bool
+
+	if worker.IsValidRootModule(path) {
+		rootModuleState = m.PushRootModuleToVenv()
+	}
+	if rootModuleState {
+		m.buildCmd(RootModuleCmd, m.basepath)
+		result, err := m.command.Output()
+		if err == nil && len(result) > 0 && worker.IsRequirementMeet(true, result) {
+			pkgs = worker.LoadModules(result)
+		}
+		decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
+		m.metainfo = decoder.ConvertMetadataToModules(true, pkgs, &modules)
+	}
+	return modules[0], nil
 }
