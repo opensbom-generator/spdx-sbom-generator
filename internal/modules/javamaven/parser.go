@@ -117,23 +117,23 @@ type Plugin struct {
 
 func (properties *Properties) UnmarshalXML(decoder *xml.Decoder, startElement xml.StartElement) error {
 	*properties = map[string]string{}
-	for {
+	var token xml.Token
+	var err error
+	token, err = decoder.Token()
+	for err != io.EOF {
 		key := ""
 		value := ""
-		token, err := decoder.Token()
-		// check end of file
-		if err == io.EOF {
-			break
-		}
+
 		switch tokenType := token.(type) {
 		case xml.StartElement:
 			key = tokenType.Name.Local
-			err := decoder.DecodeElement(&value, &startElement)
+			err = decoder.DecodeElement(&value, &startElement)
 			if err != nil {
 				return err
 			}
 			(*properties)[key] = value
 		}
+		token, err = decoder.Token()
 	}
 	return nil
 }

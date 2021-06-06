@@ -329,7 +329,6 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 			modules = append(modules, additionalModules...)
 		}
 	}
-
 	return modules, nil
 }
 
@@ -337,7 +336,7 @@ func getTransitiveDependencyList() (map[string][]string, error) {
 	path := "/tmp/JavaMavenTDTreeOutput.txt"
 	os.Remove(path)
 
-	command := exec.Command("mvn", "dependency:tree", "-DappendOutput=true", "-DoutputFile=/tmp/JavaMavenTDTreeOutput.txt")
+	command := exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile=/tmp/JavaMavenTDTreeOutput.txt")
 	_, err := command.Output()
 	if err != nil {
 		return nil, err
@@ -374,44 +373,40 @@ func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 	return tdList, nil
 }
 
-func isSubPackage(name string) (int, bool) {
-	if strings.HasPrefix(name, "\\-") || strings.HasPrefix(name, "+-") {
-		return 1, true
+func doesDependencyExists(tdList map[string][]string, lData string, val string) bool {
+	for _, item := range tdList[lData] {
+		if item == val {
+			return true
+		}
 	}
-	if strings.Contains(name, "   \\-") || strings.Contains(name, "|  \\- ") {
-		return 2, true
-	}
-	if strings.Contains(name, "  |  \\-") {
-		return 3, true
-	}
-
-	return 0, false
+	return false
 }
 
 func handlePkgs(text []string, tdList map[string][]string) {
 	i := 0
-	var pkgName, subpkg, currentTextVal string
-	subPkgs := make([]string, 0)
+	var pkgName string
+	isEmptyMainPkg := false
 
 	for i < len(text) {
-		level, isTrue := isSubPackage(text[i])
-
-		if !isTrue {
+		if strings.Contains(text[i], "{") {
 			pkgName = strings.Split(text[i], ":")[1]
-			subPkgs = nil
-		} else {
-			subpkg = strings.Split(text[i], ":")[1]
-			if level == 1 {
-				subPkgs = append(subPkgs, subpkg)
-				tdList[pkgName] = subPkgs
-			} else if level == 2 {
-				tdList[currentTextVal] = []string{subpkg}
-			} else if level == 3 {
-				tdList[currentTextVal] = []string{subpkg}
+		} else if strings.Contains(text[i], "->") {
+			lhsData := strings.Split(text[i], "->")[0]
+			rhsData := strings.Split(text[i], "->")[1]
+			lData := strings.Split(lhsData, ":")[1]
+			rData := strings.Split(rhsData, ":")[1]
+
+			// If package name is same, add right hand side dependency
+			if !isEmptyMainPkg && lData == pkgName {
+				tdList[pkgName] = append(tdList[pkgName], rData)
+			} else if !doesDependencyExists(tdList, lData, rData) { // check whether dependency already exists
+				tdList[lData] = append(tdList[lData], rData)
+			}
+		} else if strings.Contains(text[i], "}") {
+			if i == 1 {
+				isEmptyMainPkg = true
 			}
 		}
-		// store previous line item
-		currentTextVal = subpkg
 		i++
 	}
 }
