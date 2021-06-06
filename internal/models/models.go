@@ -3,7 +3,12 @@
 package models
 
 import (
+	"crypto/sha1"
+	"crypto/sha256"
+	"crypto/sha512"
+	"encoding/hex"
 	"fmt"
+	"hash"
 )
 
 // IPlugin ...
@@ -63,11 +68,30 @@ const (
 
 type CheckSum struct {
 	Algorithm HashAlgorithm
+	Content   []byte
 	Value     string
 }
 
 func (c *CheckSum) String() string {
+	if c.Value == "" {
+		c.Value = c.calculateCheckSum(c.Content)
+	}
+
 	return fmt.Sprintf("%v: %s", c.Algorithm, c.Value)
+}
+
+func (c *CheckSum) calculateCheckSum(content []byte) string {
+	var h hash.Hash
+	switch c.Algorithm {
+	case HashAlgoSHA256:
+		h = sha256.New()
+	case HashAlgoSHA512:
+		h = sha512.New()
+	default:
+		h = sha1.New()
+	}
+	h.Write(content)
+	return hex.EncodeToString(h.Sum(nil))
 }
 
 // HashAlgorithm ...
