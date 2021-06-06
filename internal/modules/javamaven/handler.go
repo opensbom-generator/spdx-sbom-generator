@@ -125,10 +125,10 @@ func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
 		return nil, err1
 	}
 
-	if err := buildDependenciesGraph(modules, tdList); err != nil {
+	err = buildDependenciesGraph(modules, tdList)
+	if err != nil {
 		return nil, errBuildlingModuleDependencies
 	}
-
 	return modules, nil
 }
 

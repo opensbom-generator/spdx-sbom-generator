@@ -74,7 +74,6 @@ func stdOutCapture() func() (string, error) {
 func getDependencyList() ([]string, error) {
 	done := stdOutCapture()
 
-	// TODO add error handling
 	cmd1 := exec.Command("mvn", "-o", "dependency:list")
 	cmd2 := exec.Command("grep", ":.*:.*:.*")
 	cmd3 := exec.Command("cut", "-d]", "-f2-")
@@ -103,23 +102,18 @@ func getDependencyList() ([]string, error) {
 
 func convertMavenPackageToModule(project MavenPomProject) models.Module {
 	// package to module
-	var mod models.Module
+	var name string
 	if len(project.Name) == 0 {
-		mod.Name = strings.Replace(project.ArtifactId, " ", "-", -1)
+		name = strings.Replace(project.ArtifactId, " ", "-", -1)
 	} else {
-		mod.Name = strings.Replace(project.Name, " ", "-", -1)
+		name = strings.Replace(project.Name, " ", "-", -1)
 	}
-	mod.Version = project.Version
+	mod := createModule(name, project.Version)
 	mod.Root = true
 	updatePackageSuppier(mod, project.Developers)
 	updatePackageDownloadLocation(mod, project.DistributionManagement)
 	if len(project.Url) > 0 {
 		mod.PackageHomePage = project.Url
-	}
-	mod.Modules = map[string]*models.Module{}
-	mod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Value:     readCheckSum(mod.Path),
 	}
 
 	licensePkg, err := helper.GetLicenses(".")
@@ -151,6 +145,18 @@ func FindInPlugins(slice []Plugin, val string) (int, bool) {
 	return -1, false
 }
 
+func createModule(name string, version string) models.Module {
+	var mod models.Module
+	mod.Name = name
+	mod.Version = version
+	mod.Modules = map[string]*models.Module{}
+	mod.CheckSum = &models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Value:     readCheckSum(name),
+	}
+	return mod
+}
+
 // If parent pom.xml has modules information in it, go to individual modules pom.xml
 func convertPkgModulesToModule(fpath string, moduleName string, parentPom MavenPomProject) ([]models.Module, error) {
 	filePath := fpath + "/" + moduleName + "/pom.xml"
@@ -172,19 +178,14 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom MavenP
 		return []models.Module{}, err
 	}
 
-	var parentMod models.Module
-	parentMod.Name = project.Name
-	parentMod.Modules = map[string]*models.Module{}
+	var version string
 	if len(project.Version) == 0 {
 		// set package version as module version
-		parentMod.Version = parentPom.Version
+		version = parentPom.Version
 	} else {
-		parentMod.Version = project.Version
+		version = project.Version
 	}
-	parentMod.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Value:     readCheckSum(project.Name),
-	}
+	parentMod := createModule(project.Name, version)
 	modules = append(modules, parentMod)
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
@@ -193,14 +194,8 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom MavenP
 		if !found {
 			_, found1 := FindInDependency(parentPom.DependencyManagement.Dependencies, element.ArtifactId)
 			if !found1 {
-				var mod models.Module
-				mod.Name = path.Base(element.ArtifactId)
-				mod.Version = element.Version
-				mod.Modules = map[string]*models.Module{}
-				mod.CheckSum = &models.CheckSum{
-					Algorithm: models.HashAlgoSHA1,
-					Value:     readCheckSum(element.ArtifactId),
-				}
+				name := path.Base(element.ArtifactId)
+				mod := createModule(name, element.Version)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
@@ -213,14 +208,8 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom MavenP
 		if !found {
 			_, found1 := FindInPlugins(parentPom.Build.PluginManagement, element.ArtifactId)
 			if !found1 {
-				var mod models.Module
-				mod.Name = path.Base(element.ArtifactId)
-				mod.Version = element.Version
-				mod.Modules = map[string]*models.Module{}
-				mod.CheckSum = &models.CheckSum{
-					Algorithm: models.HashAlgoSHA1,
-					Value:     readCheckSum(element.ArtifactId),
-				}
+				name := path.Base(element.ArtifactId)
+				mod := createModule(name, element.Version)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
@@ -255,31 +244,21 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 
 	// iterate over dependencyManagement
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
-		var mod models.Module
-		mod.Name = path.Base(dependencyManagement.ArtifactId)
+		var modVersion string
 		if len(project.Properties) > 0 {
 			version := strings.TrimLeft(strings.TrimRight(dependencyManagement.Version, "}"), "${")
-			mod.Version = project.Properties[version]
+			modVersion = project.Properties[version]
 		}
-		mod.Modules = map[string]*models.Module{}
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(dependencyManagement.ArtifactId),
-		}
+		name := path.Base(dependencyManagement.ArtifactId)
+		mod := createModule(name, modVersion)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
 
 	// iterate over dependencies
 	for _, dep := range project.Dependencies {
-		var mod models.Module
-		mod.Name = path.Base(dep.ArtifactId)
-		mod.Version = dep.Version
-		mod.Modules = map[string]*models.Module{}
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(dep.ArtifactId),
-		}
+		name := path.Base(dep.ArtifactId)
+		mod := createModule(name, dep.Version)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
@@ -314,14 +293,9 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 		}
 
 		if !found {
-			var mod models.Module
-			mod.Name = path.Base(dependencyItem)
-			mod.Version = strings.Split(dependencyList[i], ":")[3]
-			mod.Modules = map[string]*models.Module{}
-			mod.CheckSum = &models.CheckSum{
-				Algorithm: models.HashAlgoSHA1,
-				Value:     readCheckSum(dependencyItem),
-			}
+			name := path.Base(dependencyItem)
+			version := strings.Split(dependencyList[i], ":")[3]
+			mod := createModule(name, version)
 			modules = append(modules, mod)
 			parentMod.Modules[mod.Name] = &mod
 		}
@@ -330,28 +304,16 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 
 	// iterate over Plugins
 	for _, plugin := range project.Build.Plugins {
-		var mod models.Module
-		mod.Name = path.Base(plugin.ArtifactId)
-		mod.Version = plugin.Version
-		mod.Modules = map[string]*models.Module{}
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(plugin.ArtifactId),
-		}
+		name := path.Base(plugin.ArtifactId)
+		mod := createModule(name, plugin.Version)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
 
 	// iterate over PluginManagement
 	for _, plugin := range project.Build.PluginManagement {
-		var mod models.Module
-		mod.Name = path.Base(plugin.ArtifactId)
-		mod.Version = plugin.Version
-		mod.Modules = map[string]*models.Module{}
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(plugin.ArtifactId),
-		}
+		name := path.Base(plugin.ArtifactId)
+		mod := createModule(name, plugin.Version)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
@@ -417,7 +379,10 @@ func isSubPackage(name string) (int, bool) {
 		return 1, true
 	} else if strings.Contains(name, "   \\-") || strings.Contains(name, "|  \\- ") {
 		return 2, true
+	} else if strings.Contains(name, "  |  \\-") {
+		return 3, true
 	}
+
 	return 0, false
 }
 
@@ -438,6 +403,8 @@ func handlePkgs(text []string, tdList map[string][]string) {
 				subPkgs = append(subPkgs, subpkg)
 				tdList[pkgName] = subPkgs
 			} else if level == 2 {
+				tdList[currentTextVal] = []string{subpkg}
+			} else if level == 3 {
 				tdList[currentTextVal] = []string{subpkg}
 			}
 		}
