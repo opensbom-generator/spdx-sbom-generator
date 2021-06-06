@@ -343,9 +343,9 @@ func getTransitiveDependencyList() (map[string][]string, error) {
 		return nil, err
 	}
 
-	tdList, err1 := readAndgetTransitiveDependencyList()
-	if err1 != nil {
-		return nil, err1
+	tdList, err := readAndgetTransitiveDependencyList()
+	if err != nil {
+		return nil, err
 	}
 	return tdList, nil
 }
@@ -377,9 +377,11 @@ func readAndgetTransitiveDependencyList() (map[string][]string, error) {
 func isSubPackage(name string) (int, bool) {
 	if strings.HasPrefix(name, "\\-") || strings.HasPrefix(name, "+-") {
 		return 1, true
-	} else if strings.Contains(name, "   \\-") || strings.Contains(name, "|  \\- ") {
+	}
+	if strings.Contains(name, "   \\-") || strings.Contains(name, "|  \\- ") {
 		return 2, true
-	} else if strings.Contains(name, "  |  \\-") {
+	}
+	if strings.Contains(name, "  |  \\-") {
 		return 3, true
 	}
 

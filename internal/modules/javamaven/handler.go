@@ -66,9 +66,12 @@ func (m *javamaven) HasModulesInstalled(path string) error {
 	// TODO: How to verify is java project is build
 	// Enforcing mvn path to be set in PATH variable
 	fname, err := exec.LookPath("mvn")
-	if err == nil {
-		fname, err = filepath.Abs(fname)
+	if err != nil {
+		log.Println(err)
+		return err
 	}
+
+	fname, err = filepath.Abs(fname)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -79,7 +82,8 @@ func (m *javamaven) HasModulesInstalled(path string) error {
 
 // GetVersion...
 func (m *javamaven) GetVersion() (string, error) {
-	if err := m.buildCmd(VersionCmd, "."); err != nil {
+	err := m.buildCmd(VersionCmd, ".")
+	if err != nil {
 		return "", err
 	}
 
@@ -119,10 +123,10 @@ func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
 		return nil, err
 	}
 
-	tdList, err1 := getTransitiveDependencyList()
-	if err1 != nil {
+	tdList, err := getTransitiveDependencyList()
+	if err != nil {
 		fmt.Println("error in getting mvn transitive dependency tree and parsing it")
-		return nil, err1
+		return nil, err
 	}
 
 	err = buildDependenciesGraph(modules, tdList)
