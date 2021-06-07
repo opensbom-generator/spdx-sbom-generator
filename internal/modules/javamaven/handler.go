@@ -165,7 +165,6 @@ func (m *javamaven) buildCmd(cmd command, path string) error {
 	return command.Build()
 }
 
-// this is just a test
 func readCheckSum(content string) string {
 	h := sha1.New()
 	h.Write([]byte(content))
