@@ -9,7 +9,7 @@ import (
 type command string
 
 // assume each project is using python3 default
-var (
+const (
 	VersionCmd           command = "python3 -V"                                              // generic to check version
 	ModulesCmd           command = "bin/python -m pip list --exclude-editable --format json" // venv is local
 	MetadataCmd          command = "bin/python -m pip show {PACKAGE}"
