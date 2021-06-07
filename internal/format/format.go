@@ -130,7 +130,7 @@ func buildDocument(module models.Module) (*models.Document, error) {
 		SPDXVersion:       "SPDX-2.2",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
-		DocumentName:      module.Name,
+		DocumentName:      buildName(module.Name, module.Version),
 		DocumentNamespace: buildNamespace(module.Name, module.Version),
 		Creator:           fmt.Sprintf("Tool: spdx-sbom-generator-%s", version),
 		Created:           time.Now().UTC().Format(time.RFC3339),
@@ -254,4 +254,13 @@ func buildNamespace(name, version string) string {
 	}
 
 	return fmt.Sprintf("http://spdx.org/spdxpackages/%s-%s-%s", name, version, uuid)
+}
+
+func buildName(name, version string) string {
+
+	if version == "" {
+		return name
+	}
+
+	return fmt.Sprintf("%s-%s", name, version)
 }

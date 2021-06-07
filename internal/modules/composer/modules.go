@@ -46,7 +46,7 @@ func convertProjectInfoToModule(project ComposerProjectInfo, path string) (model
 	version := normalizePackageVersion(project.Versions[0])
 	packageUrl := genComposerUrl(project.Name, version)
 	checkSumValue := readCheckSum(packageUrl)
-	name := getName(project.Name, version)
+	name := getName(project.Name)
 	module := models.Module{
 		Name:       name,
 		Version:    version,
@@ -97,7 +97,7 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 		moduleIndex[module.Name] = idx
 	}
 
-	rootLevelName := getName(treeComponent.Name, "")
+	rootLevelName := getName(treeComponent.Name)
 	_, ok := moduleMap[rootLevelName]
 	if !ok {
 		return false
@@ -114,7 +114,7 @@ func addTreeComponentsToModule(treeComponent ComposerTreeComponent, modules []mo
 	}
 
 	for _, subTreeComponent := range requires {
-		childLevelName := getName(subTreeComponent.Name, "")
+		childLevelName := getName(subTreeComponent.Name)
 		childLevelModule, ok := moduleMap[childLevelName]
 		if !ok {
 			continue
@@ -199,7 +199,7 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 
 	module := models.Module{
 		Version:    normalizePackageVersion(dep.Version),
-		Name:       getName(dep.Name, ""),
+		Name:       getName(dep.Name),
 		Root:       false,
 		PackageURL: genUrlFromComposerPackage(dep),
 		CheckSum: &models.CheckSum{
@@ -236,7 +236,7 @@ func getAuthor(dep ComposerLockPackage) models.SupplierContact {
 	return pckAuthor
 }
 
-func getName(moduleName string, version string) string {
+func getName(moduleName string) string {
 	var name string
 
 	groupNames := strings.Split(moduleName, "/")
@@ -247,11 +247,7 @@ func getName(moduleName string, version string) string {
 		name = groupNames[0]
 	}
 
-	if version == "" {
-		return name
-	}
-
-	return name + "-" + version
+	return name
 }
 
 func genUrlFromComposerPackage(dep ComposerLockPackage) string {
