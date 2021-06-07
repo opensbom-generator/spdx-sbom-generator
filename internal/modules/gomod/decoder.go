@@ -8,11 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
+
+const vendorFolder = "vendor"
 
 var errFailedtoReadMod = errors.New("Failed to read go.mod line")
 
@@ -78,13 +82,13 @@ func (d *Decoder) ConvertPlainReaderToModules(modules []models.Module) error {
 }
 
 // ConvertJSONReaderToModules ...
-func (d *Decoder) ConvertJSONReaderToModules(modules *[]models.Module) error {
+func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]models.Module) error {
 	decoder := json.NewDecoder(d.reader)
-	isRoot := true
+	pathMap := map[string]bool{}
 	for {
 		//var m models.Module
-		var m MOD
-		if err := decoder.Decode(&m); err != nil {
+		var j JSONOutput
+		if err := decoder.Decode(&j); err != nil {
 			if err == io.EOF {
 				break
 			}
@@ -92,31 +96,54 @@ func (d *Decoder) ConvertJSONReaderToModules(modules *[]models.Module) error {
 			return err
 		}
 
-		md, err := buildModule(&m)
+		// we will only use Module for now
+		if j.Module == nil {
+			continue
+		}
+
+		if _, ok := pathMap[j.Module.Path]; ok {
+			continue
+		}
+
+		pathMap[j.Module.Path] = true
+		md, err := buildModule(j.Module)
 		if err != nil {
 			return err
 		}
 
-		md.Root = isRoot
-		isRoot = false
+		if j.Module.Path == path {
+			md.Root = true
+		}
 		*modules = append(*modules, *md)
 	}
 
 	return nil
 }
 
-func buildModule(m *MOD) (*models.Module, error) {
-	var module models.Module
-	module.Name = helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir)
-	module.Version = m.Version
-	module.LocalPath = m.Dir
-	module.PackageURL = m.Path
-	contentCheckSum := helper.BuildManifestContent(m.Dir)
-	module.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA256,
-		Content:   contentCheckSum,
+// ConvertJSONReaderToSingleModule ...
+func (d *Decoder) ConvertJSONReaderToSingleModule(module *models.Module) error {
+	err := json.NewDecoder(d.reader).Decode(module)
+	if err == io.EOF {
+		return nil
 	}
-	licensePkg, err := helper.GetLicenses(m.Dir)
+
+	return err
+}
+
+func buildModule(m *Module) (*models.Module, error) {
+	localDir := buildLocalPath(m.Path, m.Dir)
+	contentCheckSum := helper.BuildManifestContent(localDir)
+	module := models.Module{
+		Name:       helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),
+		Version:    m.Version,
+		LocalPath:  localDir,
+		PackageURL: m.Path,
+		CheckSum: &models.CheckSum{
+			Algorithm: models.HashAlgoSHA256,
+			Content:   contentCheckSum,
+		},
+	}
+	licensePkg, err := helper.GetLicenses(localDir)
 	if err == nil {
 		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
@@ -140,4 +167,18 @@ func readMod(token string) ([]string, error) {
 
 	return mods, nil
 
+}
+
+func buildLocalPath(path, dir string) string {
+	cd, err := os.Getwd()
+	if err != nil {
+		return dir
+	}
+
+	localPath := filepath.Join(cd, vendorFolder, path)
+	if helper.Exists(localPath) {
+		return localPath
+	}
+
+	return dir
 }
