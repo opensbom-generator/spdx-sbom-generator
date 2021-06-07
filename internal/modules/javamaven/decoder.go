@@ -107,13 +107,27 @@ func getDependencyList() ([]string, error) {
 
 func convertMavenPackageToModule(project gopom.Project) models.Module {
 	// package to module
-	var name string
+	var modName string
 	if len(project.Name) == 0 {
-		name = strings.Replace(project.ArtifactID, " ", "-", -1)
+		modName = strings.Replace(project.ArtifactID, " ", "-", -1)
 	} else {
-		name = strings.Replace(project.Name, " ", "-", -1)
+		modName = project.Name
+		if strings.HasPrefix(project.Name, "$") {
+			name := strings.TrimLeft(strings.TrimRight(project.Name, "}"), "${")
+			if strings.HasPrefix(name, "project") {
+				modName = project.Parent.ArtifactID
+			}
+		}
+		modName = strings.Replace(modName, " ", "-", -1)
 	}
-	mod := createModule(name, project.Version)
+
+	modVersion := project.Version
+	if strings.HasPrefix(project.Version, "$") {
+		version := strings.TrimLeft(strings.TrimRight(project.Version, "}"), "${")
+		modVersion = project.Properties.Entries[version]
+	}
+
+	mod := createModule(modName, modVersion)
 	mod.Root = true
 	updatePackageSuppier(mod, project.Developers)
 	updatePackageDownloadLocation(mod, project.DistributionManagement)
