@@ -116,8 +116,8 @@ func GetCopyright(content string) string {
 		if strings.Contains(strings.ToLower(tokens[0]), "copyright") {
 			return line
 		}
-		for  _,l :=  range lines {
-			if strings.HasPrefix( strings.TrimSpace(strings.ToLower(l)),"copyright") {
+		for _, l := range lines {
+			if strings.HasPrefix(strings.TrimSpace(strings.ToLower(l)), "copyright") {
 				return l
 			}
 
