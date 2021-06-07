@@ -160,11 +160,15 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 			pathExtension := filepath.Ext(path)
 			if strings.ToLower(pathExtension) == m.metadata.Manifest[i] {
 				if helper.Exists(path) {
-					// TODO: WIP for root module
 					fileName := filepath.Base(path)
 					rootProjectName := fileName[0 : len(fileName)-len(pathExtension)]
 					module.Name = rootProjectName
+					module.Version = "0.0.0" // default version for root
 					module.Root = true
+					module.CheckSum = &models.CheckSum{
+						Algorithm: models.HashAlgoSHA256,
+						Content:   []byte(fmt.Sprintf("%s%s", module.Name, module.Version)),
+					}
 				}
 			}
 		}
@@ -183,6 +187,10 @@ func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 	// no projects found
 	if len(projectPaths) == 0 {
 		return modules, errDependenciesNotFound
+	}
+	// set root module
+	if m.rootModule != nil {
+		modules = append(modules, *m.rootModule)
 	}
 	modulePath := filepath.Join(assetDirectoryJoinPath, assetModuleFile)
 	for _, project := range projectPaths {
@@ -203,7 +211,7 @@ func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 			modules = append(modules, packages...)
 		}
 	}
-	if len(modules) == 0 {
+	if len(modules) == 0 || len(modules) == 1 {
 		return modules, errFailedToConvertModules
 	}
 	return modules, nil
@@ -244,11 +252,10 @@ func parsePackagesConfigModules(modulePath string) ([]models.Module, error) {
 		return modules, err
 	}
 	for _, modulePackage := range moduleData.Packages {
-		module := models.Module{
-			Name:    modulePackage.ID,
-			Version: modulePackage.Version,
+		module, err := buildModule(modulePackage.ID, modulePackage.Version, nil)
+		if err != nil {
+			return modules, err
 		}
-		buildModule(&module)
 		modules = append(modules, module)
 	}
 	return modules, nil
@@ -283,7 +290,7 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 						packageInfo := info.(map[string]interface{})
 						packageName := packageArray[0]
 						packageVersion := packageArray[1]
-						dependencies := map[string]*models.Module{}
+						dependencies := map[string]string{}
 						// get the dependency packages
 						dependencyModules := packageInfo[assetDependencies]
 						if dependencyModules != nil {
@@ -291,19 +298,14 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 							for dName, dInfo := range dependencyPackages {
 								dVersion, ok := dInfo.(string)
 								if ok {
-									dependencies[dName] = &models.Module{
-										Name:    dName,
-										Version: dVersion,
-									}
+									dependencies[dName] = dVersion
 								}
 							}
 						}
-						module := models.Module{
-							Name:    packageName,
-							Version: packageVersion,
-							Modules: dependencies,
+						module, err := buildModule(packageName, packageVersion, dependencies)
+						if err != nil {
+							return modules, err
 						}
-						buildModule(&module)
 						modules = append(modules, module)
 					}
 				}
@@ -338,29 +340,43 @@ func getProjectPaths(path string) ([]string, error) {
 }
 
 // buildModule .. set the properties
-func buildModule(module *models.Module) error {
+func buildModule(name string, version string, dependencies map[string]string) (models.Module, error) {
+	var module models.Module
+	module.Name = name
+	module.Version = version
+	//get the hash checksum
+	checkSum, err := getHashCheckSum(name, version)
+	if err != nil {
+		return module, err
+	}
+	module.CheckSum = checkSum
 	// get nuget spec file details
-	nuSpecFile, err := getNugetSpec(module.Name, module.Version)
+	nuSpecFile, err := getNugetSpec(name, version)
 	if err != nil {
-		return err
-	}
-	// get the hash checksum
-	checkSum, err := getHashCheckSum(module.Name, module.Version)
-	if err != nil {
-		return err
-	}
-	if checkSum != nil {
-		module.CheckSum = checkSum
+		return module, err
 	}
 	if nuSpecFile != nil {
-		module.PackageHomePage = nuSpecFile.Meta.ProjectURL
-		module.LicenseDeclared = nuSpecFile.Meta.LicenseURL
+		module.PackageURL = nuSpecFile.Meta.ProjectURL
+		module.LicenseConcluded = nuSpecFile.Meta.LicenseURL
 		module.Copyright = nuSpecFile.Meta.Copyright
-		module.CommentsLicense = nuSpecFile.Meta.License.Text
 		module.Supplier.Name = nuSpecFile.Meta.Owners
 		// TODO -- identify other properties
 	}
-	return nil
+	// set dependencies
+	dependencyModules := map[string]*models.Module{}
+	for dName, dVersion := range dependencies {
+		checkSum, err := getHashCheckSum(name, version)
+		if err != nil {
+			return module, err
+		}
+		dependencyModules[dName] = &models.Module{
+			Name:     dName,
+			Version:  dVersion,
+			CheckSum: checkSum,
+		}
+	}
+	module.Modules = dependencyModules
+	return module, nil
 }
 
 // getCachedSpecFilename
@@ -449,8 +465,8 @@ func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
 	}
 	if fileData != nil {
 		return &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(fileData),
+			Algorithm: models.HashAlgoSHA256,
+			Content:   fileData,
 		}, nil
 	}
 	nugetUrlPrefix := fmt.Sprintf("%s%s/%s/%s", nugetBaseUrl, name, version, name)
@@ -472,8 +488,8 @@ func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
 	}
 	if body != nil {
 		return &models.CheckSum{
-			Algorithm: models.HashAlgoSHA1,
-			Value:     readCheckSum(body),
+			Algorithm: models.HashAlgoSHA256,
+			Content:   fileData,
 		}, nil
 	}
 	return nil, nil

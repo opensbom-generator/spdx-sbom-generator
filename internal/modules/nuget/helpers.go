@@ -3,8 +3,6 @@
 package nuget
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,12 +13,6 @@ func genUrl(packageName string, packageVersion string) string {
 		return ""
 	}
 	return fmt.Sprintf("pkg:nuget/%s@%s", packageName, packageVersion)
-}
-
-func readCheckSum(content []byte) string {
-	h := sha1.New()
-	h.Write(content)
-	return hex.EncodeToString(h.Sum(nil))
 }
 
 func getHttpResponseWithHeaders(url string, headers map[string]string) (*http.Response, error) {
