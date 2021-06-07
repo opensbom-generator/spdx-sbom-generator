@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"spdx-sbom-generator/internal/licenses"
 	"spdx-sbom-generator/internal/models"
 
@@ -18,8 +19,41 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const copyrightLookup = "copyright"
+
+// copyright matching level of prefernece
+const (
+	matchLevel1 = iota
+	matchLevel2
+	matchLevel3
+)
+
+var re *regexp.Regexp
+
+func init() {
+	re = regexp.MustCompile(`^\d{4}$|^\d{4}-\d{4}$|^\(c\)$`)
+}
+
 type FileInfo struct {
 	Path string `json:"path,omitempty"`
+}
+
+type copyrightMap map[int]string
+
+func (c copyrightMap) get() string {
+	if c[matchLevel1] != "" {
+		return c[matchLevel1]
+	}
+
+	if c[matchLevel2] != "" {
+		return c[matchLevel2]
+	}
+
+	if c[matchLevel3] != "" {
+		return c[matchLevel3]
+	}
+
+	return ""
 }
 
 // Exists ...
@@ -97,12 +131,17 @@ func extractLicenseContent(path, filename string) string {
 	return string(bytes)
 }
 
-// GetCopyright parses the license file found at node_modules/{PackageName}
+// GetCopyright parses the license file found at plugin module or vendor folder
 // Extract the text found starting with the keyword 'Copyright (c)' and until the newline
 func GetCopyright(content string) string {
+	cr := make(copyrightMap, 0)
 	// split by paragraph
 	paragraphs := strings.Split(content, "\n\n")
 	for _, p := range paragraphs {
+		if !strings.Contains(strings.ToLower(p), copyrightLookup) {
+			continue
+		}
+
 		lines := strings.Split(p, "\n")
 		if len(lines) == 0 {
 			continue
@@ -113,18 +152,23 @@ func GetCopyright(content string) string {
 		if len(tokens) == 0 {
 			continue
 		}
-		if strings.Contains(strings.ToLower(tokens[0]), "copyright") {
-			return line
-		}
-		for _, l := range lines {
-			if strings.HasPrefix(strings.TrimSpace(strings.ToLower(l)), "copyright") {
-				return l
-			}
 
+		if strings.EqualFold(copyrightLookup, tokens[0]) {
+			cr[matchLevel2] = line
+			if re.MatchString(tokens[1]) {
+				cr[matchLevel1] = line
+			}
+		}
+
+		for _, l := range lines {
+			if strings.HasPrefix(strings.TrimSpace(strings.ToLower(l)), copyrightLookup) {
+				cr[matchLevel3] = strings.TrimSpace(l)
+				break
+			}
 		}
 	}
 
-	return ""
+	return cr.get()
 }
 
 // BuildManifestContent builds a content with directory tree
