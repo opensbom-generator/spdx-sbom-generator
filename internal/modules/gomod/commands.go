@@ -11,7 +11,7 @@ type command string
 var (
 	VersionCmd     command = "go version"
 	RootModuleCmd  command = "go list -mod readonly -json -m"
-	ModulesCmd     command = "go list -mod readonly -json -m all"
+	ModulesCmd     command = "go list -deps -json ./..."
 	GraphModuleCmd command = "go mod graph"
 )
 

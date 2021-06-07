@@ -13,3 +13,4 @@ var errDependenciesNotFound errType = errors.New("Unable to generate SPDX file, 
 var errBuildlingModuleDependencies errType = errors.New("Error building modules dependencies")
 var errNoGoCommand errType = errors.New("No Golang command")
 var errFailedToConvertModules errType = errors.New("Failed to convert modules")
+var errNoMainModule errType = errors.New("No main module found")
