@@ -134,8 +134,8 @@ func getGemRootModule(path string) (*models.Module, error) {
 	rootModule.Version = spec.Version
 	rootModule.Root = true
 	rootModule.Path = spec.GemLocationDir
-	rootModule.PackageHomePage = spec.HomePage
-	rootModule.PackageURL = spec.HomePage
+	rootModule.PackageHomePage = cleanURI(spec.HomePage)
+	rootModule.PackageURL = cleanURI(spec.HomePage)
 	rootModule.CheckSum = &models.CheckSum{
 		Algorithm: models.HashAlgoSHA256,
 		Value:     spec.Checksum,
@@ -238,8 +238,8 @@ func parseSpec(spec Spec) models.Module {
 		Name:            spec.Name,
 		Version:         spec.Version,
 		Root:            false,
-		PackageHomePage: spec.HomePage,
-		PackageURL:      spec.HomePage,
+		PackageHomePage: cleanURI(spec.HomePage),
+		PackageURL:      cleanURI(spec.HomePage),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA256,
 			Value:     spec.Checksum,
@@ -445,7 +445,7 @@ func ReduceSpec(row, column string, spec *Spec) {
 		fallthrough
 	case "spec.homepage":
 		_, value := strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[0], " ", ""), strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[1], " ", "")
-		spec.HomePage = unfreeze(value)
+		spec.HomePage = cleanURI(unfreeze(value))
 	case "s.authors":
 		fallthrough
 	case "spec.authors":
@@ -1208,6 +1208,13 @@ func cleanName(name string) string {
 	s = strings.ReplaceAll(s, "\"", "")
 	s = strings.ReplaceAll(s, "“", "")
 	return s
+}
+
+// Sanitize URI
+func cleanURI(url string) string {
+	u := strings.ReplaceAll(url,"=","")
+	u = strings.ReplaceAll(u,"\"","")
+	return u
 }
 
 // Get package version
