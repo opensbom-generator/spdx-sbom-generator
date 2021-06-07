@@ -217,6 +217,11 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
 		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 		module.CommentsLicense = licensePkg.Comments
+	} else if len(dep.License) > 0 {
+		// INFO: is Error, use license from composer.lock
+		licenseValue := dep.License[0]
+		module.LicenseDeclared = licenseValue
+		module.LicenseConcluded = licenseValue
 	}
 
 	return module
