@@ -25,16 +25,13 @@ type NugetSpec struct {
 	Name  xml.Name `xml:"package"`
 	Xmlns string   `xml:"xmlns,attr,omitempty"`
 	Meta  struct {
-		ID         string `xml:"id"`
-		Version    string `xml:"version"`
-		Title      string `xml:"title,omitempty"`
-		Authors    string `xml:"authors"`
-		Owners     string `xml:"owners,omitempty"`
-		LicenseURL string `xml:"licenseUrl,omitempty"`
-		License    struct {
-			Text string `xml:",chardata"`
-			Type string `xml:"type,attr"`
-		} `xml:"license,omitempty"`
+		ID               string `xml:"id"`
+		Version          string `xml:"version"`
+		Title            string `xml:"title,omitempty"`
+		Authors          string `xml:"authors"`
+		Owners           string `xml:"owners,omitempty"`
+		LicenseURL       string `xml:"licenseUrl,omitempty"`
+		License          string `xml:"license"`
 		ProjectURL       string `xml:"projectUrl,omitempty"`
 		IconURL          string `xml:"iconUrl,omitempty"`
 		ReqLicenseAccept bool   `xml:"requireLicenseAcceptance"`

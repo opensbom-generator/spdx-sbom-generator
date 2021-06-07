@@ -357,10 +357,23 @@ func buildModule(name string, version string, dependencies map[string]string) (m
 	}
 	if nuSpecFile != nil {
 		module.PackageURL = nuSpecFile.Meta.ProjectURL
-		module.LicenseConcluded = nuSpecFile.Meta.LicenseURL
-		module.Copyright = nuSpecFile.Meta.Copyright
-		module.Supplier.Name = nuSpecFile.Meta.Owners
-		// TODO -- identify other properties
+		if nuSpecFile.Meta.License != "" {
+			module.LicenseDeclared = helper.BuildLicenseDeclared(nuSpecFile.Meta.License)
+			module.LicenseConcluded = helper.BuildLicenseConcluded(nuSpecFile.Meta.License)
+			if !helper.LicenseSPDXExists(nuSpecFile.Meta.License) {
+				module.OtherLicense = append(module.OtherLicense, &models.License{
+					ID:   fmt.Sprintf("LicenseRef-%s", nuSpecFile.Meta.License),
+					Name: fmt.Sprintf("LicenseRef-%s", nuSpecFile.Meta.License),
+				})
+			}
+		}
+		if nuSpecFile.Meta.Copyright != "" {
+			module.Copyright = helper.GetCopyright(nuSpecFile.Meta.Copyright)
+		}
+		module.Supplier.Name = nuSpecFile.Meta.Authors
+		if module.Supplier.Name != "" {
+			module.Supplier.Name = nuSpecFile.Meta.Owners
+		}
 	}
 	// set dependencies
 	dependencyModules := map[string]*models.Module{}
