@@ -44,7 +44,7 @@ func SetMetadataValues(matadata *Metadata, datamap map[string]string) {
 }
 
 func ParseMetadata(metadata *Metadata, packagedetails string) {
-	pkgDataMap := make(map[string]string, 9)
+	pkgDataMap := make(map[string]string, 10)
 	resultlines := strings.Split(packagedetails, "\n")
 
 	for _, resline := range resultlines {
@@ -87,6 +87,7 @@ func (d *MetadataDecoder) BuildMetadata(packagename string) Metadata {
 	metadata.LocalPath = BuildLocalPath(metadata.Location, metadata.Name)
 	metadata.LicensePath = BuildLicenseUrl(metadata.Location, metadata.Name, metadata.Version)
 	metadata.MetadataPath = BuildMetadataPath(metadata.Location, metadata.Name, metadata.Version)
+	metadata.WheelPath = BuildWheelPath(metadata.Location, metadata.Name, metadata.Version)
 
 	return metadata
 }
@@ -104,7 +105,6 @@ func (d *MetadataDecoder) BuildModule(root bool, metadata Metadata) models.Modul
 	}
 
 	// Prepare SupplierContact
-	// Todo : How to determine if this is person or organization
 	if len(metadata.AuthorEmail) > 0 {
 		module.Supplier = models.SupplierContact{
 			Type:  contactType,
@@ -114,12 +114,7 @@ func (d *MetadataDecoder) BuildModule(root bool, metadata Metadata) models.Modul
 	}
 
 	module.PackageURL = metadata.PackageURL
-
-	// Todo : Get correct checksum
-	module.CheckSum = &models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Value:     GetCheckSum(metadata.Name),
-	}
+	module.CheckSum = getPackageChecksum(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
 
 	licensePkg, err := helper.GetLicenses(metadata.DistInfoPath)
 	if err == nil {
@@ -135,10 +130,7 @@ func (d *MetadataDecoder) BuildModule(root bool, metadata Metadata) models.Modul
 	module.OtherLicense = []*models.License{} // How to get this
 	module.PackageComment = metadata.Description
 
-	// Python CLI command lists all non-root packages.
 	module.Root = root
-
-	// Todo : Nee to build sub-module details
 	module.Modules = map[string]*models.Module{}
 
 	return module

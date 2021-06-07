@@ -3,8 +3,6 @@
 package worker
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"path"
 	"strings"
@@ -15,6 +13,7 @@ const PackageUrl = "pypi.org/pypi"
 const PackageDistInfoPath = ".dist-info"
 const PackageLicenseFile = ".dist-info/LICENSE"
 const PackageMetadataFie = ".dist-info/METADATA"
+const PackageWheelFie = ".dist-info/WHEEL"
 
 // NOASSERTION constant
 const NoAssertion = "NOASSERTION"
@@ -51,6 +50,7 @@ type Metadata struct {
 	DistInfoPath   string
 	LicensePath    string
 	MetadataPath   string
+	WheelPath      string
 	Location       string
 	LocalPath      string
 	Modules        []string
@@ -103,6 +103,13 @@ func BuildMetadataPath(location string, name string, version string) string {
 	return path.Join(paths...)
 }
 
+func BuildWheelPath(location string, name string, version string) string {
+	package_name := name + "-" + version
+	package_wheel := package_name + PackageWheelFie
+	paths := []string{location, package_wheel}
+	return path.Join(paths...)
+}
+
 func SetMetadataToNoAssertion(metadata *Metadata, packagename string) {
 	metadata.Name = packagename
 	metadata.Version = NoAssertion
@@ -113,14 +120,6 @@ func SetMetadataToNoAssertion(metadata *Metadata, packagename string) {
 	metadata.License = NoAssertion
 	metadata.LocalPath = NoAssertion
 	metadata.Modules = []string{}
-}
-
-// This is only a test code.
-// Need to find correct way of getting package checksum
-func GetCheckSum(content string) string {
-	h := sha1.New()
-	h.Write([]byte(content))
-	return hex.EncodeToString(h.Sum(nil))
 }
 
 func IsAuthorAnOrganization(author string, authoremail string) bool {
