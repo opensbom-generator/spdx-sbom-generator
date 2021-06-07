@@ -50,7 +50,7 @@ func New(cfg Config) (Format, error) {
 // todo: refactor this Render into interface that different priting format can leverage
 // move into go templates
 func (f *Format) Render() error {
-	modules := f.Config.GetSource()
+	modules := sortModules(f.Config.GetSource())
 	document, err := buildDocument(modules[0])
 	if err != nil {
 		return err
@@ -126,13 +126,12 @@ func generatePackage(file *os.File, pkg models.Package) {
 }
 
 func buildDocument(module models.Module) (*models.Document, error) {
-	uuid := uuid.New().String()
 	return &models.Document{
 		SPDXVersion:       "SPDX-2.2",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
 		DocumentName:      module.Name,
-		DocumentNamespace: fmt.Sprintf("http://spdx.org/spdxpackages/%s-%s-%s", module.Name, module.Version, uuid),
+		DocumentNamespace: buildNamespace(module.Name, module.Version),
 		Creator:           fmt.Sprintf("Tool: spdx-sbom-generator-%s", version),
 		Created:           time.Now().UTC().Format(time.RFC3339),
 	}, nil
@@ -234,4 +233,25 @@ func setPkgSPDXID(s, v string, root bool) string {
 	}
 
 	return fmt.Sprintf("SPDXRef-Package-%s-%s", replacer.Replace(s), v)
+}
+
+// todo: improve this logic
+func sortModules(modules []models.Module) []models.Module {
+	for i, m := range modules {
+		if m.Root {
+			modules = append(modules[:i], modules[i+1:]...)
+			return append([]models.Module{m}, modules...)
+		}
+	}
+
+	return modules
+}
+
+func buildNamespace(name, version string) string {
+	uuid := uuid.New().String()
+	if version == "" {
+		return fmt.Sprintf("http://spdx.org/spdxpackages/%s-%s", name, uuid)
+	}
+
+	return fmt.Sprintf("http://spdx.org/spdxpackages/%s-%s-%s", name, version, uuid)
 }

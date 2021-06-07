@@ -14,10 +14,9 @@ import (
 func New() *mod {
 	return &mod{
 		metadata: models.PluginMetadata{
-			Name:       "Go Modules",
-			Slug:       "go-mod",
-			Manifest:   []string{"go.mod"},
-			ModulePath: []string{"vendor"}, // todo Add other module source
+			Name:     "Go Modules",
+			Slug:     "go-mod",
+			Manifest: []string{"go.mod"},
 		},
 	}
 }
@@ -51,12 +50,8 @@ func (m *mod) IsValid(path string) bool {
 
 // HasModulesInstalled ...
 func (m *mod) HasModulesInstalled(path string) error {
-	for i := range m.metadata.ModulePath {
-		if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
-			return nil
-		}
-	}
-	return errDependenciesNotFound
+	// we dont need to validate if packages are installed as process to read depedencies will download them
+	return nil
 }
 
 // GetVersion...
@@ -94,8 +89,13 @@ func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
 	}
 	defer buffer.Reset()
 
+	mainModule, err := m.GetRootModule(path)
+	if err != nil {
+		return nil, err
+	}
+
 	modules := []models.Module{}
-	if err := NewDecoder(buffer).ConvertJSONReaderToModules(&modules); err != nil {
+	if err := NewDecoder(buffer).ConvertJSONReaderToModules(mainModule.Path, &modules); err != nil {
 		return nil, err
 	}
 
@@ -137,16 +137,16 @@ func (m *mod) getModule(path string) (models.Module, error) {
 	}
 	defer buffer.Reset()
 
-	modules := []models.Module{}
-	if err := NewDecoder(buffer).ConvertJSONReaderToModules(&modules); err != nil {
+	module := models.Module{}
+	if err := NewDecoder(buffer).ConvertJSONReaderToSingleModule(&module); err != nil {
 		return models.Module{}, err
 	}
 
-	if len(modules) == 0 {
+	if module.Path == "" {
 		return models.Module{}, errFailedToConvertModules
 	}
 
-	return modules[0], nil
+	return module, nil
 }
 
 func (m *mod) buildCmd(cmd command, path string) error {

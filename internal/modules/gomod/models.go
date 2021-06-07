@@ -13,18 +13,25 @@ type mod struct {
 	command    *helper.Cmd
 }
 
-type MOD struct {
-	Version   string `json:"Version,omitempty"`
-	Path      string `json:"Path,omitempty"`
-	Dir       string `json:"Dir,noempty"`
-	Replace   modReplace
-	GoMod     string
-	GoVersion string
+type JSONOutput struct {
+	Dir        string  `json: "Dir,omitempty"`
+	ImportPath string  `json:"ImportPath,omitempty"`
+	Name       string  `json:"Name,omitempty"`
+	Module     *Module `json:"Module,omitempty"`
+}
+
+type Module struct {
+	Version   string     `json:"Version,omitempty"`
+	Path      string     `json:"Path,omitempty"`
+	Dir       string     `json:"Dir,noempty"`
+	Replace   modReplace `json:"Replace,omitempty"`
+	GoMod     string     `json:"GoMod,omitempty"`
+	GoVersion string     `json:"GoVersion,omitempty"`
 }
 
 type modReplace struct {
-	Path      string
-	Dir       string
-	GoMod     string
-	GoVersion string
+	Path      string `json:"Path,omitempty"`
+	Dir       string `json:"Dir,noempty"`
+	GoMod     string `json:"GoMod,omitempty"`
+	GoVersion string `json:"GoVersion,omitempty"`
 }
