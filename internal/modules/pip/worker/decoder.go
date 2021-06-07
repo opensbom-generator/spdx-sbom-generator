@@ -114,7 +114,7 @@ func (d *MetadataDecoder) BuildModule(root bool, metadata Metadata) models.Modul
 	}
 
 	module.PackageURL = metadata.PackageURL
-	module.CheckSum = getPackageChecksum(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
+	module.CheckSum = GetPackageChecksum(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
 
 	licensePkg, err := helper.GetLicenses(metadata.DistInfoPath)
 	if err == nil {

@@ -3,14 +3,12 @@
 package worker
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"os"
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
 )
 
@@ -116,42 +114,4 @@ func IsValidRootModule(path string) bool {
 		}
 	}
 	return false
-}
-
-func getPackageChecksum(packagename string, packageJsonURL string, packageWheelPath string) *models.CheckSum {
-	checkfortag := true
-
-	wheeltag, err := getWheelDistributionLastTag(packageWheelPath)
-	if err != nil {
-		checkfortag = false
-	}
-	if checkfortag && len(wheeltag) == 0 {
-		checkfortag = false
-	}
-
-	checksum := getPypiPackageChecksum(packagename, packageJsonURL, checkfortag, wheeltag)
-	return &checksum
-}
-
-func getWheelDistributionLastTag(packageWheelPath string) (string, error) {
-	if !helper.Exists(packageWheelPath) {
-		return "", errorWheelFileNotFound
-	}
-
-	file, err := os.Open(packageWheelPath)
-	if err != nil {
-		return "", errorUnableToOpenWheelFile
-	}
-	defer file.Close()
-
-	lasttag := ""
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		res := strings.Split(scanner.Text(), ":")
-		if strings.Compare(strings.ToLower(res[0]), "tag") == 0 {
-			lasttag = strings.TrimSpace(res[1])
-		}
-	}
-
-	return lasttag, nil
 }
