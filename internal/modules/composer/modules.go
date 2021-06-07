@@ -251,13 +251,19 @@ func getName(moduleName string) string {
 }
 
 func genUrlFromComposerPackage(dep ComposerLockPackage) string {
-	URL := removeURLProtocol(dep.Source.URL)
-	if URL != "" {
-		URL = strings.ReplaceAll(URL, ".git", "")
-		return URL
+	homePage := dep.Homepage
+	if homePage != "" {
+		return removeURLProtocol(homePage)
 	}
 
-	return genComposerUrl(dep.Name, dep.Version)
+	gitURL := removeURLProtocol(dep.Source.URL)
+	gitURL = strings.ReplaceAll(gitURL, ".git", "")
+	if gitURL != "" {
+		return gitURL
+	}
+
+	cratedGitURL := genComposerUrl(dep.Name, dep.Version)
+	return cratedGitURL
 }
 func genComposerUrl(name string, version string) string {
 	return "github.com/" + name
