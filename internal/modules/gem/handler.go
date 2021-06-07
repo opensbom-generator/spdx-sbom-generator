@@ -53,8 +53,8 @@ func (g *gem) IsValid(path string) bool {
 
 // HasModulesInstalled ...
 func (g *gem) HasModulesInstalled(path string) error {
-	hasRake := HasRakefile(path)
-	_ = EnsurePlatform(path)
+	hasRake := hasRakefile(path)
+	_ = ensurePlatform(path)
 	hasModule := false
 	for i := range g.metadata.ModulePath {
 		if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
@@ -103,7 +103,7 @@ func (g *gem) GetRootModule(path string) (*models.Module, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
 		return &models.Module{}, err
 	}
-	return GetGemRootModule(path)
+	return getGemRootModule(path)
 }
 
 // GetModule ...
@@ -121,5 +121,5 @@ func (g *gem) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
 		return []models.Module{}, err
 	}
-	return ListGemRootModule(path)
+	return listGemRootModule(path)
 }
