@@ -82,7 +82,7 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       false,
-		PackageURL: getPackageURL(dep),
+		PackageURL: formatPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
@@ -148,7 +148,7 @@ func convertCargoPackageToPluginModule(dep CargoPackage) models.Module {
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       true,
-		PackageURL: getPackageURL(dep),
+		PackageURL: formatPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
@@ -175,26 +175,24 @@ func convertToLocalPath(manifestPath string) string {
 	return localPath
 }
 
-func getPackageURL(dep CargoPackage) string {
-	var value string
-
+func getDefaultPackageURL(dep CargoPackage) string {
 	if dep.Homepage != "" {
-		value = dep.Homepage
-	} else if dep.Source != "" {
-		value = dep.Source
-	} else {
-		value = dep.Repository
+		return dep.Homepage
 	}
 
-	value = removeURLProtocol(value)
-	value = removeRegisrySuffix(value)
+	if dep.Source != "" {
+		return dep.Source
+	}
 
-	return value
+	return dep.Repository
 }
 
-func removeRegisrySuffix(value string) string {
-	str := strings.ReplaceAll(value, "registry+", "")
-	return str
+func formatPackageURL(dep CargoPackage) string {
+	URL := getDefaultPackageURL(dep)
+	URL = removeURLProtocol(URL)
+	URL = removeRegisrySuffix(URL)
+
+	return URL
 }
 
 func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {

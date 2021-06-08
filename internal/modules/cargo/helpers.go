@@ -22,3 +22,8 @@ func removeURLProtocol(str string) string {
 	value = strings.ReplaceAll(value, "http://", "")
 	return value
 }
+
+func removeRegisrySuffix(value string) string {
+	str := strings.ReplaceAll(value, "registry+", "")
+	return str
+}
