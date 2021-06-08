@@ -50,4 +50,4 @@ jobs:
           goversion: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
           project_path: "./cmd/generator"
           binary_name: "spdx-sbom-generator"
-          ldflags: "-X 'main.version=${{ env.RELEASE_VERSION }'"
+          ldflags: "-X 'main.version=${{ env.RELEASE_VERSION }}'"
