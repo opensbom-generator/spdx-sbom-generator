@@ -15,9 +15,9 @@ import (
 const ProjectUrl = "pypi.org/project"
 const PackageUrl = "pypi.org/pypi"
 const PackageDistInfoPath = ".dist-info"
-const PackageLicenseFile = ".dist-info/LICENSE"
-const PackageMetadataFie = ".dist-info/METADATA"
-const PackageWheelFie = ".dist-info/WHEEL"
+const PackageLicenseFile = "LICENSE"
+const PackageMetadataFie = "METADATA"
+const PackageWheelFie = "WHEEL"
 
 // NOASSERTION constant
 const NoAssertion = "NOASSERTION"
@@ -87,30 +87,45 @@ func BuildLocalPath(location string, name string) string {
 }
 
 func BuildDistInfoPath(location string, name string, version string) string {
+	var distInfoPath string
+	var exists bool
+
+	distInfoPath, exists = checkIfDistInfoPathExists(location, name, version)
+	if exists {
+		return distInfoPath
+	}
+
+	distInfoPath, exists = checkIfDistInfoPathExists(location,
+		strings.ReplaceAll(name, "-", "_"),
+		version)
+
+	return distInfoPath
+}
+
+func checkIfDistInfoPathExists(location string, name string, version string) (string, bool) {
+	var distInfoPath string
+
 	package_name := name + "-" + version
 	package_metadata := package_name + PackageDistInfoPath
 	paths := []string{location, package_metadata}
+
+	distInfoPath = path.Join(paths...)
+
+	return distInfoPath, helper.Exists(distInfoPath)
+}
+
+func BuildLicenseUrl(distInfoLocation string) string {
+	paths := []string{distInfoLocation, PackageLicenseFile}
 	return path.Join(paths...)
 }
 
-func BuildLicenseUrl(location string, name string, version string) string {
-	package_name := name + "-" + version
-	package_license := package_name + PackageLicenseFile
-	paths := []string{location, package_license}
+func BuildMetadataPath(distInfoLocation string) string {
+	paths := []string{distInfoLocation, PackageMetadataFie}
 	return path.Join(paths...)
 }
 
-func BuildMetadataPath(location string, name string, version string) string {
-	package_name := name + "-" + version
-	package_metadata := package_name + PackageMetadataFie
-	paths := []string{location, package_metadata}
-	return path.Join(paths...)
-}
-
-func BuildWheelPath(location string, name string, version string) string {
-	package_name := name + "-" + version
-	package_wheel := package_name + PackageWheelFie
-	paths := []string{location, package_wheel}
+func BuildWheelPath(distInfoLocation string) string {
+	paths := []string{distInfoLocation, PackageWheelFie}
 	return path.Join(paths...)
 }
 
