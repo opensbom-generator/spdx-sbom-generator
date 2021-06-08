@@ -71,12 +71,9 @@ func (m *nuget) SetRootModule(path string) error {
 
 // IsValid ...
 func (m *nuget) IsValid(path string) bool {
-	for i := range m.metadata.Manifest {
-		if strings.ToLower(filepath.Ext(path)) == m.metadata.Manifest[i] {
-			if helper.Exists(path) {
-				return true
-			}
-		}
+	projectPath := m.GetProjectManifestPath(path)
+	if helper.Exists(projectPath) {
+		return true
 	}
 	return false
 }
@@ -100,9 +97,10 @@ func (m *nuget) HasModulesInstalled(path string) error {
 		packageCachePaths = append(packageCachePaths, strings.TrimSpace(cachePathArray[1]))
 	}
 
-	log.Infof("trying to restore the packages: %s", path)
+	projectPath := m.GetProjectManifestPath(path)
+	log.Infof("trying to restore the packages: %s", projectPath)
 
-	restoreCommand := command(fmt.Sprintf("%s %s", RestorePackageCmd, path))
+	restoreCommand := command(fmt.Sprintf("%s %s", RestorePackageCmd, projectPath))
 	if err := m.buildCmd(restoreCommand, "."); err != nil {
 		return err
 	}
@@ -112,9 +110,9 @@ func (m *nuget) HasModulesInstalled(path string) error {
 		return err
 	}
 
-	log.Infof("looking for the project modules using location: %s", path)
+	log.Infof("looking for the project modules using location: %s", projectPath)
 
-	projectPaths, err := getProjectPaths(path)
+	projectPaths, err := getProjectPaths(projectPath)
 	if err != nil {
 		return err
 	}
@@ -156,20 +154,17 @@ func (m *nuget) GetVersion() (string, error) {
 func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 	if m.rootModule == nil {
 		module := models.Module{}
-		for i := range m.metadata.Manifest {
-			pathExtension := filepath.Ext(path)
-			if strings.ToLower(pathExtension) == m.metadata.Manifest[i] {
-				if helper.Exists(path) {
-					fileName := filepath.Base(path)
-					rootProjectName := fileName[0 : len(fileName)-len(pathExtension)]
-					module.Name = rootProjectName
-					module.Version = "0.0.0" // default version for root
-					module.Root = true
-					module.CheckSum = &models.CheckSum{
-						Algorithm: models.HashAlgoSHA256,
-						Content:   []byte(fmt.Sprintf("%s%s", module.Name, module.Version)),
-					}
-				}
+		projectPath := m.GetProjectManifestPath(path)
+		pathExtension := filepath.Ext(projectPath)
+		if helper.Exists(projectPath) {
+			fileName := filepath.Base(projectPath)
+			rootProjectName := fileName[0 : len(fileName)-len(pathExtension)]
+			module.Name = rootProjectName
+			module.Version = "0.0.0" // default version for root
+			module.Root = true
+			module.CheckSum = &models.CheckSum{
+				Algorithm: models.HashAlgoSHA256,
+				Content:   []byte(fmt.Sprintf("%s%s", module.Name, module.Version)),
 			}
 		}
 		m.rootModule = &module
@@ -180,17 +175,14 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 // ListModulesWithDeps ...
 func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 	var modules []models.Module
-	projectPaths, err := getProjectPaths(path)
+	projectPath := m.GetProjectManifestPath(path)
+	projectPaths, err := getProjectPaths(projectPath)
 	if err != nil {
 		return modules, err
 	}
 	// no projects found
 	if len(projectPaths) == 0 {
 		return modules, errDependenciesNotFound
-	}
-	// set root module
-	if m.rootModule != nil {
-		modules = append(modules, *m.rootModule)
 	}
 	modulePath := filepath.Join(assetDirectoryJoinPath, assetModuleFile)
 	for _, project := range projectPaths {
@@ -211,8 +203,12 @@ func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 			modules = append(modules, packages...)
 		}
 	}
-	if len(modules) == 0 || len(modules) == 1 {
+	if len(modules) == 0 {
 		return modules, errFailedToConvertModules
+	}
+	// set root module
+	if m.rootModule != nil {
+		modules = append(modules, *m.rootModule)
 	}
 	return modules, nil
 }
@@ -237,6 +233,24 @@ func (m *nuget) buildCmd(cmd command, path string) error {
 	m.command = command
 
 	return command.Build()
+}
+
+// GetProjectManifestPath ...
+func (m *nuget) GetProjectManifestPath(path string) string {
+	for i := range m.metadata.Manifest {
+		pathPattern := filepath.Join(path, fmt.Sprintf("*%s", m.metadata.Manifest[i]))
+		projectPaths, err := filepath.Glob(pathPattern)
+		if err != nil {
+			log.Error(err)
+		}
+		if len(projectPaths) > 0 {
+			return projectPaths[0]
+		}
+		if strings.ToLower(filepath.Ext(path)) == m.metadata.Manifest[i] {
+			return path
+		}
+	}
+	return ""
 }
 
 // parsePackagesConfigModules parses the output -- works for the packages.config
