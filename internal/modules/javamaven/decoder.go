@@ -231,7 +231,6 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 	}
 
 	parentMod := convertMavenPackageToModule(project)
-	//	parentMod := createModule(project.Name, version, project)
 	modules = append(modules, parentMod)
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
