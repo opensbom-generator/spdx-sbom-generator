@@ -577,14 +577,14 @@ func BuildLockDependencyTree(rows []string) {
 
 }
 
-// Computes SHA 256 Checksum for gems
+// Compute SHA 256 Checksum for gems
 func checkSum(path string, filename string, isFullPath bool) (string, error) {
 
 	var sha string
 	files, err := ioutil.ReadDir(path)
 
 	if err != nil {
-		return "", err
+		return "", nil
 	}
 
 	if !isFullPath {
@@ -592,18 +592,32 @@ func checkSum(path string, filename string, isFullPath bool) (string, error) {
 		for _, f := range files {
 			if f.IsDir() {
 				fullPath := filepath.Join(path, f.Name(), CACHE_DEFAULT_DIR)
-				return checkSum(fullPath, cleanName(filename), true)
+				return checkSum(fullPath, filename, true)
 			}
 		}
 
 	} else {
+
 		if !strings.Contains(path, CACHE_DEFAULT_DIR) {
 			return "", nil
 		}
-		switch runtime.GOOS {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			path = gemDir()
+		}
+		var ops = runtime.GOOS
+		if strings.Contains(strings.ToLower(ops), "linux") {
+			ops = "linux"
+		}
+		if strings.Contains(strings.ToLower(ops), "darwin") {
+			ops = "darwin"
+		}
+		if strings.Contains(strings.ToLower(ops), "windows") {
+			ops = "windows"
+		}
+		switch ops {
 		case "linux":
 			linuxcmd := "sha256sum"
-			cmd := exec.Command(linuxcmd, cleanName(filename))
+			cmd := exec.Command(linuxcmd, filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
 			output, err := cmd.Output()
 			if err != nil {
 				return "", err
@@ -613,7 +627,7 @@ func checkSum(path string, filename string, isFullPath bool) (string, error) {
 			winCmd := `certUtil`
 			//@TODO Adjust for windows, try the line commented below.
 			//winArgs := fmt.Sprintf(`-hashfile %s SHA256 | findstr /v "hash"`, filename)
-			cmd := exec.Command(winCmd, "-hashfile", cleanName(filename), "SHA256", "|", "/v", `"hash"`)
+			cmd := exec.Command(winCmd, "-hashfile", filepath.Join(path, filename+GEM_DEFAULT_EXTENSION), "SHA256", "|", "/v", `"hash"`)
 			output, err := cmd.Output()
 			if err != nil {
 				return "", err
@@ -621,7 +635,7 @@ func checkSum(path string, filename string, isFullPath bool) (string, error) {
 			sha = strings.Fields(string(output))[0]
 		case "darwin":
 			osxCmd := `shasum`
-			cmd := exec.Command(osxCmd, "-a", "256", filepath.Join(path, cleanName(filename)+GEM_DEFAULT_EXTENSION), filepath.Join(path, cleanName(filename)+GEM_DEFAULT_EXTENSION))
+			cmd := exec.Command(osxCmd, "-a", "256", filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
 			output, err := cmd.Output()
 			if err != nil {
 				return "", err
@@ -998,12 +1012,13 @@ func buildLocalTree(paths []string, secondaryLocation string) []Spec {
 		specPath := filepath.Join(installPath, SPEC_DEFAULT_DIR)
 		cachePath := filepath.Join(installPath, CACHE_DEFAULT_DIR)
 		secondaryCachePath := filepath.Join(secondaryLocation, CACHE_DEFAULT_DIR)
-		checkSumPaths := []string{cachePath, secondaryCachePath}
+		primaryLocation := gemDir()
+		checkSumPaths := []string{cachePath, secondaryCachePath, primaryLocation}
 		licensePath := filepath.Join(installPath, GEM_DEFAULT_DIR)
 
 		if _, err := os.Stat(specPath); err != nil {
-		  continue
-	    }
+			continue
+		}
 
 		files, err := ioutil.ReadDir(specPath)
 		if err != nil {
@@ -1019,6 +1034,9 @@ func buildLocalTree(paths []string, secondaryLocation string) []Spec {
 				fileName := strings.Replace(f.Name(), SPEC_EXTENSION, "", 1)
 
 				for _, csp := range checkSumPaths {
+					if _, err := os.Stat(csp); os.IsNotExist(err) {
+						continue
+					}
 					sha, err := checkSum(csp, fileName, true)
 					if err == nil && sha != "" {
 						spec.Checksum = sha
@@ -1260,4 +1278,14 @@ func hasRakefile(path string) bool {
 		return true
 	}
 	return ioutil.WriteFile(filename, []byte("require \"bundler/gem_tasks\" \ntask :default => :spec"), 0644) == nil
+}
+
+// Gets the gem installation directory
+func gemDir() string {
+	cmd := exec.Command("gem", "environment", "gemdir")
+	output, err := cmd.Output()
+	if err != nil {
+		fmt.Println(err)
+	}
+	return filepath.Join(strings.Fields(string(output))[0], CACHE_DEFAULT_DIR)
 }
