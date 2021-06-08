@@ -217,6 +217,11 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
 		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 		module.CommentsLicense = licensePkg.Comments
+	} else if len(dep.License) > 0 {
+		// INFO: is Error, use license from composer.lock
+		licenseValue := dep.License[0]
+		module.LicenseDeclared = licenseValue
+		module.LicenseConcluded = licenseValue
 	}
 
 	return module
@@ -237,25 +242,36 @@ func getAuthor(dep ComposerLockPackage) models.SupplierContact {
 }
 
 func getName(moduleName string) string {
-	s := strings.Split(moduleName, "/")
+	var name string
 
-	if len(s) > 1 {
-		return s[1]
+	groupNames := strings.Split(moduleName, "/")
+
+	if len(groupNames) > 1 {
+		name = groupNames[1]
+	} else {
+		name = groupNames[0]
 	}
 
-	return s[0]
+	return name
 }
 
 func genUrlFromComposerPackage(dep ComposerLockPackage) string {
-	URL := removeURLProtocol(dep.Source.URL)
-	if URL != "" {
-		return URL
+	homePage := dep.Homepage
+	if homePage != "" {
+		return removeURLProtocol(homePage)
 	}
 
-	return genComposerUrl(dep.Name, dep.Version)
+	gitURL := removeURLProtocol(dep.Source.URL)
+	gitURL = strings.ReplaceAll(gitURL, ".git", "")
+	if gitURL != "" {
+		return gitURL
+	}
+
+	cratedGitURL := genComposerUrl(dep.Name, dep.Version)
+	return cratedGitURL
 }
 func genComposerUrl(name string, version string) string {
-	return "github.com/" + name + ".git"
+	return "github.com/" + name
 }
 
 func normalizePackageVersion(version string) string {

@@ -39,6 +39,9 @@ jobs:
             goos: darwin
     steps:
       - uses: actions/checkout@v2
+      # set current version based on release tag
+      - name: Set RELEASE_VERSION env
+        run: echo RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
       - uses: wangyoucao577/go-release-action@v1.18
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -47,3 +50,4 @@ jobs:
           goversion: "https://dl.google.com/go/go1.13.1.linux-amd64.tar.gz"
           project_path: "./cmd/generator"
           binary_name: "spdx-sbom-generator"
+          ldflags: "-X 'main.version=${{ env.RELEASE_VERSION }}'"

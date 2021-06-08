@@ -24,11 +24,11 @@ Usage:
 
 Flags:
   -h, --help                   help for spdx-sbom-generator
-  -i, --include-license-text    Include full license text (default: false)
-  -o, --output string          <output> Write SPDX to file (default format: 'spdx' - default output "bom.spdx")
+  -i, --include-license-text   include full license text (default: false)
+  -o, --output-dir string      directory to write output file to (default: current directory)
   -p, --path string            the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.') (default ".")
   -s, --schema string          <version> Target schema version (default: '2.2') (default "2.2")
-  -v, --version string         output the version number
+  -f, --format string          output file format (default: 'spdx')
 ```
 
 ### Output options
@@ -39,7 +39,7 @@ Flags:
 
 Command output sample option:
 ```BASH
-./spdx-sbom-generator -o bom.spdx
+./spdx-sbom-generator -o /out/spdx/
 ```
 
 
@@ -101,7 +101,7 @@ We currently provide a few Docker images:
 $ docker run -it --rm \
     -v "/path/to/repository:/repository" \
     -v "$(pwd)/out:/out" \
-    spdx/spdx-sbom-generator -p /repository -o /out/bom.spdx
+    spdx/spdx-sbom-generator -p /repository -o /out/spdx/
 ```
 
 ## Data Contract

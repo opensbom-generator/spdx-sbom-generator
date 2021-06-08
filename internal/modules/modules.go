@@ -13,8 +13,8 @@ import (
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/javamaven"
 	"spdx-sbom-generator/internal/modules/npm"
+	"spdx-sbom-generator/internal/modules/nuget"
 	"spdx-sbom-generator/internal/modules/yarn"
-
 )
 
 var (
@@ -32,6 +32,7 @@ func init() {
 		gomod.New(),
 		npm.New(),
 		javamaven.New(),
+		nuget.New(),
 		yarn.New(),
 	)
 }
@@ -49,26 +50,28 @@ type Config struct {
 }
 
 // New ...
-func New(cfg Config) (*Manager, error) {
+func New(cfg Config) ([]*Manager, error) {
 	var usePlugin models.IPlugin
+	var managerSlice []*Manager
 	for _, plugin := range registeredPlugins {
 		if plugin.IsValid(cfg.Path) {
 			if err := plugin.SetRootModule(cfg.Path); err != nil {
 				return nil, err
 			}
+
 			usePlugin = plugin
-			break
+			if usePlugin == nil {
+				return nil, errNoPluginAvailable
+			}
+
+			managerSlice = append(managerSlice, &Manager{
+				Config: cfg,
+				Plugin: usePlugin,
+			})
 		}
 	}
 
-	if usePlugin == nil {
-		return nil, errNoPluginAvailable
-	}
-
-	return &Manager{
-		Config: cfg,
-		Plugin: usePlugin,
-	}, nil
+	return managerSlice, nil
 }
 
 // Run ...
