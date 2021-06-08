@@ -1,0 +1,62 @@
+SPDXVersion: SPDX-2.2
+DataLicense: CC0-1.0
+SPDXID: SPDXRef-DOCUMENT
+DocumentName: foodie-0.1.0
+DocumentNamespace: http://spdx.org/spdxpackages/foodie-0.1.0-0.1.0-8cb6faa5-5d32-429d-958d-f8f80855b458
+Creator: Tool: spdx-sbom-generator-0.0.1
+Created: 2021-06-08T17:28:10Z
+
+##### Package representing the foodie-0.1.0
+
+PackageName: foodie-0.1.0
+SPDXID: SPDXRef-Package-foodie-0.1.0
+PackageVersion: 0.1.0
+PackageSupplier: NOASSERTION
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageChecksum: SHA256: 56098a8f19fb99fe2f350849e81ba45eb4458cc5fa3cdae444a59454f0a758e5
+PackageHomePage: https://http://mygemserver.com
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: Copyright (c) 2021 TODO: Write your name
+PackageLicenseComments: NOASSERTION
+PackageComment: NOASSERTION
+
+Relationship SPDXRef-DOCUMENT DESCRIBES SPDXRef-Package-foodie-0.1.0 
+
+Relationship SPDXRef-Package-foodie-0.1.0 DEPENDS_ON SPDXRef-Package-rake-10.5.0 
+
+##### Package representing the rake-10.5.0
+
+PackageName: rake-10.5.0
+SPDXID: SPDXRef-Package-rake-10.5.0
+PackageVersion: 10.5.0
+PackageSupplier: NOASSERTION
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageChecksum: SHA256: 2b55a1ad44b5c945719d8a97c302a316af770b835187d12143e83069df5a8a49
+PackageHomePage: https://https://github.com/ruby/rake
+PackageLicenseConcluded: MIT
+PackageLicenseDeclared: MIT
+PackageCopyrightText: Copyright (c) Jim Weirich
+PackageLicenseComments: NOASSERTION
+PackageComment: NOASSERTION
+
+Relationship SPDXRef-Package-rake-10.5.0 DEPENDS_ON SPDXRef-Package-minitest 
+
+##### Package representing the minitest
+
+PackageName: minitest
+SPDXID: SPDXRef-Package-minitest
+PackageVersion: 5.11.3
+PackageSupplier: NOASSERTION
+PackageDownloadLocation: NOASSERTION
+FilesAnalyzed: false
+PackageChecksum: SHA256: 78e18aa2c49c58e9bc53c54a0b900e87ad0a96394e92fbbfa58d3ff860a68f45
+PackageHomePage: https://https://github.com/seattlerb/minitest
+PackageLicenseConcluded: NOASSERTION
+PackageLicenseDeclared: NOASSERTION
+PackageCopyrightText: NOASSERTION
+PackageLicenseComments: NOASSERTION
+PackageComment: NOASSERTION
+
