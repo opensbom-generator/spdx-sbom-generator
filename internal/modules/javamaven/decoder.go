@@ -78,22 +78,23 @@ func stdOutCapture() func() (string, error) {
 
 func getDependencyList() ([]string, error) {
 	done := stdOutCapture()
+	var err error
 
 	cmd1 := exec.Command("mvn", "-o", "dependency:list")
 	cmd2 := exec.Command("grep", ":.*:.*:.*")
 	cmd3 := exec.Command("cut", "-d]", "-f2-")
 	cmd4 := exec.Command("sort", "-u")
-	cmd2.Stdin, _ = cmd1.StdoutPipe()
-	cmd3.Stdin, _ = cmd2.StdoutPipe()
-	cmd4.Stdin, _ = cmd3.StdoutPipe()
+	cmd2.Stdin, err = cmd1.StdoutPipe()
+	cmd3.Stdin, err = cmd2.StdoutPipe()
+	cmd4.Stdin, err = cmd3.StdoutPipe()
 	cmd4.Stdout = os.Stdout
-	_ = cmd4.Start()
-	_ = cmd3.Start()
-	_ = cmd2.Start()
-	_ = cmd1.Run()
-	_ = cmd2.Wait()
-	_ = cmd3.Wait()
-	_ = cmd4.Wait()
+	err = cmd4.Start()
+	err = cmd3.Start()
+	err = cmd2.Start()
+	err = cmd1.Run()
+	err = cmd2.Wait()
+	err = cmd3.Wait()
+	err = cmd4.Wait()
 
 	capturedOutput, err := done()
 	if err != nil {
@@ -114,8 +115,8 @@ func convertMavenPackageToModule(project gopom.Project) models.Module {
 		modName = project.Name
 		if strings.HasPrefix(project.Name, "$") {
 			name := strings.TrimLeft(strings.TrimRight(project.Name, "}"), "${")
-			if strings.HasPrefix(name, "project") {
-				modName = project.Parent.ArtifactID
+			if strings.HasPrefix(name, "project.artifactId") {
+				modName = project.ArtifactID
 			}
 		}
 		modName = strings.Replace(modName, " ", "-", -1)
@@ -153,34 +154,34 @@ func convertMavenPackageToModule(project gopom.Project) models.Module {
 	return mod
 }
 
-func FindInDependency(slice []gopom.Dependency, val string) (int, bool) {
-	for i, item := range slice {
+func findInDependency(slice []gopom.Dependency, val string) bool {
+	for _, item := range slice {
 		if item.ArtifactID == val {
-			return i, true
+			return true
 		}
 	}
-	return -1, false
+	return false
 }
 
-func FindInPlugins(slice []gopom.Plugin, val string) (int, bool) {
-	for i, item := range slice {
+func findInPlugins(slice []gopom.Plugin, val string) bool {
+	for _, item := range slice {
 		if item.ArtifactID == val {
-			return i, true
+			return true
 		}
 	}
-	return -1, false
+	return false
 }
 
 func createModule(name string, version string, project gopom.Project) models.Module {
 	var mod models.Module
-
 	modVersion := version
 	if strings.HasPrefix(version, "$") {
-		version := strings.TrimLeft(strings.TrimRight(version, "}"), "${")
-		modVersion = project.Properties.Entries[version]
+		version1 := strings.TrimLeft(strings.TrimRight(version, "}"), "${")
+		modVersion = project.Properties.Entries[version1]
 	}
 
 	name = path.Base(name)
+	name = strings.TrimSpace(name)
 	mod.Name = strings.Replace(name, " ", "-", -1)
 	mod.Version = modVersion
 	mod.Modules = map[string]*models.Module{}
@@ -191,43 +192,51 @@ func createModule(name string, version string, project gopom.Project) models.Mod
 	return mod
 }
 
-// If parent pom.xml has modules information in it, go to individual modules pom.xml
-func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.Project) ([]models.Module, error) {
-	filePath := fpath + "/" + moduleName + "/pom.xml"
+func readAndLoadPomFile(fpath string) (gopom.Project, error) {
+	var project gopom.Project
+
+	filePath := fpath + "/pom.xml"
 	pomFile, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println(err)
-		return []models.Module{}, err
+		return project, err
 	}
 	defer pomFile.Close()
 
-	var modules []models.Module
 	// read our opened xmlFile as a byte array.
-	pomStr, _ := ioutil.ReadAll(pomFile)
+	pomData, err := ioutil.ReadAll(pomFile)
+	if err != nil {
+		return project, err
+	}
 
 	// Load project from string
-	var project gopom.Project
-	if err := xml.Unmarshal([]byte(pomStr), &project); err != nil {
-		fmt.Printf("unable to unmarshal Module %s pom file. Reason: %v", moduleName, err)
+	if err := xml.Unmarshal(pomData, &project); err != nil {
+		fmt.Printf("unable to unmarshal pom file. Reason: %v", err)
+		return project, err
+	}
+
+	return project, nil
+}
+
+// If parent pom.xml has modules information in it, go to individual modules pom.xml
+func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.Project) ([]models.Module, error) {
+	var modules []models.Module
+	filePath := fpath + "/" + moduleName
+	project, err := readAndLoadPomFile(filePath)
+	if err != nil {
 		return []models.Module{}, err
 	}
 
-	var version string
-	if len(project.Version) == 0 {
-		// set package version as module version
-		version = parentPom.Version
-	} else {
-		version = project.Version
-	}
-	parentMod := createModule(project.Name, version, project)
+	parentMod := convertMavenPackageToModule(project)
 	modules = append(modules, parentMod)
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Dependencies {
-		name := strings.Replace(element.ArtifactID, " ", "-", -1)
-		_, found := FindInDependency(parentPom.Dependencies, name)
+		name := strings.TrimSpace(element.ArtifactID)
+		name = strings.Replace(element.ArtifactID, " ", "-", -1)
+		found := findInDependency(parentPom.Dependencies, name)
 		if !found {
-			_, found1 := FindInDependency(parentPom.DependencyManagement.Dependencies, name)
+			found1 := findInDependency(parentPom.DependencyManagement.Dependencies, name)
 			if !found1 {
 				mod := createModule(name, element.Version, project)
 				modules = append(modules, mod)
@@ -238,10 +247,11 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 
 	// Include plugins from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Build.Plugins {
-		name := strings.Replace(element.ArtifactID, " ", "-", -1)
-		_, found := FindInPlugins(parentPom.Build.Plugins, name)
+		name := strings.TrimSpace(element.ArtifactID)
+		name = strings.Replace(element.ArtifactID, " ", "-", -1)
+		found := findInPlugins(parentPom.Build.Plugins, name)
 		if !found {
-			_, found1 := FindInPlugins(parentPom.Build.PluginManagement.Plugins, name)
+			found1 := findInPlugins(parentPom.Build.PluginManagement.Plugins, name)
 			if !found1 {
 				mod := createModule(name, element.Version, project)
 				modules = append(modules, mod)
@@ -254,25 +264,10 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 
 func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
-
-	filePath := fpath + "/pom.xml"
-	pomFile, err := os.Open(filePath)
+	project, err := readAndLoadPomFile(fpath)
 	if err != nil {
-		fmt.Println(err)
-		return modules, err
+		return []models.Module{}, err
 	}
-	defer pomFile.Close()
-
-	// read our opened xmlFile as a byte array.
-	pomStr, _ := ioutil.ReadAll(pomFile)
-
-	// Load project from string
-	var project gopom.Project
-	if err := xml.Unmarshal([]byte(pomStr), &project); err != nil {
-		fmt.Printf("unable to unmarshal pom file. Reason: %v", err)
-		return modules, err
-	}
-
 	parentMod := convertMavenPackageToModule(project)
 	modules = append(modules, parentMod)
 
@@ -313,6 +308,11 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	// Add additional dependency from mvn dependency list to pom.xml dependency list
 	var i int
 	for i < len(dependencyList)-2 { // skip 1 empty line and Finished statement line
+		// If any errors captured in mvn dependency, ignore that
+		if strings.Contains(dependencyList[i], "Invalid module name") {
+			i++
+			continue
+		}
 		dependencyItem := strings.Split(dependencyList[i], ":")[1]
 
 		found := false
@@ -435,7 +435,7 @@ func handlePkgs(text []string, tdList map[string][]string) {
 	}
 }
 
-func buildDependenciesGraph(modules []models.Module, tdList map[string][]string) error {
+func buildDependenciesGraph(modules []models.Module, tdList map[string][]string) {
 	moduleMap := map[string]models.Module{}
 	moduleIndex := map[string]int{}
 
@@ -479,6 +479,4 @@ func buildDependenciesGraph(modules []models.Module, tdList map[string][]string)
 			}
 		}
 	}
-
-	return nil
 }
