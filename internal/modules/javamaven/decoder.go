@@ -19,9 +19,6 @@ import (
 	"github.com/vifraa/gopom"
 )
 
-// CouponGroupNameVar identifier to avoid lint error
-//var PersonSupplierType string = "person"
-
 // Update package supplier information
 func updatePackageSuppier(mod models.Module, developers []gopom.Developer) {
 
