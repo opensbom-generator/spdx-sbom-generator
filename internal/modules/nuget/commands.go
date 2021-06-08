@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-package gomod
+package nuget
 
 import (
 	"strings"
@@ -9,10 +9,9 @@ import (
 type command string
 
 var (
-	VersionCmd     command = "go version"
-	RootModuleCmd  command = "go list -mod readonly -json -m"
-	ModulesCmd     command = "go list -deps -json ./..."
-	GraphModuleCmd command = "go mod graph"
+	VersionCmd           command = "dotnet --version"
+	LocalPackageCacheCmd command = "dotnet nuget locals global-packages --list"
+	RestorePackageCmd    command = "dotnet restore"
 )
 
 // Parse ...

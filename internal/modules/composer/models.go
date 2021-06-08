@@ -16,6 +16,7 @@ type ComposerLockPackage struct {
 	Description string
 	Source      ComposerLockPackageSource
 	Authors     []ComposerLockPackageAuthor
+	Homepage    string
 }
 type ComposerLockPackageAuthor struct {
 	Name  string

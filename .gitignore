@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # Local ENV  metadata
 .DS_Store
 
@@ -15,3 +17,4 @@ bom*
 
 # IDE file
 .swp
+.idea/
