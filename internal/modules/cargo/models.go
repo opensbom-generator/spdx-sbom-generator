@@ -20,6 +20,7 @@ type CargoPackage struct {
 	Authors      []string                 `json:"authors"`
 	Repository   string                   `json:"repository"`
 	Homepage     string                   `json:"homepage"`
+	License      string                   `json:"license"`
 }
 
 type CargoPackageDependency struct {

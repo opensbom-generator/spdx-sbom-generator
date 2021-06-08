@@ -99,6 +99,9 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
 		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 		module.CommentsLicense = licensePkg.Comments
+	} else if dep.License != "" {
+		module.LicenseDeclared = dep.License
+		module.LicenseConcluded = dep.License
 	}
 
 	return module
@@ -174,15 +177,24 @@ func convertToLocalPath(manifestPath string) string {
 
 func getPackageURL(dep CargoPackage) string {
 	var value string
-	if dep.Source != "" {
+
+	if dep.Homepage != "" {
+		value = dep.Homepage
+	} else if dep.Source != "" {
 		value = dep.Source
 	} else {
 		value = dep.Repository
 	}
 
 	value = removeURLProtocol(value)
+	value = removeRegisrySuffix(value)
 
 	return value
+}
+
+func removeRegisrySuffix(value string) string {
+	str := strings.ReplaceAll(value, "registry+", "")
+	return str
 }
 
 func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {
