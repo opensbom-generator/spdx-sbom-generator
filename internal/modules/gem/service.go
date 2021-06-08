@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package gem
 
 import (
@@ -77,10 +79,10 @@ func NewService(name string) (*GemService, error) {
 		return nil, err
 	}
 	return &GemService{
-		request,
-		nil,
-		name,
-		nil,
+		request:  request,
+		response: nil,
+		name:     name,
+		err:      nil,
 	}, nil
 }
 

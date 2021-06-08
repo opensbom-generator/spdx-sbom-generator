@@ -31,7 +31,7 @@ func New() *gem {
 		metadata: models.PluginMetadata{
 			Name:       "Bundler",
 			Slug:       "bundler",
-			Manifest:   []string{"Gemfile", "Gemfile.lock,gems.rb,gems.locked"},
+			Manifest:   []string{"Gemfile", "Gemfile.lock", "gems.rb", "gems.locked"},
 			ModulePath: []string{"vendor/bundle"},
 		},
 	}

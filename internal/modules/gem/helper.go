@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 package gem
 
 import (
@@ -1212,8 +1214,8 @@ func cleanName(name string) string {
 
 // Sanitize URI
 func cleanURI(url string) string {
-	u := strings.ReplaceAll(url,"=","")
-	u = strings.ReplaceAll(u,"\"","")
+	u := strings.ReplaceAll(url, "=", "")
+	u = strings.ReplaceAll(u, "\"", "")
 	return u
 }
 
