@@ -80,10 +80,12 @@ func (g *gem) GetVersion() (string, error) {
 
 	fields := strings.Fields(string(output))
 
-	if fields[0] != "Bundler" || fields[1] != "version" {
+	if len(fields) > 1 && (fields[0] != "Bundler" || fields[1] != "version") {
 		return "", fmt.Errorf("unexpected output format: %s", output)
 	}
-
+	if len(fields) < 2 {
+		return "", fmt.Errorf("unexpected output format: %s", output)
+	}
 	return fields[2], nil
 }
 
