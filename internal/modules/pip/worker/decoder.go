@@ -85,10 +85,9 @@ func (d *MetadataDecoder) BuildMetadata(packagename string) Metadata {
 
 	metadata.DistInfoPath = BuildDistInfoPath(metadata.Location, metadata.Name, metadata.Version)
 	metadata.LocalPath = BuildLocalPath(metadata.Location, metadata.Name)
-	metadata.LicensePath = BuildLicenseUrl(metadata.Location, metadata.Name, metadata.Version)
-	metadata.MetadataPath = BuildMetadataPath(metadata.Location, metadata.Name, metadata.Version)
-	metadata.WheelPath = BuildWheelPath(metadata.Location, metadata.Name, metadata.Version)
-
+	metadata.LicensePath = BuildLicenseUrl(metadata.DistInfoPath)
+	metadata.MetadataPath = BuildMetadataPath(metadata.DistInfoPath)
+	metadata.WheelPath = BuildWheelPath(metadata.DistInfoPath)
 	return metadata
 }
 

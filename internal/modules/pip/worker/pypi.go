@@ -97,15 +97,17 @@ func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfort
 	}
 
 	// Our preference of picking the digest is first from "bdist" and them from "sdist"
-	pkgdigest, err := getPackageTypeDigestBDist(&packagedigests, wheeltag)
-	if err == nil {
-		algoType, digestValue := getHighestHashData(pkgdigest)
-		checksum.Algorithm = algoType
-		checksum.Value = digestValue
-		return checksum
+	if checkfortag {
+		pkgdigest, err := getPackageTypeDigestBDist(&packagedigests, wheeltag)
+		if err == nil {
+			algoType, digestValue := getHighestHashData(pkgdigest)
+			checksum.Algorithm = algoType
+			checksum.Value = digestValue
+			return checksum
+		}
 	}
 
-	pkgdigest, err = getPackageTypeDigestSDist(&packagedigests)
+	pkgdigest, err := getPackageTypeDigestSDist(&packagedigests)
 	if err == nil {
 		algoType, digestValue := getHighestHashData(pkgdigest)
 		checksum.Algorithm = algoType
