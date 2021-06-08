@@ -72,7 +72,7 @@ func (g *gem) HasModulesInstalled(path string) error {
 // GetVersion ...
 func (g *gem) GetVersion() (string, error) {
 
-	cmd := exec.Command("Bundler", "version")
+	cmd := exec.Command("bundler", "version")
 	output, err := cmd.Output()
 	if err != nil {
 		return "", err
