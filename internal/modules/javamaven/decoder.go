@@ -127,7 +127,14 @@ func convertMavenPackageToModule(project gopom.Project) models.Module {
 		modVersion = project.Properties.Entries[version]
 	}
 
-	mod := createModule(modName, modVersion)
+	var mod models.Module
+	mod.Name = modName
+	mod.Version = modVersion
+	mod.Modules = map[string]*models.Module{}
+	mod.CheckSum = &models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Value:     readCheckSum(modName),
+	}
 	mod.Root = true
 	updatePackageSuppier(mod, project.Developers)
 	updatePackageDownloadLocation(mod, project.DistributionManagement)
@@ -164,10 +171,18 @@ func FindInPlugins(slice []gopom.Plugin, val string) (int, bool) {
 	return -1, false
 }
 
-func createModule(name string, version string) models.Module {
+func createModule(name string, version string, project gopom.Project) models.Module {
 	var mod models.Module
-	mod.Name = name
-	mod.Version = version
+
+	modVersion := version
+	if strings.HasPrefix(version, "$") {
+		version := strings.TrimLeft(strings.TrimRight(version, "}"), "${")
+		modVersion = project.Properties.Entries[version]
+	}
+
+	name = path.Base(name)
+	mod.Name = strings.Replace(name, " ", "-", -1)
+	mod.Version = modVersion
 	mod.Modules = map[string]*models.Module{}
 	mod.CheckSum = &models.CheckSum{
 		Algorithm: models.HashAlgoSHA1,
@@ -204,17 +219,17 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 	} else {
 		version = project.Version
 	}
-	parentMod := createModule(project.Name, version)
+	parentMod := createModule(project.Name, version, project)
 	modules = append(modules, parentMod)
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Dependencies {
-		_, found := FindInDependency(parentPom.Dependencies, element.ArtifactID)
+		name := strings.Replace(element.ArtifactID, " ", "-", -1)
+		_, found := FindInDependency(parentPom.Dependencies, name)
 		if !found {
-			_, found1 := FindInDependency(parentPom.DependencyManagement.Dependencies, element.ArtifactID)
+			_, found1 := FindInDependency(parentPom.DependencyManagement.Dependencies, name)
 			if !found1 {
-				name := path.Base(element.ArtifactID)
-				mod := createModule(name, element.Version)
+				mod := createModule(name, element.Version, project)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
@@ -223,12 +238,12 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 
 	// Include plugins from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Build.Plugins {
-		_, found := FindInPlugins(parentPom.Build.Plugins, element.ArtifactID)
+		name := strings.Replace(element.ArtifactID, " ", "-", -1)
+		_, found := FindInPlugins(parentPom.Build.Plugins, name)
 		if !found {
-			_, found1 := FindInPlugins(parentPom.Build.PluginManagement.Plugins, element.ArtifactID)
+			_, found1 := FindInPlugins(parentPom.Build.PluginManagement.Plugins, name)
 			if !found1 {
-				name := path.Base(element.ArtifactID)
-				mod := createModule(name, element.Version)
+				mod := createModule(name, element.Version, project)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
@@ -263,21 +278,28 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 
 	// iterate over dependencyManagement
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
-		var modVersion string
-		if len(project.Properties.Entries) > 0 {
-			version := strings.TrimLeft(strings.TrimRight(dependencyManagement.Version, "}"), "${")
-			modVersion = project.Properties.Entries[version]
-		}
-		name := path.Base(dependencyManagement.ArtifactID)
-		mod := createModule(name, modVersion)
+		mod := createModule(dependencyManagement.ArtifactID, dependencyManagement.Version, project)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
 
 	// iterate over dependencies
 	for _, dep := range project.Dependencies {
-		name := path.Base(dep.ArtifactID)
-		mod := createModule(name, dep.Version)
+		mod := createModule(dep.ArtifactID, dep.Version, project)
+		modules = append(modules, mod)
+		parentMod.Modules[mod.Name] = &mod
+	}
+
+	// iterate over Plugins
+	for _, plugin := range project.Build.Plugins {
+		mod := createModule(plugin.ArtifactID, plugin.Version, project)
+		modules = append(modules, mod)
+		parentMod.Modules[mod.Name] = &mod
+	}
+
+	// iterate over PluginManagement
+	for _, plugin := range project.Build.PluginManagement.Plugins {
+		mod := createModule(plugin.ArtifactID, plugin.Version, project)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
@@ -312,29 +334,12 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 		}
 
 		if !found {
-			name := path.Base(dependencyItem)
 			version := strings.Split(dependencyList[i], ":")[3]
-			mod := createModule(name, version)
+			mod := createModule(dependencyItem, version, project)
 			modules = append(modules, mod)
 			parentMod.Modules[mod.Name] = &mod
 		}
 		i++
-	}
-
-	// iterate over Plugins
-	for _, plugin := range project.Build.Plugins {
-		name := path.Base(plugin.ArtifactID)
-		mod := createModule(name, plugin.Version)
-		modules = append(modules, mod)
-		parentMod.Modules[mod.Name] = &mod
-	}
-
-	// iterate over PluginManagement
-	for _, plugin := range project.Build.PluginManagement.Plugins {
-		name := path.Base(plugin.ArtifactID)
-		mod := createModule(name, plugin.Version)
-		modules = append(modules, mod)
-		parentMod.Modules[mod.Name] = &mod
 	}
 
 	if lookForDepenent {
