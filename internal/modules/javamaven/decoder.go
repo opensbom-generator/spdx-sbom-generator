@@ -208,7 +208,7 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 	// Load project from string
 	var project gopom.Project
 	if err := xml.Unmarshal([]byte(pomStr), &project); err != nil {
-		fmt.Println("unable to unmarshal Module %s pom file. Reason: %s", moduleName, err)
+		fmt.Printf("unable to unmarshal Module %s pom file. Reason: %v", moduleName, err)
 		return []models.Module{}, err
 	}
 
@@ -269,7 +269,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	// Load project from string
 	var project gopom.Project
 	if err := xml.Unmarshal([]byte(pomStr), &project); err != nil {
-		fmt.Println("unable to unmarshal pom file. Reason: %s", err)
+		fmt.Printf("unable to unmarshal pom file. Reason: %v", err)
 		return modules, err
 	}
 
