@@ -13,7 +13,7 @@ import (
 
 const cmdName = "poetry"
 const manifestFile = "pyproject.toml"
-const manifestLockFile = "Poetry.lock"
+const manifestLockFile = "poetry.lock"
 const placeholderPkgName = "{PACKAGE}"
 
 var errDependenciesNotFound = errors.New("There are no components in the BOM. The project may not contain dependencies installed. Please install Modules before running spdx-sbom-generator, e.g.: `poetry install` might solve the issue.")
