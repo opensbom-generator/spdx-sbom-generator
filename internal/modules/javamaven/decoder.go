@@ -122,9 +122,14 @@ func convertMavenPackageToModule(project gopom.Project) models.Module {
 		modName = strings.Replace(modName, " ", "-", -1)
 	}
 
-	modVersion := project.Version
-	if strings.HasPrefix(project.Version, "$") {
-		version := strings.TrimLeft(strings.TrimRight(project.Version, "}"), "${")
+	var modVersion string
+	if len(project.Version) > 0 {
+		modVersion = project.Version
+	} else if len(project.Parent.Version) > 0 {
+		modVersion = project.Parent.Version
+	}
+	if strings.HasPrefix(modVersion, "$") {
+		version := strings.TrimLeft(strings.TrimRight(modVersion, "}"), "${")
 		modVersion = project.Properties.Entries[version]
 	}
 
@@ -228,6 +233,7 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 	}
 
 	parentMod := convertMavenPackageToModule(project)
+	parentMod.Root = false
 	modules = append(modules, parentMod)
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
@@ -269,6 +275,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 		return []models.Module{}, err
 	}
 	parentMod := convertMavenPackageToModule(project)
+	parentMod.Root = true
 	modules = append(modules, parentMod)
 
 	// iterate over dependencyManagement
