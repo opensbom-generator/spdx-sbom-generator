@@ -71,7 +71,7 @@ func (m *javamaven) HasModulesInstalled(path string) error {
 		return err
 	}
 
-	fname, err = filepath.Abs(fname)
+	_, err = filepath.Abs(fname)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -129,10 +129,8 @@ func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
 		return nil, err
 	}
 
-	err = buildDependenciesGraph(modules, tdList)
-	if err != nil {
-		return nil, errBuildlingModuleDependencies
-	}
+	buildDependenciesGraph(modules, tdList)
+
 	return modules, nil
 }
 
