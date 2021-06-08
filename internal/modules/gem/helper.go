@@ -1001,6 +1001,10 @@ func buildLocalTree(paths []string, secondaryLocation string) []Spec {
 		checkSumPaths := []string{cachePath, secondaryCachePath}
 		licensePath := filepath.Join(installPath, GEM_DEFAULT_DIR)
 
+		if _, err := os.Stat(specPath); err != nil {
+		  continue
+	    }
+
 		files, err := ioutil.ReadDir(specPath)
 		if err != nil {
 			log.Fatal(err)
