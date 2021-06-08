@@ -15,9 +15,12 @@ import (
 const jsonLogFormat = "json"
 const defaultLogLevel = "info"
 
-var errRequiredEnVarError = errors.New("environment variable required")
+// provided through ldflags on build
+var (
+	version string
+)
 
-var version string
+var errRequiredEnVarError = errors.New("environment variable required")
 
 var rootCmd = &cobra.Command{
 	Use:   "spdx-sbom-generator",
@@ -27,17 +30,21 @@ var rootCmd = &cobra.Command{
 }
 
 func main() {
+	if version == "" {
+		version = "source-code"
+	}
+
 	if err := rootCmd.Execute(); err != nil {
 		log.Fatal(err)
 	}
 }
-
 func init() {
-	rootCmd.Flags().StringVarP(&version, "version", "v", "", "output the version number")
 	rootCmd.Flags().StringP("path", "p", ".", "the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.')")
 	rootCmd.Flags().BoolP("include-license-text", "i", false, " Include full license text (default: false)")
-	rootCmd.Flags().StringP("output", "o", "bom.spdx", "<output> Write SPDX to file (default: '.spdx')")
 	rootCmd.Flags().StringP("schema", "s", "2.2", "<version> Target schema version (default: '2.2')")
+	rootCmd.Flags().StringP("output-dir", "o", ".", "<output> directory to Write SPDX to file (default: current directory)")
+	rootCmd.Flags().StringP("format", "f", "spdx", "output file format (default: spdx)")
+
 	//rootCmd.MarkFlagRequired("path")
 	cobra.OnInitialize(setupLogger)
 }
@@ -66,7 +73,6 @@ func setupLogger() {
 
 func generate(cmd *cobra.Command, args []string) {
 	log.Info("Starting to generate SPDX ...")
-	var version string
 	checkOpt := func(opt string) string {
 		cmdOpt, err := cmd.Flags().GetString(opt)
 		if err != nil {
@@ -76,19 +82,21 @@ func generate(cmd *cobra.Command, args []string) {
 		return cmdOpt
 	}
 	path := checkOpt("path")
-	output := checkOpt("output")
+	outputDir := checkOpt("output-dir")
 	schema := checkOpt("schema")
+	format := checkOpt("format")
 	license, err := cmd.Flags().GetBool("include-license-text")
 	if err != nil {
 		log.Fatalf("Failed to read command option: %v", err)
 	}
 
 	handler, err := handler.NewSPDX(handler.SPDXSettings{
-		Version: version,
-		Path:    path,
-		License: license,
-		Output:  output,
-		Schema:  schema,
+		Version:   version,
+		Path:      path,
+		License:   license,
+		OutputDir: outputDir,
+		Schema:    schema,
+		Format:    format,
 	})
 	if err != nil {
 		log.Fatalf("Failed to initialize command: %v", err)

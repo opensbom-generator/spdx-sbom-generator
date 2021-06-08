@@ -16,7 +16,6 @@ import (
 
 const (
 	noAssertion = "NOASSERTION"
-	version     = "0.0.1" // todo: get version from version.txt
 )
 
 var replacer *strings.Replacer
@@ -29,8 +28,9 @@ type Format struct {
 
 // Config ...
 type Config struct {
-	Filename  string
-	GetSource func() []models.Module
+	ToolVersion string
+	Filename    string
+	GetSource   func() []models.Module
 }
 
 func init() {
@@ -51,7 +51,7 @@ func New(cfg Config) (Format, error) {
 // move into go templates
 func (f *Format) Render() error {
 	modules := sortModules(f.Config.GetSource())
-	document, err := buildDocument(modules[0])
+	document, err := buildDocument(f.Config.ToolVersion, modules[0])
 	if err != nil {
 		return err
 	}
@@ -125,14 +125,14 @@ func generatePackage(file *os.File, pkg models.Package) {
 	file.WriteString(fmt.Sprintf("PackageComment: %v\n\n", pkg.PackageComment))
 }
 
-func buildDocument(module models.Module) (*models.Document, error) {
+func buildDocument(toolVersion string, module models.Module) (*models.Document, error) {
 	return &models.Document{
 		SPDXVersion:       "SPDX-2.2",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
 		DocumentName:      module.Name,
 		DocumentNamespace: buildNamespace(module.Name, module.Version),
-		Creator:           fmt.Sprintf("Tool: spdx-sbom-generator-%s", version),
+		Creator:           fmt.Sprintf("Tool: spdx-sbom-generator-%s", toolVersion),
 		Created:           time.Now().UTC().Format(time.RFC3339),
 	}, nil
 }
