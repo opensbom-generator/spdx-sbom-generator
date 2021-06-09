@@ -106,8 +106,19 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
-
 	mod.Modules = map[string]*models.Module{}
+
+	mod.Copyright = getCopyright(path)
+	modLic, err := helper.GetLicenses(path)
+	if err != nil {
+		return mod, nil
+	}
+	mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
+	mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
+	mod.CommentsLicense = modLic.Comments
+	if !helper.LicenseSPDXExists(modLic.ID) {
+		mod.OtherLicense = append(mod.OtherLicense, modLic)
+	}
 
 	return mod, nil
 }
@@ -160,17 +171,17 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 	if err != nil {
 		return modules, err
 	}
-	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)))
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
 	de.CheckSum = &models.CheckSum{
-		Algorithm: "sha256",
-		Value:     h,
+		Algorithm: "SHA256",
+		Value: h,
 	}
 	modules = append(modules, *de)
 	for key, dd := range deps {
 		d := dd.(map[string]interface{})
 		var mod models.Module
-		mod.Name = fmt.Sprintf("%s-%s", key, d["version"].(string))
 		mod.Version = d["version"].(string)
+		mod.Name = fmt.Sprintf("%s-%s", strings.TrimPrefix(key, "@"), mod.Version )
 
 		r := ""
 		if d["resolved"] != nil {
@@ -181,15 +192,12 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		}
 
 		mod.PackageURL = r
-		mod.CheckSum = getCheckSum(d, mod.Name)
-
-		licensePath := filepath.Join(path, m.metadata.ModulePath[0], key, "LICENSE")
-		if helper.Exists(licensePath) {
-			r := reader.New(licensePath)
-			s := r.StringFromFile()
-			mod.Copyright = helper.GetCopyright(s)
+		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
+		mod.CheckSum = &models.CheckSum{
+			Algorithm: "SHA256",
+			Value: h,
 		}
-
+		mod.Copyright = getCopyright(filepath.Join(path, m.metadata.ModulePath[0], key))
 		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key))
 		if err != nil {
 			continue
@@ -200,22 +208,43 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		if !helper.LicenseSPDXExists(modLic.ID) {
 			mod.OtherLicense = append(mod.OtherLicense, modLic)
 		}
+		mod.Modules = map[string]*models.Module{}
+		if d["requires"] != nil {
+			modDeps := d["requires"].(map[string]interface{})
+			for k, v := range modDeps {
+				name := strings.TrimPrefix(k, "@")
+				version := strings.TrimPrefix(v.(string), "^")
+				mod.Modules[k] = &models.Module{
+					Name:     fmt.Sprintf("%s-%s", name, version),
+					Version:  version,
+					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
+				}
+
+			}
+		}
+
 		modules = append(modules, mod)
 	}
 	return modules, nil
 }
 
-func getCheckSum(dep map[string]interface{}, name string) *models.CheckSum {
-	if dep["integrity"] != nil {
-		rArr := strings.Split(dep["integrity"].(string), "-")
-		return &models.CheckSum{
-			Value:     rArr[1],
-			Algorithm: models.HashAlgorithm(rArr[0]),
-		}
+func getCopyright(path string) string {
+	licensePath := filepath.Join(path, "LICENSE")
+	if helper.Exists(licensePath) {
+		r := reader.New(licensePath)
+		s := r.StringFromFile()
+		return helper.GetCopyright(s)
 	}
-	h := fmt.Sprintf("%x", sha256.Sum256([]byte(name)))
-	return &models.CheckSum{
-		Value:     h,
-		Algorithm: "sha256",
+
+	licenseMDPath, err := filepath.Glob(filepath.Join(path, "LICENSE*"))
+	if err != nil {
+		return ""
 	}
+	if len(licenseMDPath) > 0 && helper.Exists(licenseMDPath[0]) {
+		r := reader.New(licenseMDPath[0])
+		s := r.StringFromFile()
+		return helper.GetCopyright(s)
+	}
+
+	return ""
 }

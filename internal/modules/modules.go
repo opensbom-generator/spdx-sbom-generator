@@ -14,6 +14,7 @@ import (
 	"spdx-sbom-generator/internal/modules/javamaven"
 	"spdx-sbom-generator/internal/modules/npm"
 	"spdx-sbom-generator/internal/modules/nuget"
+	"spdx-sbom-generator/internal/modules/pip"
 	"spdx-sbom-generator/internal/modules/yarn"
 )
 
@@ -34,6 +35,7 @@ func init() {
 		javamaven.New(),
 		nuget.New(),
 		yarn.New(),
+		pip.New(),
 	)
 }
 
