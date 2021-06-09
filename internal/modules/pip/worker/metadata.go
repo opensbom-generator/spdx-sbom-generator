@@ -37,10 +37,15 @@ const (
 var AuthorAnOrganizationKeywords = []string{"Authority", "Team", "Developers", "Services", "Foundation", "Software"}
 
 type Packages struct {
-	Name    string `json:"name,omitempty"`
-	Version string `json:"version,omitempty"`
+	Name      string `json:"name,omitempty"`
+	Version   string `json:"version,omitempty"`
+	Location  string `json:"location,omitempty"`
+	Installer string `json:"installer,omitempty"`
+	Root      bool
 }
+
 type Metadata struct {
+	Root           bool
 	Name           string
 	Version        string
 	Description    string

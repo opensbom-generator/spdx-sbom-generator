@@ -65,17 +65,18 @@ func ParseMetadata(metadata *Metadata, packagedetails string) {
 	SetMetadataValues(metadata, pkgDataMap)
 }
 
-func (d *MetadataDecoder) BuildMetadata(packagename string) Metadata {
+func (d *MetadataDecoder) BuildMetadata(pkg Packages) Metadata {
 	var metadata Metadata
 
-	metadatastr, err := d.getPkgDetailsFunc(packagename)
+	metadatastr, err := d.getPkgDetailsFunc(pkg.Name)
 	if err != nil {
 		// If there was error fetching package details, we are setting all members to NOASSERTION.
 		// Except for Package Name
-		SetMetadataToNoAssertion(&metadata, packagename)
+		SetMetadataToNoAssertion(&metadata, pkg.Name)
 	}
 	ParseMetadata(&metadata, metadatastr)
 
+	metadata.Root = pkg.Root
 	metadata.ProjectURL = BuildProjectUrl(metadata.Name, metadata.Version)
 	metadata.PackageURL = BuildPackageUrl(metadata.Name, metadata.Version)
 	if len(metadata.HomePage) > 0 {
@@ -91,7 +92,7 @@ func (d *MetadataDecoder) BuildMetadata(packagename string) Metadata {
 	return metadata
 }
 
-func (d *MetadataDecoder) BuildModule(root bool, metadata Metadata) models.Module {
+func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	var module models.Module
 	module.Version = metadata.Version
 	module.Name = metadata.Name
@@ -129,7 +130,7 @@ func (d *MetadataDecoder) BuildModule(root bool, metadata Metadata) models.Modul
 	module.OtherLicense = []*models.License{} // How to get this
 	module.PackageComment = metadata.Description
 
-	module.Root = root
+	module.Root = metadata.Root
 	module.Modules = map[string]*models.Module{}
 
 	return module
@@ -140,17 +141,17 @@ func (d *MetadataDecoder) GetMetadataList(pkgs []Packages) (map[string]Metadata,
 	metaList := []Metadata{}
 
 	for _, pkg := range pkgs {
-		metadata := d.BuildMetadata(pkg.Name)
+		metadata := d.BuildMetadata(pkg)
 		metaList = append(metaList, metadata)
 		metainfo[strings.ToLower(pkg.Name)] = metadata
 	}
 	return metainfo, metaList
 }
 
-func (d *MetadataDecoder) ConvertMetadataToModules(isRoot bool, pkgs []Packages, modules *[]models.Module) map[string]Metadata {
+func (d *MetadataDecoder) ConvertMetadataToModules(pkgs []Packages, modules *[]models.Module) map[string]Metadata {
 	metainfo, metaList := d.GetMetadataList(pkgs)
 	for _, metadata := range metaList {
-		mod := d.BuildModule(isRoot, metadata)
+		mod := d.BuildModule(metadata)
 		*modules = append(*modules, mod)
 	}
 	return metainfo
