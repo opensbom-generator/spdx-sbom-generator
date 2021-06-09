@@ -10,35 +10,35 @@ import (
 )
 
 type pip struct {
-	pip models.IPlugin
+	plugin models.IPlugin
 }
 
-// Initiate the new pip plugin
+// New ...
 func New() *pip {
 	return &pip{
-		pip: nil,
+		plugin: nil,
 	}
 }
 
 // Get Metadata ...
 func (m *pip) GetMetadata() models.PluginMetadata {
-	return m.pip.GetMetadata()
+	return m.plugin.GetMetadata()
 }
 
 // Is Valid ...
 func (m *pip) IsValid(path string) bool {
 	if p := pipenv.New(); p.IsValid(path) {
-		m.pip = p
+		m.plugin = p
 		return true
 	}
 
 	if p := poetry.New(); p.IsValid(path) {
-		m.pip = p
+		m.plugin = p
 		return true
 	}
 
 	if p := pyenv.New(); p.IsValid(path) {
-		m.pip = p
+		m.plugin = p
 		return true
 	}
 
@@ -47,30 +47,30 @@ func (m *pip) IsValid(path string) bool {
 
 // Has Modules Installed ...
 func (m *pip) HasModulesInstalled(path string) error {
-	return m.pip.HasModulesInstalled(path)
+	return m.plugin.HasModulesInstalled(path)
 }
 
 // Get Version ...
 func (m *pip) GetVersion() (string, error) {
-	return m.pip.GetVersion()
+	return m.plugin.GetVersion()
 }
 
 // Set Root Module ...
 func (m *pip) SetRootModule(path string) error {
-	return m.pip.SetRootModule(path)
+	return m.plugin.SetRootModule(path)
 }
 
 // Get Root Module ...
 func (m *pip) GetRootModule(path string) (*models.Module, error) {
-	return m.pip.GetRootModule(path)
+	return m.plugin.GetRootModule(path)
 }
 
 // List Used Modules...
 func (m *pip) ListUsedModules(path string) ([]models.Module, error) {
-	return m.pip.ListUsedModules(path)
+	return m.plugin.ListUsedModules(path)
 }
 
 // List Modules With Deps ...
 func (m *pip) ListModulesWithDeps(path string) ([]models.Module, error) {
-	return m.pip.ListModulesWithDeps(path)
+	return m.plugin.ListModulesWithDeps(path)
 }
