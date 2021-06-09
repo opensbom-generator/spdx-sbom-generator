@@ -10,6 +10,7 @@ import (
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/modules/cargo"
 	"spdx-sbom-generator/internal/modules/composer"
+	"spdx-sbom-generator/internal/modules/gem"
 	"spdx-sbom-generator/internal/modules/gomod"
 	"spdx-sbom-generator/internal/modules/javamaven"
 	"spdx-sbom-generator/internal/modules/npm"
@@ -31,6 +32,7 @@ func init() {
 		cargo.New(),
 		composer.New(),
 		gomod.New(),
+		gem.New(),
 		npm.New(),
 		javamaven.New(),
 		nuget.New(),
