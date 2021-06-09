@@ -39,6 +39,7 @@ var (
 	assetPackage           = "package"
 	assetDependencies      = "dependencies"
 	configModuleFile       = "packages.config"
+	nugetPackageSplit      = "global-packages:"
 )
 
 // New ...
@@ -92,7 +93,7 @@ func (m *nuget) HasModulesInstalled(path string) error {
 	if globalPackageCachePath == "" {
 		return errNoDependencyCache
 	}
-	cachePathArray := strings.Split(globalPackageCachePath, ":")
+	cachePathArray := strings.Split(globalPackageCachePath, nugetPackageSplit)
 	if len(cachePathArray) > 1 {
 		packageCachePaths = append(packageCachePaths, strings.TrimSpace(cachePathArray[1]))
 	}
