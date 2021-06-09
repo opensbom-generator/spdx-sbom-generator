@@ -911,11 +911,12 @@ func detectManifest(path, mode string) (string, error) {
 func ensurePlatform(path string) bool {
 
 	manifest, err := detectManifest(path, DETECTION_MODE_LOCK)
-	if err != nil {
+	if err != nil || manifest == "" {
 		return false
 	}
 	path = fmt.Sprintf("%s%s", path, manifest)
 	beginChar := path[0:1]
+	
 	followedByChar := path[1:2]
 	if beginChar == "." && followedByChar != "/" {
 		path = strings.Replace(path, ".", "./", 1)
