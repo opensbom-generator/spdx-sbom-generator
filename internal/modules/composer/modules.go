@@ -218,7 +218,6 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 		module.CommentsLicense = licensePkg.Comments
 	} else if len(dep.License) > 0 {
-		// INFO: is Error, use license from composer.lock
 		licenseValue := dep.License[0]
 		module.LicenseDeclared = licenseValue
 		module.LicenseConcluded = licenseValue
@@ -242,17 +241,13 @@ func getAuthor(dep ComposerLockPackage) models.SupplierContact {
 }
 
 func getName(moduleName string) string {
-	var name string
 
 	groupNames := strings.Split(moduleName, "/")
 
 	if len(groupNames) > 1 {
-		name = groupNames[1]
-	} else {
-		name = groupNames[0]
+		return groupNames[1]
 	}
-
-	return name
+	return groupNames[0]
 }
 
 func genUrlFromComposerPackage(dep ComposerLockPackage) string {
@@ -267,8 +262,8 @@ func genUrlFromComposerPackage(dep ComposerLockPackage) string {
 		return gitURL
 	}
 
-	cratedGitURL := genComposerUrl(dep.Name, dep.Version)
-	return cratedGitURL
+	createdURL := genComposerUrl(dep.Name, dep.Version)
+	return createdURL
 }
 func genComposerUrl(name string, version string) string {
 	return "github.com/" + name

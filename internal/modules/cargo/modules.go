@@ -82,7 +82,7 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       false,
-		PackageURL: getPackageURL(dep),
+		PackageURL: formatPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
@@ -99,6 +99,9 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 		module.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
 		module.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
 		module.CommentsLicense = licensePkg.Comments
+	} else if dep.License != "" {
+		module.LicenseDeclared = dep.License
+		module.LicenseConcluded = dep.License
 	}
 
 	return module
@@ -145,7 +148,7 @@ func convertCargoPackageToPluginModule(dep CargoPackage) models.Module {
 		Version:    dep.Version,
 		Name:       dep.Name,
 		Root:       true,
-		PackageURL: getPackageURL(dep),
+		PackageURL: formatPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
@@ -172,17 +175,24 @@ func convertToLocalPath(manifestPath string) string {
 	return localPath
 }
 
-func getPackageURL(dep CargoPackage) string {
-	var value string
-	if dep.Source != "" {
-		value = dep.Source
-	} else {
-		value = dep.Repository
+func getDefaultPackageURL(dep CargoPackage) string {
+	if dep.Homepage != "" {
+		return dep.Homepage
 	}
 
-	value = removeURLProtocol(value)
+	if dep.Source != "" {
+		return dep.Source
+	}
 
-	return value
+	return dep.Repository
+}
+
+func formatPackageURL(dep CargoPackage) string {
+	URL := getDefaultPackageURL(dep)
+	URL = removeURLProtocol(URL)
+	URL = removeRegisrySuffix(URL)
+
+	return URL
 }
 
 func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {

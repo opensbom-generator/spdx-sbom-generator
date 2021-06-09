@@ -2,7 +2,9 @@
 
 package composer
 
-import "strings"
+import (
+	"strings"
+)
 
 func removeURLProtocol(str string) string {
 	value := strings.ReplaceAll(str, "https://", "")
