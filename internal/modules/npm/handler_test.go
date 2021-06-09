@@ -3,6 +3,7 @@
 package npm
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os/exec"
@@ -104,40 +105,47 @@ func TestListAllModules(t *testing.T) {
 	count := 0
 	for _, mod := range mods {
 		if mod.Name == "validator-10.11.0" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
+
 			assert.Equal(t, "10.11.0", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/validator/-/validator-10.11.0.tgz", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha512"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "X/p3UZerAIsbBfN/IwahhYaBbY68EN/UQBWHtsbXGT5bfrH/p4NQzUCG1kF/rtKaNpnJ7jAu6NGTdSNtyNIXMw==", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) 2018 Chris O'Hara <cohara87@gmail.com>", mod.Copyright)
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++
 			continue
 		}
 		if mod.Name == "shortid-2.2.16" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
+
 			assert.Equal(t, "2.2.16", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/shortid/-/shortid-2.2.16.tgz", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha512"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "Ugt+GIZqvGXCIItnsL+lvFJOiN7RYqlGy7QE41O3YC1xbNSeDGIRO7xg2JJXIAj1cAGnOeC1r7/T9pgrtQbv4g==", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) Dylan Greene", mod.Copyright)
 			assert.Equal(t, "MITNFA", mod.LicenseDeclared)
 			count++
 			continue
 		}
 		if mod.Name == "body-parser-1.19.0" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
+
 			assert.Equal(t, "1.19.0", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/body-parser/-/body-parser-1.19.0.tgz", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha512"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "dhEPs72UPbDnAQJ9ZKMNTP6ptJaionhP5cBb541nXPlW60Jepo9RV/a4fX4XWW9CuFNK22krhrj1+rgzifNCsw==", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) 2014 Jonathan Ong <me@jongleberry.com>", mod.Copyright)
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++
 			continue
 		}
 		if mod.Name == "bcryptjs-2.4.3" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
 			assert.Equal(t, "2.4.3", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/bcryptjs/-/bcryptjs-2.4.3.tgz", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha1"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "mrVie5PmBiH/fNrF2pczAn3x0Ms=", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) 2012 Nevins Bartolomeo <nevins.bartolomeo@gmail.com>", strings.TrimSpace(mod.Copyright))
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++

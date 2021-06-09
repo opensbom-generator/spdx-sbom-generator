@@ -152,9 +152,9 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 	if err != nil {
 		return modules, err
 	}
-	h := fmt.Sprintf("%x", sha256.Sum256([]byte(path)) )
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))) )
 	de.CheckSum = &models.CheckSum{
-		Algorithm: "sha256",
+		Algorithm: "SHA256",
 		Value: h,
 	}
 	modules = append(modules, *de)
@@ -163,18 +163,16 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		mod.Name = d.Name
 		mod.Version = d.Version
 
-		// todo: handle mod.supplier
-
 		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
 		if strings.Contains(r, yarnRegistry) {
 			mod.Supplier.Name = "NOASSERTION"
 		}
 
 		mod.PackageURL = r
-		rArr := strings.Split(d.Integrity, "-")
+		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
-			Value:     rArr[1],
-			Algorithm: models.HashAlgorithm(rArr[0]),
+			Algorithm: "SHA256",
+			Value: h,
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, "LICENSE")
 		if helper.Exists(licensePath) {

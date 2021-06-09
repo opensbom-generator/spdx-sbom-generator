@@ -3,6 +3,7 @@
 package yarn
 
 import (
+	"crypto/sha256"
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"os/exec"
@@ -96,30 +97,36 @@ func TestListAllModules(t *testing.T) {
 	count := 0
 	for _, mod := range mods {
 		if mod.Name == "axios-0.19.2" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))) )
+
 			assert.Equal(t, "0.19.2", mod.Version)
 			assert.Equal(t, "https://registry.yarnpkg.com/axios/-/axios-0.19.2.tgz#3ea36c5d8818d0d5f8a8a97a6d36b86cdc00cb27", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha512"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "fjgm5MvRHLhx+osE2xoekY70AhARk3a6hkN+3Io1jc00jtquGvxYlKlsFUhmUET0V5te6CcZI7lcv2Ym61mjHA==", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) 2014-present Matt Zabriskie", mod.Copyright)
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++
 			continue
 		}
 		if mod.Name == "react-16.14.0" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))) )
+
 			assert.Equal(t, "16.14.0", mod.Version)
 			assert.Equal(t, "https://registry.yarnpkg.com/react/-/react-16.14.0.tgz#94d776ddd0aaa37da3eda8fc5b6b18a4c9a3114d", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha512"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "0X2CImDkJGApiAlcf0ODKIneSwBPhqJawOa5wCtKbu7ZECrmS26NvtSILynQ66cgkT/RJ4LidJOc3bUESwmU8g==", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) Facebook, Inc. and its affiliates.", mod.Copyright)
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++
 			continue
 		}
 		if mod.Name == "react-dom-16.14.0" {
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))) )
+
 			assert.Equal(t, "16.14.0", mod.Version)
 			assert.Equal(t, "https://registry.yarnpkg.com/react-dom/-/react-dom-16.14.0.tgz#7ad838ec29a777fb3c75c3a190f661cf92ab8b89", mod.PackageURL)
-			assert.Equal(t, models.HashAlgorithm("sha512"), mod.CheckSum.Algorithm)
-			assert.Equal(t, "1gCeQXDLoIqMgqD3IO2Ah9bnf0w9kzhwN5q4FGnHZ67hBm9yePzB5JJAIQCc8x3pFnNlwFq4RidZggNAAkzWWw==", mod.CheckSum.Value)
+			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
+			assert.Equal(t, h, mod.CheckSum.Value)
 			assert.Equal(t, "Copyright (c) Facebook, Inc. and its affiliates.", mod.Copyright)
 			assert.Equal(t, "MIT", mod.LicenseDeclared)
 			count++
