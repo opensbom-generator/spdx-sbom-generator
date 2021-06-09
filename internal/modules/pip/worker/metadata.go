@@ -14,6 +14,7 @@ import (
 
 const ProjectUrl = "pypi.org/project"
 const PackageUrl = "pypi.org/pypi"
+const SitePackage = "site-packages"
 const PackageDistInfoPath = ".dist-info"
 const PackageLicenseFile = "LICENSE"
 const PackageMetadataFie = "METADATA"
@@ -94,16 +95,21 @@ func BuildLocalPath(location string, name string) string {
 func BuildDistInfoPath(location string, name string, version string) string {
 	var distInfoPath string
 	var exists bool
+	var isSitePackage bool
 
-	distInfoPath, exists = checkIfDistInfoPathExists(location, name, version)
-	if exists {
-		return distInfoPath
+	if strings.Contains(location, SitePackage) {
+		isSitePackage = true
 	}
 
-	distInfoPath, exists = checkIfDistInfoPathExists(location,
-		strings.ReplaceAll(name, "-", "_"),
-		version)
-
+	if isSitePackage {
+		distInfoPath, exists = checkIfDistInfoPathExists(location, name, version)
+		if exists {
+			return distInfoPath
+		}
+		distInfoPath, exists = checkIfDistInfoPathExists(location, strings.ReplaceAll(name, "-", "_"), version)
+	} else {
+		distInfoPath = location
+	}
 	return distInfoPath
 }
 
