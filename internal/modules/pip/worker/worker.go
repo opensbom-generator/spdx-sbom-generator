@@ -21,7 +21,7 @@ const PyvenvCfg = "pyvenv.cfg"
 const VirtualEnv = "VIRTUAL_ENV"
 
 var errorWheelFileNotFound = fmt.Errorf("Wheel file not found")
-var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open Wheel")
+var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open wheel file")
 
 func IsRequirementMeet(data string) bool {
 	_modules := LoadModules(data)

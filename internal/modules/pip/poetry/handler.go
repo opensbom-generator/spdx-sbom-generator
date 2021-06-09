@@ -16,9 +16,9 @@ const manifestFile = "pyproject.toml"
 const manifestLockFile = "poetry.lock"
 const placeholderPkgName = "{PACKAGE}"
 
-var errDependenciesNotFound = errors.New("Unable to generate SPDX file, no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update`")
-var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
-var errNoPipCommand = errors.New("No poetry command")
+var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `poetry install` or `poetry update`")
+var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
+var errNoPipCommand = errors.New("Cannot find the poetry command")
 var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 

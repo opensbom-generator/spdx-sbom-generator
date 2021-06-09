@@ -16,9 +16,9 @@ const cmdName = "python"
 const manifestFile = "requirements.txt"
 const placeholderPkgName = "{PACKAGE}"
 
-var errDependenciesNotFound = errors.New("Unable to generate SPDX file, no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt`")
-var errBuildlingModuleDependencies = errors.New("Error building modules dependencies")
-var errNoPipCommand = errors.New("No pyenv command")
+var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt`")
+var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
+var errNoPipCommand = errors.New("Cannot find the python command")
 var errVersionNotFound = errors.New("Python version not found")
 var errFailedToConvertModules = errors.New("Failed to convert modules")
 
