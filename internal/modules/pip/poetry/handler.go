@@ -29,6 +29,7 @@ type poetry struct {
 	basepath   string
 	pkgs       []worker.Packages
 	metainfo   map[string]worker.Metadata
+	allModules []models.Module
 }
 
 // New ...
@@ -64,8 +65,7 @@ func (m *poetry) HasModulesInstalled(path string) error {
 		return err
 	}
 	result, err := m.command.Output()
-	if err == nil && len(result) > 0 && worker.IsRequirementMeet(false, result) {
-		m.pkgs = worker.LoadModules(result)
+	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
 		return nil
 	}
 	return errDependenciesNotFound
@@ -92,10 +92,7 @@ func (m *poetry) SetRootModule(path string) error {
 // Get Root Module ...
 func (m *poetry) GetRootModule(path string) (*models.Module, error) {
 	if m.rootModule == nil {
-		module, err := m.fetchRootModule(path)
-		if err != nil {
-			return nil, err
-		}
+		module := m.fetchRootModule()
 		m.rootModule = &module
 	}
 	return m.rootModule, nil
@@ -103,16 +100,12 @@ func (m *poetry) GetRootModule(path string) (*models.Module, error) {
 
 // List Used Modules...
 func (m *poetry) ListUsedModules(path string) ([]models.Module, error) {
-	var modules []models.Module
-	mod, err := m.GetRootModule(path)
-	if err == nil {
-		modules = append(modules, *mod)
+	if err := m.LoadModuleList(path); err != nil {
+		return m.allModules, errFailedToConvertModules
 	}
 	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-	nonroot := decoder.ConvertMetadataToModules(false, m.pkgs, &modules)
-	m.metainfo = worker.MergeMetadataMap(m.metainfo, nonroot)
-	modules = worker.RemoveDuplicateRootModule(modules)
-	return modules, nil
+	m.metainfo = decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
+	return m.allModules, nil
 }
 
 // List Modules With Deps ...
@@ -121,7 +114,8 @@ func (m *poetry) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := worker.BuildDependencyGraph(&modules, &m.metainfo); err != nil {
+	m.GetRootModule(path)
+	if err := worker.BuildDependencyGraph(&m.allModules, &m.metainfo); err != nil {
 		return nil, err
 	}
 	return modules, err
@@ -156,31 +150,45 @@ func (m *poetry) GetPackageDetails(packageName string) (string, error) {
 	return result, nil
 }
 
-func (m *poetry) PushRootModuleToVenv() bool {
+func (m *poetry) PushRootModuleToVenv() (bool, error) {
 	if err := m.buildCmd(InstallRootModuleCmd, m.basepath); err != nil {
-		return false
+		return false, err
 	}
 	result, err := m.command.Output()
 	if err == nil && len(result) > 0 {
-		return true
+		return true, err
 	}
-	return false
+	return false, nil
 }
 
-func (m *poetry) fetchRootModule(path string) (models.Module, error) {
-	var pkgs []worker.Packages
-	var pkg worker.Packages
-	var modules []models.Module
-
-	split := strings.Split(path, "/")
-	pkg.Name = split[len(split)-1]
-	pkg.Version = "0.0.0"
-	pkgs = append(pkgs, pkg)
-
-	rootModuleState := m.PushRootModuleToVenv()
-	if rootModuleState {
-		decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-		m.metainfo = decoder.ConvertMetadataToModules(true, pkgs, &modules)
+func (m *poetry) markRootModue() {
+	for i, pkg := range m.pkgs {
+		if pkg.Installer == "poetry" {
+			m.pkgs[i].Root = true
+			break
+		}
 	}
-	return modules[0], nil
+}
+
+func (m *poetry) LoadModuleList(path string) error {
+	state, err := m.PushRootModuleToVenv()
+	if err != nil && !state {
+		return err
+	}
+	m.buildCmd(ModulesCmd, m.basepath)
+	result, err := m.command.Output()
+	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
+		m.pkgs = worker.LoadModules(result)
+		m.markRootModue()
+	}
+	return err
+}
+
+func (m *poetry) fetchRootModule() models.Module {
+	for _, mod := range m.allModules {
+		if mod.Root {
+			return mod
+		}
+	}
+	return models.Module{}
 }

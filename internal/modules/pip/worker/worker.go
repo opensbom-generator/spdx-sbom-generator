@@ -23,11 +23,9 @@ const VirtualEnv = "VIRTUAL_ENV"
 var errorWheelFileNotFound = fmt.Errorf("Wheel file not found")
 var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open Wheel")
 
-func IsRequirementMeet(root bool, data string) bool {
+func IsRequirementMeet(data string) bool {
 	_modules := LoadModules(data)
-	if root && len(_modules) == 1 {
-		return true
-	} else if !root && len(_modules) > 3 {
+	if len(_modules) > 3 {
 		return true
 	}
 	return false

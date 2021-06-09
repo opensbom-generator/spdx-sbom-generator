@@ -11,10 +11,9 @@ type command string
 // assume pipenv will take care of python version might be python2 or python3
 const (
 	VersionCmd           command = "pipenv run python -V"
-	ModulesCmd           command = "pipenv run pip list --exclude-editable --format json"
+	ModulesCmd           command = "pipenv run pip list -v --format json"
 	MetadataCmd          command = "pipenv run pip show {PACKAGE}"
 	InstallRootModuleCmd command = "pipenv run pip install -e ."
-	RootModuleCmd        command = "pipenv run pip list -e --format json"
 )
 
 // Parse ...

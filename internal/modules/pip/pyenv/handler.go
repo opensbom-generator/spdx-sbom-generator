@@ -4,6 +4,7 @@ package pyenv
 
 import (
 	"errors"
+	"path"
 	"path/filepath"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
@@ -28,6 +29,8 @@ type pyenv struct {
 	basepath   string
 	pkgs       []worker.Packages
 	metainfo   map[string]worker.Metadata
+	allModules []models.Module
+	venv       string
 }
 
 // New ...
@@ -61,6 +64,7 @@ func (m *pyenv) IsValid(path string) bool {
 func (m *pyenv) HasModulesInstalled(path string) error {
 	runme := false
 	state, venv, venvpath := worker.SearchVenv(path)
+	m.venv = venv
 	if state && len(venv) > 0 {
 		runme = true
 		m.metadata.ModulePath = append(m.metadata.ModulePath, venvpath)
@@ -71,7 +75,7 @@ func (m *pyenv) HasModulesInstalled(path string) error {
 			return err
 		}
 		result, err := m.command.Output()
-		if err == nil && len(result) > 0 && worker.IsRequirementMeet(false, result) {
+		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
 			m.pkgs = worker.LoadModules(result)
 			return nil
 		}
@@ -100,10 +104,7 @@ func (m *pyenv) SetRootModule(path string) error {
 // Get Root Module ...
 func (m *pyenv) GetRootModule(path string) (*models.Module, error) {
 	if m.rootModule == nil {
-		module, err := m.fetchRootModule(path)
-		if err != nil {
-			return nil, err
-		}
+		module := m.fetchRootModule()
 		m.rootModule = &module
 	}
 	return m.rootModule, nil
@@ -111,15 +112,12 @@ func (m *pyenv) GetRootModule(path string) (*models.Module, error) {
 
 // List Used Modules...
 func (m *pyenv) ListUsedModules(path string) ([]models.Module, error) {
-	var modules []models.Module
-	mod, err := m.GetRootModule(path)
-	if err == nil {
-		modules = append(modules, *mod)
+	if err := m.LoadModuleList(path); err != nil {
+		return m.allModules, errFailedToConvertModules
 	}
 	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-	nonroot := decoder.ConvertMetadataToModules(false, m.pkgs, &modules)
-	m.metainfo = worker.MergeMetadataMap(m.metainfo, nonroot)
-	return modules, nil
+	m.metainfo = decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
+	return m.allModules, nil
 }
 
 // List Modules With Deps ...
@@ -128,7 +126,8 @@ func (m *pyenv) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := worker.BuildDependencyGraph(&modules, &m.metainfo); err != nil {
+	m.GetRootModule(path)
+	if err := worker.BuildDependencyGraph(&m.allModules, &m.metainfo); err != nil {
 		return nil, err
 	}
 	return modules, err
@@ -171,35 +170,54 @@ func (m *pyenv) GetPackageDetails(packageName string) (string, error) {
 	return result, nil
 }
 
-func (m *pyenv) PushRootModuleToVenv() bool {
+func (m *pyenv) PushRootModuleToVenv() (bool, error) {
 	dir := m.GetExecutableDir()
 	if err := m.buildCmd(InstallRootModuleCmd, dir); err != nil {
-		return false
+		return false, err
 	}
 	result, err := m.command.Output()
 	if err == nil && len(result) > 0 {
-		return true
+		return true, err
 	}
-	return false
+	return false, nil
 }
 
-func (m *pyenv) fetchRootModule(path string) (models.Module, error) {
-	var pkgs []worker.Packages
-	var modules []models.Module
-	var rootModuleState bool
+func (m *pyenv) markRootModue() {
+	nonRootModulePath := path.Join(m.basepath, m.venv)
+	for i, pkg := range m.pkgs {
+		if !strings.Contains(pkg.Location, nonRootModulePath) {
+			m.pkgs[i].Root = true
+			break
+		}
+	}
+}
+
+func (m *pyenv) LoadModuleList(path string) error {
+	var state bool
+	var err error
 
 	if worker.IsValidRootModule(path) {
-		rootModuleState = m.PushRootModuleToVenv()
-	}
-	if rootModuleState {
-		dir := m.GetExecutableDir()
-		m.buildCmd(RootModuleCmd, dir)
-		result, err := m.command.Output()
-		if err == nil && len(result) > 0 && worker.IsRequirementMeet(true, result) {
-			pkgs = worker.LoadModules(result)
+		state, err = m.PushRootModuleToVenv()
+		if err != nil && !state {
+			return err
 		}
-		decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-		m.metainfo = decoder.ConvertMetadataToModules(true, pkgs, &modules)
+		dir := m.GetExecutableDir()
+		m.buildCmd(ModulesCmd, dir)
+		result, err := m.command.Output()
+		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
+			m.pkgs = worker.LoadModules(result)
+			m.markRootModue()
+		}
+		return err
 	}
-	return modules[0], nil
+	return err
+}
+
+func (m *pyenv) fetchRootModule() models.Module {
+	for _, mod := range m.allModules {
+		if mod.Root {
+			return mod
+		}
+	}
+	return models.Module{}
 }
