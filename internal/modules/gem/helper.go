@@ -710,7 +710,7 @@ func extractRootLicense(path string, filename string) (string, string, string, e
 
 	files, err := ioutil.ReadDir(path)
 	if err != nil {
-		fmt.Println("error extreacting licence from :" + path)
+		fmt.Println("error extracting licence from :" + path)
 		return "", "", "", err
 	}
 	licensePath = path
