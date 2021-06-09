@@ -13,7 +13,7 @@ import (
 )
 
 var errorPackageDigestNotFound = fmt.Errorf("Digest not found")
-var errorPypiCouldNotFetchPkgData = fmt.Errorf("Could not fet package data from PyPi")
+var errorPypiCouldNotFetchPkgData = fmt.Errorf("Could not fetch package data from PyPI")
 
 type PypiPackageData struct {
 	Info PypiPackageInfo       `json:"info"`
