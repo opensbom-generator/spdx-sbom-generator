@@ -103,8 +103,14 @@ func (m *pipenv) ListUsedModules(path string) ([]models.Module, error) {
 	if err := m.LoadModuleList(path); err != nil {
 		return m.allModules, errFailedToConvertModules
 	}
+
 	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-	m.metainfo = decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
+	metainfo, err := decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
+	if err != nil {
+		return m.allModules, err
+	}
+
+	m.metainfo = metainfo
 	return m.allModules, nil
 }
 
@@ -138,8 +144,8 @@ func (m *pipenv) buildCmd(cmd command, path string) error {
 	return command.Build()
 }
 
-func (m *pipenv) GetPackageDetails(packageName string) (string, error) {
-	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
+func (m *pipenv) GetPackageDetails(packageNameList string) (string, error) {
+	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageNameList))
 
 	m.buildCmd(metatdataCmd, m.basepath)
 	result, err := m.command.Output()

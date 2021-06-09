@@ -22,6 +22,7 @@ const VirtualEnv = "VIRTUAL_ENV"
 
 var errorWheelFileNotFound = fmt.Errorf("Wheel file not found")
 var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open wheel file")
+var errorUnableToFetchPackageMetadata = fmt.Errorf("Unable to fetch package details")
 
 func IsRequirementMeet(data string) bool {
 	_modules := LoadModules(data)
