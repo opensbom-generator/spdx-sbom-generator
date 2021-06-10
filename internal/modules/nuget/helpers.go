@@ -3,17 +3,10 @@
 package nuget
 
 import (
-	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
-
-func genUrl(packageName string, packageVersion string) string {
-	if packageName == "" || packageVersion == "" {
-		return ""
-	}
-	return fmt.Sprintf("pkg:nuget/%s@%s", packageName, packageVersion)
-}
 
 func getHttpResponseWithHeaders(url string, headers map[string]string) (*http.Response, error) {
 	var netClient = &http.Client{
@@ -34,4 +27,10 @@ func getHttpResponseWithHeaders(url string, headers map[string]string) (*http.Re
 	}
 
 	return response, err
+}
+
+func removeURLProtocol(str string) string {
+	value := strings.ReplaceAll(str, "https://", "")
+	value = strings.ReplaceAll(value, "http://", "")
+	return value
 }
