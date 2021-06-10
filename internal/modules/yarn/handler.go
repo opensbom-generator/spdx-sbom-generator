@@ -110,9 +110,21 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
-
+	if pkResult["homepage"] != nil {
+		mod.PackageURL = pkResult["homepage"].(string)
+	}
 	mod.Modules = map[string]*models.Module{}
-
+	mod.Copyright = getCopyright(path)
+	modLic, err := helper.GetLicenses(path)
+	if err != nil {
+		return mod, nil
+	}
+	mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
+	mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
+	mod.CommentsLicense = modLic.Comments
+	if !helper.LicenseSPDXExists(modLic.ID) {
+		mod.OtherLicense = append(mod.OtherLicense, modLic)
+	}
 	return mod, nil
 }
 
@@ -164,6 +176,9 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		mod.Version = d.Version
 
 		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
+		if strings.Index(r, "#") > 0 {
+			r = r[:strings.Index(r, "#")]
+		}
 		if strings.Contains(r, yarnRegistry) {
 			mod.Supplier.Name = "NOASSERTION"
 		}
@@ -272,4 +287,25 @@ func readLockFile(path string) ([]dependency, error) {
 	}
 
 	return p, nil
+}
+
+func getCopyright(path string) string {
+	licensePath := filepath.Join(path, "LICENSE")
+	if helper.Exists(licensePath) {
+		r := reader.New(licensePath)
+		s := r.StringFromFile()
+		return helper.GetCopyright(s)
+	}
+
+	licenseMDPath, err := filepath.Glob(filepath.Join(path, "LICENSE*"))
+	if err != nil {
+		return ""
+	}
+	if len(licenseMDPath) > 0 && helper.Exists(licenseMDPath[0]) {
+		r := reader.New(licenseMDPath[0])
+		s := r.StringFromFile()
+		return helper.GetCopyright(s)
+	}
+
+	return ""
 }

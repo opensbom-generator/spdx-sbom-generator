@@ -106,6 +106,9 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
+	if pkResult["homepage"] != nil {
+		mod.PackageURL = pkResult["homepage"].(string)
+	}
 	mod.Modules = map[string]*models.Module{}
 
 	mod.Copyright = getCopyright(path)
@@ -181,7 +184,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		d := dd.(map[string]interface{})
 		var mod models.Module
 		mod.Version = d["version"].(string)
-		mod.Name = fmt.Sprintf("%s-%s", strings.TrimPrefix(key, "@"), mod.Version )
+		mod.Name = strings.TrimPrefix(key, "@")
 
 		r := ""
 		if d["resolved"] != nil {
