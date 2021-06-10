@@ -367,13 +367,14 @@ func buildModule(name string, version string, dependencies map[string]string) (m
 		if nuSpecFile.Meta.ProjectURL != "" {
 			module.PackageURL = removeURLProtocol(nuSpecFile.Meta.ProjectURL)
 		}
-		if nuSpecFile.Meta.License != "" && helper.LicenseSPDXExists(nuSpecFile.Meta.License) {
+		if helper.LicenseSPDXExists(nuSpecFile.Meta.License) {
 			module.LicenseDeclared = helper.BuildLicenseDeclared(nuSpecFile.Meta.License)
 			module.LicenseConcluded = helper.BuildLicenseConcluded(nuSpecFile.Meta.License)
+		} else if nuSpecFile.Meta.License != "" {
+			module.LicenseDeclared = extractLicence(nuSpecFile.Meta.License)
+			module.LicenseConcluded = extractLicence(nuSpecFile.Meta.License)
 		}
-		if nuSpecFile.Meta.Copyright != "" {
-			module.Copyright = helper.GetCopyright(nuSpecFile.Meta.Copyright)
-		}
+		module.Copyright = nuSpecFile.Meta.Copyright
 		module.Supplier.Name = nuSpecFile.Meta.Authors
 		if module.Supplier.Name != "" {
 			module.Supplier.Name = nuSpecFile.Meta.Owners
@@ -510,4 +511,15 @@ func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
 		}, nil
 	}
 	return nil, nil
+}
+
+// extractLicence
+func extractLicence(licenceMetaData string) string {
+	licenseArray := strings.Split(licenceMetaData, " ")
+	for _, license := range licenseArray {
+		if helper.LicenseSPDXExists(license) {
+			return license
+		}
+	}
+	return ""
 }
