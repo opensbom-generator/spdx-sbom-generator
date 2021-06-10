@@ -513,7 +513,7 @@ func getHashCheckSum(name string, version string) (*models.CheckSum, error) {
 	return nil, nil
 }
 
-// extractLicence
+// extractLicence from the licenceMetaData
 func extractLicence(licenceMetaData string) string {
 	licenseArray := strings.Split(licenceMetaData, " ")
 	for _, license := range licenseArray {
