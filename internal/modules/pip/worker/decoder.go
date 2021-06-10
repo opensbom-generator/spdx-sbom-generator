@@ -7,6 +7,8 @@ import (
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var httpReplacer = strings.NewReplacer("https://", "", "http://", "")
@@ -167,23 +169,26 @@ func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Met
 	for _, pkgmeta := range *pkgsMetadata {
 		mod := moduleMap[strings.ToLower(pkgmeta.Name)]
 		for _, modname := range pkgmeta.Modules {
-			depModule := moduleMap[strings.ToLower(modname)]
-			mod.Modules[depModule.Name] = &models.Module{
-				Version:          depModule.Version,
-				Name:             depModule.Name,
-				Path:             depModule.Path,
-				LocalPath:        depModule.LocalPath,
-				Supplier:         depModule.Supplier,
-				PackageURL:       depModule.PackageURL,
-				CheckSum:         depModule.CheckSum,
-				PackageHomePage:  depModule.PackageHomePage,
-				LicenseConcluded: depModule.LicenseConcluded,
-				LicenseDeclared:  depModule.LicenseDeclared,
-				CommentsLicense:  depModule.CommentsLicense,
-				OtherLicense:     depModule.OtherLicense,
-				Copyright:        depModule.Copyright,
-				PackageComment:   depModule.PackageComment,
-				Root:             depModule.Root,
+			if depModule, ok := moduleMap[strings.ToLower(modname)]; ok {
+				mod.Modules[depModule.Name] = &models.Module{
+					Version:          depModule.Version,
+					Name:             depModule.Name,
+					Path:             depModule.Path,
+					LocalPath:        depModule.LocalPath,
+					Supplier:         depModule.Supplier,
+					PackageURL:       depModule.PackageURL,
+					CheckSum:         depModule.CheckSum,
+					PackageHomePage:  depModule.PackageHomePage,
+					LicenseConcluded: depModule.LicenseConcluded,
+					LicenseDeclared:  depModule.LicenseDeclared,
+					CommentsLicense:  depModule.CommentsLicense,
+					OtherLicense:     depModule.OtherLicense,
+					Copyright:        depModule.Copyright,
+					PackageComment:   depModule.PackageComment,
+					Root:             depModule.Root,
+				}
+			} else {
+				log.Warnf("Unable to find `%s` required by `%s`", modname, pkgmeta.Name)
 			}
 		}
 	}
