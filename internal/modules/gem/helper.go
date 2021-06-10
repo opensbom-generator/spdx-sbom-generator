@@ -1007,14 +1007,12 @@ func getGemPaths() ([]string, []string) {
 func buildLocalTree(paths []string, secondaryLocation string) []Spec {
 
 	localSpecs := []Spec{}
-
+	
 	for _, installPath := range paths {
-
 		specPath := filepath.Join(installPath, SPEC_DEFAULT_DIR)
 		cachePath := filepath.Join(installPath, CACHE_DEFAULT_DIR)
-		secondaryCachePath := filepath.Join(secondaryLocation, CACHE_DEFAULT_DIR)
 		primaryLocation := gemDir()
-		checkSumPaths := []string{cachePath, secondaryCachePath, primaryLocation}
+		checkSumPaths := []string{cachePath, secondaryLocation, primaryLocation}
 		licensePath := filepath.Join(installPath, GEM_DEFAULT_DIR)
 
 		if _, err := os.Stat(specPath); err != nil {
@@ -1097,7 +1095,11 @@ func lookupGemInfo(name, version string) Spec {
 func initializeDepCache(wg *sync.WaitGroup) error {
 
 	paths, secPaths := getGemPaths()
-	depSpecs := buildLocalTree(paths, secPaths[0])
+    secondaryCachePath := gemDir()
+	if len(secPaths) > 0 {
+		secondaryCachePath = filepath.Join(secPaths[0], CACHE_DEFAULT_DIR)
+	}
+	depSpecs := buildLocalTree(paths, secondaryCachePath)
 	for _, dep := range depSpecs {
 		name, v := cleanName(dep.Name), dep.Version
 		if dependencyMap[name].count > 0 {
