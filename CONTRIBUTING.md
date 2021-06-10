@@ -1,6 +1,6 @@
 # Contributing
 
-SPDX-License-Identifier: Apache-2.0
+SPDX-License-Identifier: CC-BY-4.0
 
 All contributions must include a "Signed-off-by" line in the commit message, with the contributors' name and email address.
 
@@ -14,7 +14,7 @@ New **code files** should include a [short-form SPDX ID](https://spdx.org/ids) a
 // SPDX-License-Identifier: Apache-2.0
 ```
 
-New **documentation files** should include a [short-form SPDX ID](https://spdx.org/ids) at the top, indicating the project license for code, which is CC-BY-4.0. This should look like the following:
+New **documentation files** should include a [short-form SPDX ID](https://spdx.org/ids) at the top, indicating the project license for documentation, which is CC-BY-4.0. This should look like the following:
 
 ```text
 SPDX-License-Identifier: CC-BY-4.0
@@ -64,6 +64,4 @@ By making a contribution to this project, I certify that:
 
 ## Maintainers
 
-| Organization | Name |
-| :--- | :--- |
-| The Linux Foundation | Nirav Patel |
+See the [CODEOWNERS](CODEOWNERS) text file for the list of maintainers.
