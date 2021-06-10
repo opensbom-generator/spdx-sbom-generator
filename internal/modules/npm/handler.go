@@ -107,7 +107,9 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 		mod.Version = pkResult["version"].(string)
 	}
 	if pkResult["homepage"] != nil {
-		mod.PackageURL = pkResult["homepage"].(string)
+		fmt.Println("x1: ", pkResult["homepage"].(string))
+		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
+		fmt.Println("x2: ", mod.PackageURL)
 	}
 	mod.Modules = map[string]*models.Module{}
 
@@ -193,8 +195,11 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 				mod.Supplier.Name = "NOASSERTION"
 			}
 		}
+		//r = strings.ReplaceAll(r, "https://", "")
+		fmt.Println("r1: ", r)
+		mod.PackageURL = helper.RemoveURLProtocol(r)
+		fmt.Println("r2: ", mod.PackageURL)
 
-		mod.PackageURL = r
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",

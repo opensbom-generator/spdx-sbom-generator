@@ -111,7 +111,7 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 		mod.Version = pkResult["version"].(string)
 	}
 	if pkResult["homepage"] != nil {
-		mod.PackageURL = pkResult["homepage"].(string)
+		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
 	}
 	mod.Modules = map[string]*models.Module{}
 	mod.Copyright = getCopyright(path)
@@ -183,7 +183,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 			mod.Supplier.Name = "NOASSERTION"
 		}
 
-		mod.PackageURL = r
+		mod.PackageURL = helper.RemoveURLProtocol(r)
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
