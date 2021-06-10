@@ -106,6 +106,11 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
+	if pkResult["homepage"] != nil {
+		fmt.Println("x1: ", pkResult["homepage"].(string))
+		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
+		fmt.Println("x2: ", mod.PackageURL)
+	}
 	mod.Modules = map[string]*models.Module{}
 
 	mod.Copyright = getCopyright(path)
@@ -181,7 +186,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		d := dd.(map[string]interface{})
 		var mod models.Module
 		mod.Version = d["version"].(string)
-		mod.Name = fmt.Sprintf("%s-%s", strings.TrimPrefix(key, "@"), mod.Version )
+		mod.Name = strings.TrimPrefix(key, "@")
 
 		r := ""
 		if d["resolved"] != nil {
@@ -190,8 +195,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 				mod.Supplier.Name = "NOASSERTION"
 			}
 		}
-
-		mod.PackageURL = r
+		mod.PackageURL = helper.RemoveURLProtocol(r)
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
