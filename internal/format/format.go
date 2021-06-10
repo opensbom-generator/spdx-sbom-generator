@@ -116,7 +116,9 @@ func generatePackage(file *os.File, pkg models.Package) {
 	file.WriteString(fmt.Sprintf("PackageSupplier: %s\n", pkg.PackageSupplier))
 	file.WriteString(fmt.Sprintf("PackageDownloadLocation: %s\n", pkg.PackageDownloadLocation))
 	file.WriteString(fmt.Sprintf("FilesAnalyzed: %v\n", pkg.FilesAnalyzed))
-	file.WriteString(fmt.Sprintf("PackageChecksum: %v\n", pkg.PackageChecksum))
+	if !strings.Contains(pkg.PackageChecksum, noAssertion) {
+		file.WriteString(fmt.Sprintf("PackageChecksum: %v\n", pkg.PackageChecksum))
+	}
 	file.WriteString(fmt.Sprintf("PackageHomePage: %v\n", pkg.PackageHomePage))
 	file.WriteString(fmt.Sprintf("PackageLicenseConcluded: %v\n", pkg.PackageLicenseConcluded))
 	file.WriteString(fmt.Sprintf("PackageLicenseDeclared: %v\n", pkg.PackageLicenseDeclared))
