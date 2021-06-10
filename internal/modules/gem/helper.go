@@ -4,8 +4,11 @@ package gem
 
 import (
 	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -624,15 +627,11 @@ func checkSum(path string, filename string, isFullPath bool) (string, error) {
 			}
 			sha = strings.Fields(string(output))[0]
 		case "windows":
-			winCmd := `certUtil`
-			//@TODO Adjust for windows, try the line commented below.
-			//winArgs := fmt.Sprintf(`-hashfile %s SHA256 | findstr /v "hash"`, filename)
-			cmd := exec.Command(winCmd, "-hashfile", filepath.Join(path, filename+GEM_DEFAULT_EXTENSION), "SHA256", "|", "/v", `"hash"`)
-			output, err := cmd.Output()
+			sha256, err := getSHA(filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
 			if err != nil {
 				return "", err
 			}
-			sha = strings.Fields(string(output))[0]
+			sha = sha256
 		case "darwin":
 			osxCmd := `shasum`
 			cmd := exec.Command(osxCmd, "-a", "256", filepath.Join(path, filename+GEM_DEFAULT_EXTENSION))
@@ -916,7 +915,7 @@ func ensurePlatform(path string) bool {
 	}
 	path = fmt.Sprintf("%s%s", path, manifest)
 	beginChar := path[0:1]
-	
+
 	followedByChar := path[1:2]
 	if beginChar == "." && followedByChar != "/" {
 		path = strings.Replace(path, ".", "./", 1)
@@ -1007,7 +1006,7 @@ func getGemPaths() ([]string, []string) {
 func buildLocalTree(paths []string, secondaryLocation string) []Spec {
 
 	localSpecs := []Spec{}
-	
+
 	for _, installPath := range paths {
 		specPath := filepath.Join(installPath, SPEC_DEFAULT_DIR)
 		cachePath := filepath.Join(installPath, CACHE_DEFAULT_DIR)
@@ -1095,7 +1094,7 @@ func lookupGemInfo(name, version string) Spec {
 func initializeDepCache(wg *sync.WaitGroup) error {
 
 	paths, secPaths := getGemPaths()
-    secondaryCachePath := gemDir()
+	secondaryCachePath := gemDir()
 	if len(secPaths) > 0 {
 		secondaryCachePath = filepath.Join(secPaths[0], CACHE_DEFAULT_DIR)
 	}
@@ -1291,4 +1290,18 @@ func gemDir() string {
 		fmt.Println(err)
 	}
 	return filepath.Join(strings.Fields(string(output))[0], CACHE_DEFAULT_DIR)
+}
+
+// computes the SHA 256 checkSum of a gem
+func getSHA(filename string) (string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		log.Fatal(err)
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
