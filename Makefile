@@ -47,7 +47,7 @@ build-mac-arm64: mod
 .PHONY: build-win
 build-win: mod
 	@echo "Building spdx-sbom-generator for Windows Intel/AMD 64-bit version:$(VERSION)"
-	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=win GOARCH=amd64 go build -ldflags $(ldflags) -o bin/spdx-sbom-generator.exe cmd/generator/generator.go
+	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=windows GOARCH=amd64 go build -ldflags $(ldflags) -o bin/spdx-sbom-generator.exe cmd/generator/generator.go
 	@chmod +x bin/spdx-sbom-generator.exe
 
 $(LINT_TOOL):

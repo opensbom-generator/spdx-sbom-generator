@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/google/uuid"
 
 	"spdx-sbom-generator/internal/helper"
@@ -65,7 +66,6 @@ func (f *Format) Render() error {
 	if err2 != nil {
 		return err2
 	}
-
 	// todo organize file generation code below
 	//Print DOCUMENT
 	file.WriteString(fmt.Sprintf("SPDXVersion: %s\n", document.SPDXVersion))
@@ -174,7 +174,7 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 	return models.Package{
 		PackageName:     module.Name,
 		SPDXID:          setPkgSPDXID(module.Name, module.Version, module.Root),
-		PackageVersion:  module.Version,
+		PackageVersion:  buildVersion(module),
 		PackageSupplier: noAssertion,
 		//PackageDownloadLocation: f.buildDownloadURL(module.PackageURL, module.Version),
 		PackageDownloadLocation: noAssertion,
@@ -219,6 +219,24 @@ func buildHomepageURL(url string) string {
 		return noAssertion
 	}
 	return fmt.Sprintf("https://%s", url)
+}
+
+func buildVersion(module models.Module) string {
+	if module.Version != "" {
+		return module.Version
+	}
+	if !module.Root {
+		return module.Version
+	}
+	localGit, err := git.PlainOpen(module.LocalPath)
+	if err != nil {
+		return ""
+	}
+	head, err := localGit.Head()
+	if err != nil {
+		return ""
+	}
+	return head.Hash().String()[0:7]
 }
 
 func setPkgValue(s string) string {
