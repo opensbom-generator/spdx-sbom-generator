@@ -73,10 +73,7 @@ func (m *nuget) SetRootModule(path string) error {
 // IsValid ...
 func (m *nuget) IsValid(path string) bool {
 	projectPath := m.GetProjectManifestPath(path)
-	if helper.Exists(projectPath) {
-		return true
-	}
-	return false
+	return helper.Exists(projectPath)
 }
 
 // HasModulesInstalled ...
@@ -291,39 +288,35 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 	}
 	// parse targets from the asset json
 	targetsData := moduleData[assetTargets].(map[string]interface{})
-	if targetsData != nil {
-		for _, packageData := range targetsData {
-			data := packageData.(map[string]interface{})
-			if data != nil {
-				for name, info := range data {
-					// split the package name and version
-					packageArray := strings.Split(name, "/")
-					packageInfo := info.(map[string]interface{})
-					// consider only the package type for building the dependencies
-					if packageInfo != nil &&
-						packageInfo[assetType] == assetPackage && len(packageArray) == 2 {
-						packageInfo := info.(map[string]interface{})
-						packageName := packageArray[0]
-						packageVersion := packageArray[1]
-						dependencies := map[string]string{}
-						// get the dependency packages
-						dependencyModules := packageInfo[assetDependencies]
-						if dependencyModules != nil {
-							dependencyPackages := dependencyModules.(map[string]interface{})
-							for dName, dInfo := range dependencyPackages {
-								dVersion, ok := dInfo.(string)
-								if ok {
-									dependencies[dName] = dVersion
-								}
-							}
+	for _, packageData := range targetsData {
+		data := packageData.(map[string]interface{})
+		for name, info := range data {
+			// split the package name and version
+			packageArray := strings.Split(name, "/")
+			packageInfo := info.(map[string]interface{})
+			// consider only the package type for building the dependencies
+			if packageInfo != nil &&
+				packageInfo[assetType] == assetPackage && len(packageArray) == 2 {
+				packageInfo := info.(map[string]interface{})
+				packageName := packageArray[0]
+				packageVersion := packageArray[1]
+				dependencies := map[string]string{}
+				// get the dependency packages
+				dependencyModules := packageInfo[assetDependencies]
+				if dependencyModules != nil {
+					dependencyPackages := dependencyModules.(map[string]interface{})
+					for dName, dInfo := range dependencyPackages {
+						dVersion, ok := dInfo.(string)
+						if ok {
+							dependencies[dName] = dVersion
 						}
-						module, err := buildModule(packageName, packageVersion, dependencies)
-						if err != nil {
-							return modules, err
-						}
-						modules = append(modules, module)
 					}
 				}
+				module, err := buildModule(packageName, packageVersion, dependencies)
+				if err != nil {
+					return modules, err
+				}
+				modules = append(modules, module)
 			}
 		}
 	}
@@ -371,16 +364,12 @@ func buildModule(name string, version string, dependencies map[string]string) (m
 		return module, err
 	}
 	if nuSpecFile != nil {
-		module.PackageURL = nuSpecFile.Meta.ProjectURL
-		if nuSpecFile.Meta.License != "" {
+		if nuSpecFile.Meta.ProjectURL != "" {
+			module.PackageURL = removeURLProtocol(nuSpecFile.Meta.ProjectURL)
+		}
+		if nuSpecFile.Meta.License != "" && helper.LicenseSPDXExists(nuSpecFile.Meta.License) {
 			module.LicenseDeclared = helper.BuildLicenseDeclared(nuSpecFile.Meta.License)
 			module.LicenseConcluded = helper.BuildLicenseConcluded(nuSpecFile.Meta.License)
-			if !helper.LicenseSPDXExists(nuSpecFile.Meta.License) {
-				module.OtherLicense = append(module.OtherLicense, &models.License{
-					ID:   fmt.Sprintf("LicenseRef-%s", nuSpecFile.Meta.License),
-					Name: fmt.Sprintf("LicenseRef-%s", nuSpecFile.Meta.License),
-				})
-			}
 		}
 		if nuSpecFile.Meta.Copyright != "" {
 			module.Copyright = helper.GetCopyright(nuSpecFile.Meta.Copyright)
