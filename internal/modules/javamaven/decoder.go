@@ -20,22 +20,21 @@ import (
 )
 
 // Update package supplier information
-func updatePackageSuppier(mod models.Module, developers []gopom.Developer) {
-
-	if len(developers) > 0 {
-		if len(developers[0].Name) > 0 && len(developers[0].Email) > 0 {
-			mod.Supplier.Type = "Person"
-			mod.Supplier.Name = developers[0].Name
-			mod.Supplier.Email = developers[0].Email
-		} else if len(developers[0].Email) == 0 && len(developers[0].Name) > 0 {
-			mod.Supplier.Type = "Person"
-			mod.Supplier.Name = developers[0].Name
+func updatePackageSuppier(project gopom.Project, mod models.Module, developers []gopom.Developer) {
+	for _, developer := range developers {
+		if len(developer.Name) > 0 && len(developer.Email) > 0 {
+			mod.Supplier.Type = models.Person
+			mod.Supplier.Name = developer.Name
+			mod.Supplier.Email = developer.Email
+		} else if len(developer.Email) == 0 && len(developer.Name) > 0 {
+			mod.Supplier.Type = models.Person
+			mod.Supplier.Name = developer.Name
 		}
+	}
 
-		// check for organization tag
-		if len(developers[0].Organization) > 0 {
-			mod.Supplier.Type = "Organization"
-		}
+	// check for organization tag
+	if len(project.Organization.Name) > 0 {
+		mod.Supplier.Type = models.Organization
 	}
 }
 
@@ -45,6 +44,8 @@ func updatePackageDownloadLocation(mod models.Module, distManagement gopom.Distr
 		strings.HasPrefix(distManagement.DownloadURL, "https")) {
 		// ******** TODO Module has only PackageHomePage, it does not have PackageDownloadLocation field
 		//mod.PackageDownloadLocation = distManagement.DownloadURL
+		// To avoid lint error
+		return
 	}
 }
 
@@ -106,15 +107,25 @@ func getDependencyList() ([]string, error) {
 	return s, err
 }
 
-func convertMavenPackageToModule(project gopom.Project) models.Module {
+func updateLicenseInformationToModule(mod *models.Module) {
+	licensePkg, err := helper.GetLicenses(".")
+	if err == nil {
+		mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
+		mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
+		mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
+		mod.CommentsLicense = licensePkg.Comments
+	}
+}
+
+func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
 	// package to module
 	var modName string
 	if len(project.Name) == 0 {
-		modName = strings.Replace(project.ArtifactID, " ", "-", -1)
+		modName = strings.Replace(strings.TrimSpace(project.ArtifactID), " ", "-", -1)
 	} else {
-		modName = project.Name
-		if strings.HasPrefix(project.Name, "$") {
-			name := strings.TrimLeft(strings.TrimRight(project.Name, "}"), "${")
+		modName = strings.TrimSpace(project.Name)
+		if strings.HasPrefix(modName, "$") {
+			name := strings.TrimLeft(strings.TrimRight(modName, "}"), "${")
 			if strings.HasPrefix(name, "project.artifactId") {
 				modName = project.ArtifactID
 			}
@@ -142,18 +153,11 @@ func convertMavenPackageToModule(project gopom.Project) models.Module {
 		Value:     readCheckSum(modName),
 	}
 	mod.Root = true
-	updatePackageSuppier(mod, project.Developers)
+	updatePackageSuppier(project, mod, project.Developers)
 	updatePackageDownloadLocation(mod, project.DistributionManagement)
+	updateLicenseInformationToModule(&mod)
 	if len(project.URL) > 0 {
 		mod.PackageHomePage = project.URL
-	}
-
-	licensePkg, err := helper.GetLicenses(".")
-	if err == nil {
-		mod.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
-		mod.LicenseConcluded = helper.BuildLicenseConcluded(licensePkg.ID)
-		mod.Copyright = helper.GetCopyright(licensePkg.ExtractedText)
-		mod.CommentsLicense = licensePkg.Comments
 	}
 
 	return mod
@@ -194,6 +198,8 @@ func createModule(name string, version string, project gopom.Project) models.Mod
 		Algorithm: models.HashAlgoSHA1,
 		Value:     readCheckSum(name),
 	}
+
+	updateLicenseInformationToModule(&mod)
 	return mod
 }
 
@@ -206,7 +212,12 @@ func readAndLoadPomFile(fpath string) (gopom.Project, error) {
 		fmt.Println(err)
 		return project, err
 	}
-	defer pomFile.Close()
+
+	defer func() {
+		if pomFile != nil {
+			pomFile.Close()
+		}
+	}()
 
 	// read our opened xmlFile as a byte array.
 	pomData, err := ioutil.ReadAll(pomFile)
@@ -223,8 +234,17 @@ func readAndLoadPomFile(fpath string) (gopom.Project, error) {
 	return project, nil
 }
 
+func getModule(modules []models.Module, name string) (models.Module, error) {
+	for _, module := range modules {
+		if module.Name == name {
+			return module, nil
+		}
+	}
+	return models.Module{}, moduleNotFound
+}
+
 // If parent pom.xml has modules information in it, go to individual modules pom.xml
-func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.Project) ([]models.Module, error) {
+func convertPkgModulesToModule(existingModules []models.Module, fpath string, moduleName string, parentPom gopom.Project) ([]models.Module, error) {
 	var modules []models.Module
 	filePath := fpath + "/" + moduleName
 	project, err := readAndLoadPomFile(filePath)
@@ -232,36 +252,50 @@ func convertPkgModulesToModule(fpath string, moduleName string, parentPom gopom.
 		return []models.Module{}, err
 	}
 
-	parentMod := convertMavenPackageToModule(project)
+	parentMod := convertProjectLevelPackageToModule(project)
 	parentMod.Root = false
 	modules = append(modules, parentMod)
 
 	// Include dependecy from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Dependencies {
-		name := strings.TrimSpace(element.ArtifactID)
-		name = strings.Replace(element.ArtifactID, " ", "-", -1)
+		name := strings.Replace(strings.TrimSpace(element.ArtifactID), " ", "-", -1)
+		found1 := false
 		found := findInDependency(parentPom.Dependencies, name)
 		if !found {
-			found1 := findInDependency(parentPom.DependencyManagement.Dependencies, name)
+			found1 = findInDependency(parentPom.DependencyManagement.Dependencies, name)
 			if !found1 {
 				mod := createModule(name, element.Version, project)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
 		}
+
+		if found || found1 {
+			module, err := getModule(existingModules, name)
+			if err == nil {
+				parentMod.Modules[name] = &module
+			}
+		}
 	}
 
 	// Include plugins from module pom.xml if it is not existing in ParentPom
 	for _, element := range project.Build.Plugins {
-		name := strings.TrimSpace(element.ArtifactID)
-		name = strings.Replace(element.ArtifactID, " ", "-", -1)
+		name := strings.Replace(strings.TrimSpace(element.ArtifactID), " ", "-", -1)
+		found1 := false
 		found := findInPlugins(parentPom.Build.Plugins, name)
 		if !found {
-			found1 := findInPlugins(parentPom.Build.PluginManagement.Plugins, name)
+			found1 = findInPlugins(parentPom.Build.PluginManagement.Plugins, name)
 			if !found1 {
 				mod := createModule(name, element.Version, project)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
+			}
+		}
+
+		if found || found1 {
+			module, err := getModule(existingModules, name)
+			if err == nil {
+				parentMod.Modules[name] = &module
 			}
 		}
 	}
@@ -274,7 +308,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	if err != nil {
 		return []models.Module{}, err
 	}
-	parentMod := convertMavenPackageToModule(project)
+	parentMod := convertProjectLevelPackageToModule(project)
 	parentMod.Root = true
 	modules = append(modules, parentMod)
 
@@ -294,9 +328,12 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 
 	// iterate over Plugins
 	for _, plugin := range project.Build.Plugins {
-		mod := createModule(plugin.ArtifactID, plugin.Version, project)
-		modules = append(modules, mod)
-		parentMod.Modules[mod.Name] = &mod
+		// If plugin has groupId, skip here. Plugin details will be available at PluginManagement
+		if len(plugin.GroupID) == 0 {
+			mod := createModule(plugin.ArtifactID, plugin.Version, project)
+			modules = append(modules, mod)
+			parentMod.Modules[mod.Name] = &mod
+		}
 	}
 
 	// iterate over PluginManagement
@@ -352,7 +389,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	if lookForDepenent {
 		// iterate over Modules
 		for _, module := range project.Modules {
-			additionalModules, err := convertPkgModulesToModule(fpath, module, project)
+			additionalModules, err := convertPkgModulesToModule(modules, fpath, module, project)
 			if err != nil {
 				// continue reading other module pom.xml file
 				continue
