@@ -174,7 +174,22 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		var mod models.Module
 		mod.Name = d.Name
 		mod.Version = d.Version
-
+		if len(d.Dependencies) != 0 {
+			mod.Modules = map[string]*models.Module{}
+			for _,depD := range d.Dependencies {
+				ar := strings.Split(strings.TrimSpace(depD), " ")
+				name := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(ar[0], "\""), "\""), "@")
+				if name == "optionalDependencies:" {
+					continue
+				}
+				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "^"), "\"")
+				mod.Modules[name] = &models.Module{
+					Name:     fmt.Sprintf("%s-%s", name, version),
+					Version:  version,
+					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
+				}
+			}
+		}
 		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
 		if strings.Index(r, "#") > 0 {
 			r = r[:strings.Index(r, "#")]
@@ -206,7 +221,6 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		if !helper.LicenseSPDXExists(modLic.ID) {
 			mod.OtherLicense = append(mod.OtherLicense, modLic)
 		}
-
 		modules = append(modules, mod)
 	}
 	return modules, nil

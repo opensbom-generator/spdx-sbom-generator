@@ -107,9 +107,7 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 		mod.Version = pkResult["version"].(string)
 	}
 	if pkResult["homepage"] != nil {
-		fmt.Println("x1: ", pkResult["homepage"].(string))
 		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
-		fmt.Println("x2: ", mod.PackageURL)
 	}
 	mod.Modules = map[string]*models.Module{}
 
@@ -179,7 +177,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
 	de.CheckSum = &models.CheckSum{
 		Algorithm: "SHA256",
-		Value: h,
+		Value:     h,
 	}
 	modules = append(modules, *de)
 	for key, dd := range deps {
@@ -199,7 +197,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
-			Value: h,
+			Value:     h,
 		}
 		mod.Copyright = getCopyright(filepath.Join(path, m.metadata.ModulePath[0], key))
 		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key))
@@ -215,15 +213,17 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		mod.Modules = map[string]*models.Module{}
 		if d["requires"] != nil {
 			modDeps := d["requires"].(map[string]interface{})
-			for k, v := range modDeps {
-				name := strings.TrimPrefix(k, "@")
-				version := strings.TrimPrefix(v.(string), "^")
-				mod.Modules[k] = &models.Module{
-					Name:     fmt.Sprintf("%s-%s", name, version),
-					Version:  version,
-					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
-				}
+			deps := getPackageDependencies(modDeps, "requires")
+			for k, v := range deps {
+				mod.Modules[k] = v
+			}
+		}
 
+		if d["dependencies"] != nil {
+			modDeps := d["dependencies"].(map[string]interface{})
+			deps := getPackageDependencies(modDeps, "dependencies")
+			for k, v := range deps {
+				mod.Modules[k] = v
 			}
 		}
 
@@ -233,11 +233,20 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 }
 
 func getCopyright(path string) string {
-	licensePath := filepath.Join(path, "LICENSE")
+	licensePath := getLicenseFile(path)
 	if helper.Exists(licensePath) {
 		r := reader.New(licensePath)
 		s := r.StringFromFile()
 		return helper.GetCopyright(s)
+	}
+
+	return ""
+}
+
+func getLicenseFile(path string) string {
+	licensePath := filepath.Join(path, "LICENSE")
+	if helper.Exists(licensePath) {
+		return licensePath
 	}
 
 	licenseMDPath, err := filepath.Glob(filepath.Join(path, "LICENSE*"))
@@ -245,10 +254,35 @@ func getCopyright(path string) string {
 		return ""
 	}
 	if len(licenseMDPath) > 0 && helper.Exists(licenseMDPath[0]) {
-		r := reader.New(licenseMDPath[0])
-		s := r.StringFromFile()
-		return helper.GetCopyright(s)
+		return licenseMDPath[0]
 	}
 
+	licenseMDCaseSensitivePath, err := filepath.Glob(filepath.Join(path, "license*"))
+	if err != nil {
+		return ""
+	}
+	if len(licenseMDCaseSensitivePath) > 0 && helper.Exists(licenseMDCaseSensitivePath[0]) {
+		return licenseMDCaseSensitivePath[0]
+	}
 	return ""
+}
+
+func getPackageDependencies(modDeps map[string]interface{}, t string) map[string]*models.Module {
+	m := make(map[string]*models.Module)
+	for k, v := range modDeps {
+		name := strings.TrimPrefix(k, "@")
+		version := ""
+		if t == "dependencies"{
+			version = strings.TrimPrefix(v.(map[string]interface{})["version"].(string), "^")
+		}
+		if t == "requires" {
+			version = strings.TrimPrefix(v.(string), "^")
+		}
+		m[k] = &models.Module{
+			Name:     fmt.Sprintf("%s-%s", name, version),
+			Version:  version,
+			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
+		}
+	}
+	return m
 }
