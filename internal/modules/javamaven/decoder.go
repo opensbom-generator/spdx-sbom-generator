@@ -157,7 +157,7 @@ func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
 	updatePackageDownloadLocation(mod, project.DistributionManagement)
 	updateLicenseInformationToModule(&mod)
 	if len(project.URL) > 0 {
-		mod.PackageHomePage = project.URL
+		mod.PackageURL = project.URL
 	}
 
 	return mod
