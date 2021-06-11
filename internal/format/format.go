@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-git/v5"
 	"github.com/google/uuid"
 
 	"spdx-sbom-generator/internal/helper"
@@ -65,7 +66,6 @@ func (f *Format) Render() error {
 	if err2 != nil {
 		return err2
 	}
-
 	// todo organize file generation code below
 	//Print DOCUMENT
 	file.WriteString(fmt.Sprintf("SPDXVersion: %s\n", document.SPDXVersion))
@@ -112,7 +112,10 @@ func (f *Format) Render() error {
 func generatePackage(file *os.File, pkg models.Package) {
 	file.WriteString(fmt.Sprintf("PackageName: %s\n", pkg.PackageName))
 	file.WriteString(fmt.Sprintf("SPDXID: %s\n", pkg.SPDXID))
-	file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
+	if pkg.PackageVersion != "" {
+		file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
+	}
+
 	file.WriteString(fmt.Sprintf("PackageSupplier: %s\n", pkg.PackageSupplier))
 	file.WriteString(fmt.Sprintf("PackageDownloadLocation: %s\n", pkg.PackageDownloadLocation))
 	file.WriteString(fmt.Sprintf("FilesAnalyzed: %v\n", pkg.FilesAnalyzed))
@@ -174,16 +177,16 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 	return models.Package{
 		PackageName:     module.Name,
 		SPDXID:          setPkgSPDXID(module.Name, module.Version, module.Root),
-		PackageVersion:  module.Version,
+		PackageVersion:  buildVersion(module),
 		PackageSupplier: noAssertion,
 		//PackageDownloadLocation: f.buildDownloadURL(module.PackageURL, module.Version),
 		PackageDownloadLocation: noAssertion,
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
 		PackageHomePage:         buildHomepageURL(module.PackageURL),
-		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
-		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
-		PackageCopyrightText:    setPkgValue(module.Copyright),
+		PackageLicenseConcluded: noAssertion, // setPkgValue(module.LicenseConcluded),
+		PackageLicenseDeclared:  noAssertion, // setPkgValue(module.LicenseDeclared),
+		PackageCopyrightText:    noAssertion, // setPkgValue(module.Copyright),
 		PackageLicenseComments:  setPkgValue(""),
 		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
@@ -219,6 +222,28 @@ func buildHomepageURL(url string) string {
 		return noAssertion
 	}
 	return fmt.Sprintf("https://%s", url)
+}
+
+func buildVersion(module models.Module) string {
+	if module.Version != "" {
+		return module.Version
+	}
+
+	if !module.Root {
+		return module.Version
+	}
+
+	localGit, err := git.PlainOpen(module.LocalPath)
+	if err != nil {
+		return ""
+	}
+
+	head, err := localGit.Head()
+	if err != nil {
+		return ""
+	}
+
+	return head.Hash().String()[0:7]
 }
 
 func setPkgValue(s string) string {
