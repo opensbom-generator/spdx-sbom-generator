@@ -6,6 +6,7 @@ import (
 	"errors"
 	"path"
 	"path/filepath"
+	"runtime"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 	"spdx-sbom-generator/internal/modules/pip/worker"
@@ -13,8 +14,14 @@ import (
 )
 
 const cmdName = "python"
+const osWin = "windows"
+const osDarwin = "darwin"
+const osLinux = "linux"
+const winExecutable = "Scripts"
+const lxExecutable = "bin"
 const manifestFile = "requirements.txt"
 const placeholderPkgName = "{PACKAGE}"
+const placeholderExecutableName = "{executable}"
 
 var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pip install -r requirements.txt`")
 var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
@@ -62,35 +69,35 @@ func (m *pyenv) IsValid(path string) bool {
 
 // Has Modules Installed ...
 func (m *pyenv) HasModulesInstalled(path string) error {
-	runme := false
-	state, venv, venvpath := worker.SearchVenv(path)
-	m.venv = venv
-	if state && len(venv) > 0 {
-		runme = true
-		m.metadata.ModulePath = append(m.metadata.ModulePath, venvpath)
+	dir := m.GetExecutableDir()
+	ModulesCmd := GetExecutableCommand(ModulesCmd)
+	if err := m.buildCmd(ModulesCmd, dir); err != nil {
+		return err
 	}
-	if runme {
-		dir := m.GetExecutableDir()
-		if err := m.buildCmd(ModulesCmd, dir); err != nil {
-			return err
-		}
-		result, err := m.command.Output()
-		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
-			m.pkgs = worker.LoadModules(result)
-			return nil
-		}
+	result, err := m.command.Output()
+	if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
+		return nil
 	}
 	return errDependenciesNotFound
 }
 
 // Get Version ...
 func (m *pyenv) GetVersion() (string, error) {
-	if err := m.buildCmd(VersionCmd, m.basepath); err != nil {
-		return "", err
-	}
-	version, err := m.command.Output()
-	if err != nil {
-		return "Python", errVersionNotFound
+	version := "Python"
+	err := errVersionNotFound
+
+	runme := m.fetchVenvPath()
+	if runme {
+		dir := m.GetExecutableDir()
+		VersionCmd := GetExecutableCommand(VersionCmd)
+		if err = m.buildCmd(VersionCmd, dir); err != nil {
+			return "", err
+		}
+		version, err = m.command.Output()
+		if err != nil {
+			version = "Python"
+			err = errVersionNotFound
+		}
 	}
 	return version, err
 }
@@ -158,10 +165,11 @@ func (m *pyenv) GetExecutableDir() string {
 }
 
 func (m *pyenv) GetPackageDetails(packageName string) (string, error) {
-	metatdataCmd := command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
+	MetadataCmd := GetExecutableCommand(MetadataCmd)
+	MetadataCmd = command(strings.ReplaceAll(string(MetadataCmd), placeholderPkgName, packageName))
 	dir := m.GetExecutableDir()
 
-	m.buildCmd(metatdataCmd, dir)
+	m.buildCmd(MetadataCmd, dir)
 	result, err := m.command.Output()
 	if err != nil {
 		return "", err
@@ -172,6 +180,7 @@ func (m *pyenv) GetPackageDetails(packageName string) (string, error) {
 
 func (m *pyenv) PushRootModuleToVenv() (bool, error) {
 	dir := m.GetExecutableDir()
+	InstallRootModuleCmd := GetExecutableCommand(InstallRootModuleCmd)
 	if err := m.buildCmd(InstallRootModuleCmd, dir); err != nil {
 		return false, err
 	}
@@ -202,6 +211,7 @@ func (m *pyenv) LoadModuleList(path string) error {
 			return err
 		}
 		dir := m.GetExecutableDir()
+		ModulesCmd := GetExecutableCommand(ModulesCmd)
 		m.buildCmd(ModulesCmd, dir)
 		result, err := m.command.Output()
 		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
@@ -220,4 +230,24 @@ func (m *pyenv) fetchRootModule() models.Module {
 		}
 	}
 	return models.Module{}
+}
+
+func (m *pyenv) fetchVenvPath() bool {
+	state, venv, venvpath := worker.SearchVenv(m.basepath)
+	if state && len(venv) > 0 {
+		m.venv = venv
+		m.metadata.ModulePath = append(m.metadata.ModulePath, venvpath)
+		return true
+	}
+	return false
+}
+
+func GetExecutableCommand(cmd command) command {
+	os := runtime.GOOS
+	switch os {
+	case osWin:
+		return command(strings.ReplaceAll(string(cmd), placeholderExecutableName, winExecutable))
+	default:
+		return command(strings.ReplaceAll(string(cmd), placeholderExecutableName, lxExecutable))
+	}
 }

@@ -10,10 +10,10 @@ type command string
 
 // assume each project is using python3 default
 const (
-	VersionCmd           command = "python3 -V"                              // generic to check version
-	ModulesCmd           command = "bin/python -m pip list -v --format json" // venv is local
-	MetadataCmd          command = "bin/python -m pip show {PACKAGE}"
-	InstallRootModuleCmd command = "bin/python -m pip install -e .."
+	VersionCmd           command = "{executable}/python -V"                           // generic to check version
+	ModulesCmd           command = "{executable}/python -m pip list -v --format json" // venv is local
+	MetadataCmd          command = "{executable}/python -m pip show {PACKAGE}"
+	InstallRootModuleCmd command = "{executable}/python -m pip install -e .."
 )
 
 // Parse ...
