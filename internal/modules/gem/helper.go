@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"runtime"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
@@ -337,18 +336,18 @@ func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 	}
 
 	if !isFullPath {
-		for _, f := range files {
-			if f.IsDir() {
-				fullPath := filepath.Join(path, f.Name(), SPEC_DEFAULT_DIR)
+		for _, dir := range files {
+			if dir.IsDir() {
+				fullPath := filepath.Join(path, dir.Name(), SPEC_DEFAULT_DIR)
 				BuildSpecDependencies(fullPath, true, module)
-				break
+				return
 			}
 		}
 	}
 
 	cachePath := strings.Replace(path, SPEC_DEFAULT_DIR, CACHE_DEFAULT_DIR, 1)
 
-	name, version, err := rootGem(cachePath, cleanName(module.Name), true)
+	name, version, err := rootGem(cachePath, cleanName(module.Name))
 	versionedName := fmt.Sprintf("%s-%s", name, version)
 	if err == nil {
 		module.Name = versionedName
@@ -650,53 +649,36 @@ func checkSum(path string, filename string, isFullPath bool) (string, error) {
 }
 
 // Gets the root dependency name and version
-func rootGem(path string, filename string, isFullPath bool) (string, string, error) {
+func rootGem(path string, filename string) (string, string, error) {
 
-	var name *string
-	var version *string
-	if !isFullPath {
-		files, err := ioutil.ReadDir(path)
-		if err != nil {
-			return "", "", err
+	var name, version string
+	files, err := ioutil.ReadDir(path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	for _, f := range files {
+
+		if strings.LastIndex(f.Name(), "-") == -1 {
+			continue
 		}
+		stp := strings.LastIndex(f.Name(), "-")
+		runes := []rune(f.Name())
+		n := string(runes[0:stp])
 
-		for _, f := range files {
+		v := strings.Replace(string(runes[stp+1:]), ".gem", "", 1)
 
-			if f.IsDir() {
-				fullPath := filepath.Join(path, f.Name(), CACHE_DEFAULT_DIR)
-				return rootGem(fullPath, cleanName(filename), true)
-			}
+		filename = strings.ReplaceAll(filename, `="`, "")
+		filename = strings.ReplaceAll(filename, `"`, "")
 
-		}
+		name = n
 
-	} else {
-		files, err := ioutil.ReadDir(path)
-		if err != nil {
-			return "", "", err
-		}
-		for _, f := range files {
-			if strings.LastIndex(f.Name(), "-") == -1 {
-				continue
-			}
-			stp := strings.LastIndex(f.Name(), "-")
-			runes := []rune(f.Name())
-			n := string(runes[0:stp])
-			v := strings.Replace(string(runes[stp+1:]), ".gem", "", 1)
-			filename = strings.ReplaceAll(filename, `="`, "")
-			filename = strings.ReplaceAll(filename, `"`, "")
-
-			name = &n
-			if *name == cleanName(filename) {
-				version = &v
-				break
-			}
+		if name == filename {
+			version = v
+			break
 		}
 	}
 
-	if reflect.ValueOf(name).IsNil() || reflect.ValueOf(version).IsNil() {
-		return filename, "", errors.New("unable to compute Checksum for " + filename)
-	}
-	return *name, *version, nil
+	return name, version, nil
 
 }
 
@@ -1296,12 +1278,12 @@ func gemDir() string {
 func getSHA(filename string) (string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		log.Fatal(err)
+		return "",nil
 	}
 	defer f.Close()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		log.Fatal(err)
+		return "",nil
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
