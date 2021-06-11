@@ -112,7 +112,10 @@ func (f *Format) Render() error {
 func generatePackage(file *os.File, pkg models.Package) {
 	file.WriteString(fmt.Sprintf("PackageName: %s\n", pkg.PackageName))
 	file.WriteString(fmt.Sprintf("SPDXID: %s\n", pkg.SPDXID))
-	file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
+	if pkg.PackageVersion != "" {
+		file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
+	}
+
 	file.WriteString(fmt.Sprintf("PackageSupplier: %s\n", pkg.PackageSupplier))
 	file.WriteString(fmt.Sprintf("PackageDownloadLocation: %s\n", pkg.PackageDownloadLocation))
 	file.WriteString(fmt.Sprintf("FilesAnalyzed: %v\n", pkg.FilesAnalyzed))
@@ -181,9 +184,9 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
 		PackageHomePage:         buildHomepageURL(module.PackageURL),
-		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
-		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
-		PackageCopyrightText:    setPkgValue(module.Copyright),
+		PackageLicenseConcluded: noAssertion, // setPkgValue(module.LicenseConcluded),
+		PackageLicenseDeclared:  noAssertion, // setPkgValue(module.LicenseDeclared),
+		PackageCopyrightText:    noAssertion, // setPkgValue(module.Copyright),
 		PackageLicenseComments:  setPkgValue(""),
 		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
@@ -225,17 +228,21 @@ func buildVersion(module models.Module) string {
 	if module.Version != "" {
 		return module.Version
 	}
+
 	if !module.Root {
 		return module.Version
 	}
+
 	localGit, err := git.PlainOpen(module.LocalPath)
 	if err != nil {
 		return ""
 	}
+
 	head, err := localGit.Head()
 	if err != nil {
 		return ""
 	}
+
 	return head.Hash().String()[0:7]
 }
 
