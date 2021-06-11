@@ -31,7 +31,7 @@ build-mac: mod
 .PHONY: build-win
 build-win: mod
 	@echo "Building spdx-sbom-generator version:$(VERSION)"
-	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=windows GOARCH=amd64 go build -o bin/spdx-sbom-generator.exe cmd/generator/generator.go
+	@GO111MODULE=on GOFLAGS=-mod=vendor GOOS=win GOARCH=amd64 go build -o bin/spdx-sbom-generator.exe cmd/generator/generator.go
 	@chmod +x bin/spdx-sbom-generator.exe
 
 .PHONY: lint
