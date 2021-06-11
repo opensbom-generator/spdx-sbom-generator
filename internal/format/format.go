@@ -17,6 +17,7 @@ import (
 
 const (
 	noAssertion = "NOASSERTION"
+	httpPrefix  = "http"
 )
 
 var replacer *strings.Replacer
@@ -221,6 +222,11 @@ func buildHomepageURL(url string) string {
 	if url == "" {
 		return noAssertion
 	}
+
+	if strings.HasPrefix(url, httpPrefix) {
+		return url
+	}
+
 	return fmt.Sprintf("https://%s", url)
 }
 
