@@ -80,8 +80,7 @@ func (d *MetadataDecoder) BuildMetadata(pkg Packages) Metadata {
 
 	metadata.Root = pkg.Root
 	metadata.ProjectURL = BuildProjectUrl(metadata.Name, metadata.Version)
-	metadata.PackageURL = BuildPackageUrl(metadata.Name, metadata.Version)
-	if len(metadata.HomePage) > 0 {
+	if len(metadata.HomePage) > 0 && metadata.HomePage != "None" {
 		metadata.PackageURL = metadata.HomePage
 	}
 	metadata.PackageJsonURL = BuildPackageJsonUrl(metadata.Name, metadata.Version)

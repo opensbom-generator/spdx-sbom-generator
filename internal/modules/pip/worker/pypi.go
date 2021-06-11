@@ -88,11 +88,11 @@ var HashAlgoPickOrder []models.HashAlgorithm = []models.HashAlgorithm{
 func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfortag bool, wheeltag string) models.CheckSum {
 	checksum := models.CheckSum{
 		Algorithm: models.HashAlgoSHA1,
-		Value:     "",
 	}
+
 	packagedigests, err := fetchAndDecodePypiPackageDataJSON(packagename, packageJsonURL)
 	if err != nil {
-		checksum.Value = NoAssertion
+		checksum.Content = []byte(packagename)
 		return checksum
 	}
 
@@ -115,7 +115,6 @@ func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfort
 		return checksum
 	}
 
-	checksum.Value = NoAssertion
 	return checksum
 }
 
@@ -134,7 +133,7 @@ func getHighestHashData(packagedigests PackageDigest) (models.HashAlgorithm, str
 		}
 	}
 
-	return models.HashAlgoSHA1, NoAssertion
+	return algoType, digestValue
 }
 
 func getPackageTypeDigestBDist(packagedigests *[]PackageDigest, wheeltag string) (PackageDigest, error) {
