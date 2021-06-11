@@ -1,18 +1,25 @@
 # SPDX Software Bill of Materials (SBOM) Generator
 
-### NOTE
-The CLI is under development. Expect breaking changes until the beta release.
-
 ## Overview
-A CLI named `spdx-sbom-generator,` that generates SPDX format files. It will understand the ecosystems of most languages, and will connect to the appropriate package management system (OR read it from a local machine) during the run time and get Document creation, Package, Relationships, and Other License information.
 
-CLI will perform the following things:
-* Automatically recognize which package management system to connect (OR read it from local machine) based on package manifest file used in the project repository i.e., package.json, pom.xml
-* Display ecosystem name i.e npm and project manifest file i.e package.json
-* Output format: .spdx .spdx.json, .spdx.rdf (https://spdx.github.io/spdx-spec/1-rationale/#17-format-requirements)
+[Software Package Data Exchange](https://spdx.org/tools) (SPDX) is an open standard for communicating software bill of materials (SBOM) information that supports accurate identification of software components, explicit mapping of relationships between components, and the association of security and licensing information with each component.
+
+The `spdx-sbom-generator` CLI generates the SPDX format files. These files understands the ecosystems with respect to most of the languages, and connects to the appropriate package management system (OR read it from a local machine) during the run time to get the following details:
+
+- Document creation 
+- Package, 
+- Relationships
+- Other License information.
+
+The  `spdx-sbom-generator `  CLI performs the following actions:
+* Automatically recognize which package management system to connect (OR read it from local machine) based on package manifest file used in the project repository such as package.json, pom.xml.
+* Display ecosystem name in the form of npm and project manifest file which is package.json.
+* Output format: .spdx .spdx.json, .spdx.rdf ([SPDX Format Requirements](https://spdx.github.io/spdx-spec/1-rationale/#17-format-requirements))
 - Ecosystem to support: .NET, Python, Java-Maven, Java-Gradle, Golang, Rust, Node.js, Ruby, PHP, and Elixir
 
-## Available command options
+***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release. 
+
+## Available command Options
 Run help:
 ```BASH
 ./spdx-sbom-generator -h
@@ -31,19 +38,24 @@ Flags:
   -f, --format string          output file format (default: 'spdx')
 ```
 
-### Output options
+### Output Options
 
 - `spdx` (Default format)
+
 - `JSON`
+
 - `RDF`
+
+  
 
 Command output sample option:
 ```BASH
 ./spdx-sbom-generator -o /out/spdx/
 ```
 
-
 #### Output Sample
+
+The following snippet is a sample SPDX SBOM file:
 
 ```
 SPDXVersion: SPDX-2.2
@@ -93,7 +105,7 @@ Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 
 ## Docker Images
 
-We currently provide a few Docker images:
+Currently few Docker images are supported:
 
 [spdx/spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator) - Alpine image and spdx-sbom-generator binary installed
 
@@ -105,7 +117,7 @@ $ docker run -it --rm \
 ```
 
 ## Data Contract
-The interface requires the following functions
+The interface requires the following functions:
 
 ```GO
 type IPlugin interface {
@@ -142,7 +154,7 @@ type Module struct {
 }```
 
 `PluginMetadata` model definition:
-```GO
+​```GO
 type PluginMetadata struct {
     Name       string
     Slug       string
@@ -151,15 +163,17 @@ type PluginMetadata struct {
 }
 ```
 
-### How to Generate Module values
+### How to Generate Module Values
 
-* `CheckSum`: we have built an internal method that calculates CheckSum for a given content (in bytes) using Algorithm defined on `models.CheckSum`,
-you now have the option to provide `Content` field for `models.CheckSum{}` and CheckSum will calculate automatically, but if you want to calculate CheckSum  on your own
+* `CheckSum`: We have built an internal method that calculates CheckSum for a given content (in bytes) using algorithm that is defined on `models.CheckSum`.
+You now have an option to provide `Content` field for `models.CheckSum{}` and CheckSum will calculate automatically, but if you want to calculate CheckSum  on your own
 you still can provide `Value` field for `models.CheckSum{}`.
 
-Also, we can generate a manifest from a given directory tree using utility/helper method `BuildManifestContent`, and that's what we used for gomod plugin as `Content` value
+Also, you can generate a manifest from a given directory tree using utility/helper method `BuildManifestContent`, and that is what is used for gomod plugin as `Content` value.
 
-### Interface definitions:
+### Interface Definitions
+
+The following list provides the interface definitions:
 
 * `GetVersion`: returns version of current project platform (development language) version i.e: go version
 
@@ -216,8 +230,10 @@ PluginMetadata{
 
     **Output**: True or False
 
+#### Module Structure JSON Example
 
-#### Module Structure JSON Example:
+The sample module structure JSON Code snippet is provided in the following code snippet:
+
 ```JSON
 
 {
@@ -273,9 +289,11 @@ PluginMetadata{
 }
 ```
 
-For a more complete JSON example look at [modules.json](./examples/modules.json)
+For a more complete JSON example look at [modules.json](./examples/modules.json).
 
-### Utility methods:
+### Utility Methods
+
+The following list provide the utility methods:
 
 * `BuildManifestContent` walks through a given directory tree, and generates a content based on file paths
 
@@ -304,166 +322,202 @@ type License struct {
 
     **Output**: True or False
 
-### How to register a new Plugin
+### How to Register a New Plugin
 
-#### Step 1
-Clone project
-```BASH
-git clone git@github.com:LF-Engineering/spdx-sbom-generator.git
-```
+To register for a new plugin, perform the following steps:
 
-#### Step 2
-Create a new directory into `./internal/modules/` with package manager name, e.g.: `npm`, you should end with a directory:
+1. Clone a project.
 
-```BASH
-/internal/modules/npm
-```
+   ```
+   git clone git@github.com:LF-Engineering/spdx-sbom-generator.git
+   ```
 
-#### Step 3
-Create a Handler file, e.g.:  `handler.go`, and follow Data Contract section above. Define package name, and import section, e.g.:
-```GO
-package npm
+2. Create a new directory into `./internal/modules/` with package manager name, for example:  `npm`, you should end with a directory:
 
-import (
-	"path/filepath"
+   ```
+   /internal/modules/npm
+   
+   ```
 
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
-)
+3. Create a Handler file, for example:  `handler.go`, and follow Data Contract section above. Define package name, and import section as explained in the following code snippet:
 
-// rest of the file below
-```
+   ```
+   package npm
+   
+   import (
+   	"path/filepath"
+   
+   	"spdx-sbom-generator/internal/helper"
+   	"spdx-sbom-generator/internal/models"
+   )
+   
+   // rest of the file below
+   
+   ```
 
-#### Step 4
-In `handler.go`, define the plugin struct with at least the plugin metadata info, e.g.:
-```GO
-type npm struct {
-	metadata models.PluginMetadata
-}
-```
+   
 
-#### Step 5
-Define plugin registration method (`New` func) with metadata values, e.g:
-```GO
-// New ...
-func New() *npm {
-	return &npm{
-		metadata: models.PluginMetadata{
-			Name:       "Node Package Manager",
-			Slug:       "npm",
-			Manifest:   []string{"package.json"},
-			ModulePath: []string{"node_modules"},
-		},
-	}
-}
-```
+4. In `handler.go`, define the plugin struct with at least the plugin metadata info as explained in the following code snippet:
 
-#### Step 6
-In `handler.go`, create the required interface function (Data contract definition above)
+   ```
+   type npm struct {
+   	metadata models.PluginMetadata
+   }
+   
+   ```
 
-```GO
-// GetMetadata ...
-func (m *npm) GetMetadata() models.PluginMetadata {
-  return m.metadata
-}
+   
 
-// IsValid ...
-func (m *npm) IsValid(path string) bool {
-  for i := range m.metadata.Manifest {
-    if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
-      return true
-    }
-  }
-  return false
-}
+5. Define plugin registration method (`New` func) with metadata values as explained in the following code snippet:
 
-// HasModulesInstalled ...
-func (m *npm) HasModulesInstalled(path string) error {
-  for i := range m.metadata.ModulePath {
-    if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
-      return nil
-    }
-  }
-  return errDependenciesNotFound
-}
+   ```
+   // New ...
+   func New() *npm {
+   	return &npm{
+   		metadata: models.PluginMetadata{
+   			Name:       "Node Package Manager",
+   			Slug:       "npm",
+   			Manifest:   []string{"package.json"},
+   			ModulePath: []string{"node_modules"},
+   		},
+   	}
+   }
+   
+   ```
 
-// GetVersion ...
-func (m *npm) GetVersion() (string, error) {
-  output, err := exec.Command("npm", "--version").Output()
-  if err != nil {
-    return "", err
-  }
+   
 
-  return string(output), nil
-}
+6. In `handler.go`, create the required interface function (Data contract definition above).
 
-// SetRootModule ...
-func (m *npm) SetRootModule(path string) error {
-  return nil
-}
+   ```
+   // GetMetadata ...
+   func (m *npm) GetMetadata() models.PluginMetadata {
+     return m.metadata
+   }
+   
+   // IsValid ...
+   func (m *npm) IsValid(path string) bool {
+     for i := range m.metadata.Manifest {
+       if helper.Exists(filepath.Join(path, m.metadata.Manifest[i])) {
+         return true
+       }
+     }
+     return false
+   }
+   
+   // HasModulesInstalled ...
+   func (m *npm) HasModulesInstalled(path string) error {
+     for i := range m.metadata.ModulePath {
+       if helper.Exists(filepath.Join(path, m.metadata.ModulePath[i])) {
+         return nil
+       }
+     }
+     return errDependenciesNotFound
+   }
+   
+   // GetVersion ...
+   func (m *npm) GetVersion() (string, error) {
+     output, err := exec.Command("npm", "--version").Output()
+     if err != nil {
+       return "", err
+     }
+   
+     return string(output), nil
+   }
+   
+   // SetRootModule ...
+   func (m *npm) SetRootModule(path string) error {
+     return nil
+   }
+   
+   // GetRootModule ...
+   func (m *npm) GetRootModule(path string) (*models.Module, error) {
+     return nil, nil
+   }
+   
+   // ListUsedModules...
+   func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
+     return nil, nil
+   }
+   
+   // ListModulesWithDeps ...
+   func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+     return nil, nil
+   }
+   
+   ```
 
-// GetRootModule ...
-func (m *npm) GetRootModule(path string) (*models.Module, error) {
-  return nil, nil
-}
+   
 
-// ListUsedModules...
-func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
-  return nil, nil
-}
+7. In `modules.go` at `./internal/modules/` directory, register the new plugin. Add the plugin to register to the existing definition.
 
-// ListModulesWithDeps ...
-func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
-  return nil, nil
-}
-```
+   ```
+   func init() {
+       registeredPlugins = append(registeredPlugins,
+               gomod.New(),
+               npm.New(),
+       )
+   }
+   
+   ```
 
-#### Step 7
-In `modules.go` at `./internal/modules/` directory, register the new plugin. Add the plugin to register to the existing definition
+   
 
-```GO
-func init() {
-    registeredPlugins = append(registeredPlugins,
-            gomod.New(),
-            npm.New(),
-    )
-}
-```
+## How to Work With SPDX SBOM Generator
+A **Makefile** for the `spdx-sbom-generator` is described below with ability to run, test, lint, and build the project binary for different platforms (Linux, Mac, and Windows).
 
-## How to work with it
-A **Makefile** for the `spdx-sbom-generator` is described below with ability to run, test, lint, and build the project binary for different platforms (Linux, Mac, and Windows)
+Perform the following steps to work with SPDX SBOM Generator:
 
-* Run project on current directory
-```BASH
-make generate
-```
-you can provide the CLI parameters that will be passed along the comamnd, e.g.:
-```BASH
-ARGS="--path /home/ubuntu/projects/expressjs" make generate
-```
+1. Run project on current directory.
 
-* Build linux Intel/AMD 64-bit binary
-```BASH
-make build
-```
+   ```
+   make generate
+   ```
 
-* Build Mac Intel/AMD 64-bit binary
-```BASH
-make build-mac
-```
+   you can provide the CLI parameters that will be passed along the command, for example:
 
-* Build Mac ARM 64-bit binary
-```BASH
-make build-mac-arm64
-```
+   ```
+   ARGS="--path /home/ubuntu/projects/expressjs" make generate
+   ```
 
-* Build Windows Intel/AMD 64-bit binary
-```BASH
-make build-win
-```
+2. Build Linux Intel/AMD 64-bit binary.
+
+   ```
+   make build
+   ```
+
+3. Build Mac Intel/AMD 64-bit binary.
+
+   ```
+   make build-mac
+   ```
+
+4. Build Mac ARM 64-bit binary.
+
+   ```
+   make build-mac-arm64
+   ```
+
+5. Build Windows Intel/AMD 64-bit binary.
+
+   ```
+   make build-win
+   ```
+
+   
 
 Licensing
-=========
-docker/cli is licensed under the Apache License, Version 2.0. See
-[LICENSE](https://github.com/spdx/spdx-sbom-generator/blob/master/LICENSE) for the full
-license text.
+---------
+docker/cli is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/blob/master/LICENSE) for the full license text.
+
+## Additional Information 
+
+[SPDX](https://spdx.org)
+
+[SPDX SBOM](https://www.linuxfoundation.org/en/blog/spdx-its-already-in-use-for-global-software-bill-of-materials-sbom-and-supply-chain-security/)
+
+[SPDX Tools](https://tools.spdx.org/app/) 
+
+[SPDX License List](https://spdx.org/licenses/)
+
+[SPDX GitHub Repos](https://github.com/spdx) 
