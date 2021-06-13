@@ -135,7 +135,7 @@ func getGemRootModule(path string) (*models.Module, error) {
 	}
 
 	setLicenseInfo(spec.GemLocationDir, &rootModule)
-	rootModule.Name = gemName(spec.Name) 
+	rootModule.Name = gemName(spec.Name)
 	rootModule.Version = spec.Version
 	rootModule.Root = true
 	rootModule.Path = spec.GemLocationDir
@@ -198,7 +198,8 @@ func listGemRootModule(path string) ([]models.Module, error) {
 
 			firstDescendantSpec, name, err := getDescendantInfo(firstDescendant)
 			if err != nil {
-				noSpecs[firstDescendant] = true
+				l1 := fmt.Sprintf("%s runtime dependency of %s", firstDescendant, dep.Name)
+				noSpecs[l1] = true
 				continue
 			}
 			// Add 1st Layer
@@ -207,7 +208,8 @@ func listGemRootModule(path string) ([]models.Module, error) {
 			for _, secondDescendant := range firstDescendantSpec.RuntimeDependencies {
 				secondDescendantSpec, name, err := getDescendantInfo(secondDescendant)
 				if err != nil {
-					noSpecs[secondDescendant] = true
+					l2 := fmt.Sprintf("%s runtime dependency of %s", secondDescendant, firstDescendantSpec.Name)
+					noSpecs[l2] = true
 					continue
 				}
 				//Add 2nd Layer
@@ -216,7 +218,8 @@ func listGemRootModule(path string) ([]models.Module, error) {
 				for _, thirdDescendant := range secondDescendantSpec.RuntimeDependencies {
 					thirdDescendantSpec, name, err := getDescendantInfo(thirdDescendant)
 					if err != nil {
-						noSpecs[thirdDescendant] = true
+						l3 := fmt.Sprintf("%s runtime dependency of %s", thirdDescendant, secondDescendantSpec.Name)
+						noSpecs[l3] = true
 						continue
 					}
 					//Add 3rd Layer
@@ -239,7 +242,7 @@ func listGemRootModule(path string) ([]models.Module, error) {
 
 	if len(noSpecs) > 0 {
 		for dep := range noSpecs {
-		  log.Warnf("manifest for %s not found in gem paths", dep)
+			log.Warnf("manifest for %s not found in gem paths", dep)
 		}
 	}
 
@@ -1256,7 +1259,7 @@ func gemName(name string) string {
 	vRunes := []rune(name)
 	v := string(vRunes[stp+1:])
 	c := v[:1]
-	if _,err := strconv.ParseInt(c,10,32);err != nil {
+	if _, err := strconv.ParseInt(c, 10, 32); err != nil {
 		return name
 	}
 	runes := []rune(name)
