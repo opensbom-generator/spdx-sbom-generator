@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -20,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -134,7 +135,7 @@ func getGemRootModule(path string) (*models.Module, error) {
 	}
 
 	setLicenseInfo(spec.GemLocationDir, &rootModule)
-	rootModule.Name = spec.Name
+	rootModule.Name = gemName(spec.Name)
 	rootModule.Version = spec.Version
 	rootModule.Root = true
 	rootModule.Path = spec.GemLocationDir
@@ -153,6 +154,7 @@ func listGemRootModule(path string) ([]models.Module, error) {
 
 	rootPath = &path
 	modules := make([]models.Module, 0)
+	noSpecs := make(map[string]bool)
 
 	layerOneGems,
 		layerTwoGems,
@@ -196,6 +198,8 @@ func listGemRootModule(path string) ([]models.Module, error) {
 
 			firstDescendantSpec, name, err := getDescendantInfo(firstDescendant)
 			if err != nil {
+				l1 := fmt.Sprintf("%s runtime dependency of %s", firstDescendant, dep.Name)
+				noSpecs[l1] = true
 				continue
 			}
 			// Add 1st Layer
@@ -204,6 +208,8 @@ func listGemRootModule(path string) ([]models.Module, error) {
 			for _, secondDescendant := range firstDescendantSpec.RuntimeDependencies {
 				secondDescendantSpec, name, err := getDescendantInfo(secondDescendant)
 				if err != nil {
+					l2 := fmt.Sprintf("%s runtime dependency of %s", secondDescendant, firstDescendantSpec.Name)
+					noSpecs[l2] = true
 					continue
 				}
 				//Add 2nd Layer
@@ -212,6 +218,8 @@ func listGemRootModule(path string) ([]models.Module, error) {
 				for _, thirdDescendant := range secondDescendantSpec.RuntimeDependencies {
 					thirdDescendantSpec, name, err := getDescendantInfo(thirdDescendant)
 					if err != nil {
+						l3 := fmt.Sprintf("%s runtime dependency of %s", thirdDescendant, secondDescendantSpec.Name)
+						noSpecs[l3] = true
 						continue
 					}
 					//Add 3rd Layer
@@ -231,6 +239,12 @@ func listGemRootModule(path string) ([]models.Module, error) {
 	modules = append(modules, layerOneGems...)
 	modules = append(modules, layerTwoGems...)
 	modules = append(modules, layerThreeGems...)
+
+	if len(noSpecs) > 0 {
+		for dep := range noSpecs {
+			log.Warnf("manifest for %s not found in gem paths", dep)
+		}
+	}
 
 	return modules, nil
 }
@@ -1236,6 +1250,22 @@ func gemVersion(name string) string {
 	return string(runes[stp+1:])
 }
 
+// Get name without the version
+func gemName(name string) string {
+	if !strings.Contains(name, "-") {
+		return name
+	}
+	stp := strings.LastIndex(name, "-")
+	vRunes := []rune(name)
+	v := string(vRunes[stp+1:])
+	c := v[:1]
+	if _, err := strconv.ParseInt(c, 10, 32); err != nil {
+		return name
+	}
+	runes := []rune(name)
+	return string(runes[:stp])
+}
+
 // Remove unwanted word if exists '.freeze is often added by bundler'
 func unfreeze(val string) string {
 
@@ -1278,12 +1308,12 @@ func gemDir() string {
 func getSHA(filename string) (string, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return "",nil
+		return "", nil
 	}
 	defer f.Close()
 	h := sha256.New()
 	if _, err := io.Copy(h, f); err != nil {
-		return "",nil
+		return "", nil
 	}
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
