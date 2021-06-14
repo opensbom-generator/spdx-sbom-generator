@@ -4,12 +4,15 @@ package worker
 
 import (
 	"fmt"
+	"regexp"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
+
+const pkgMetedataSeparator string = "---"
 
 var httpReplacer = strings.NewReplacer("https://", "", "http://", "")
 
@@ -67,18 +70,7 @@ func ParseMetadata(metadata *Metadata, packagedetails string) {
 	SetMetadataValues(metadata, pkgDataMap)
 }
 
-func (d *MetadataDecoder) BuildMetadata(pkg Packages) Metadata {
-	var metadata Metadata
-
-	metadatastr, err := d.getPkgDetailsFunc(pkg.Name)
-	if err != nil {
-		// If there was error fetching package details, we are setting all members to NOASSERTION.
-		// Except for Package Name
-		SetMetadataToNoAssertion(&metadata, pkg.Name)
-	}
-	ParseMetadata(&metadata, metadatastr)
-
-	metadata.Root = pkg.Root
+func getAddionalMataDataInfo(metadata *Metadata) {
 	metadata.ProjectURL = BuildProjectUrl(metadata.Name, metadata.Version)
 	if len(metadata.HomePage) > 0 && metadata.HomePage != "None" {
 		metadata.PackageURL = metadata.HomePage
@@ -90,7 +82,44 @@ func (d *MetadataDecoder) BuildMetadata(pkg Packages) Metadata {
 	metadata.LicensePath = BuildLicenseUrl(metadata.DistInfoPath)
 	metadata.MetadataPath = BuildMetadataPath(metadata.DistInfoPath)
 	metadata.WheelPath = BuildWheelPath(metadata.DistInfoPath)
-	return metadata
+}
+
+func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, []Metadata, error) {
+	metainfo := map[string]Metadata{}
+	metaList := []Metadata{}
+	pkgIndex := map[string]int{}
+
+	var metadata *Metadata
+
+	pkgNameList := ""
+	for i, pkg := range pkgs {
+		pkgNameList += pkg.Name + " "
+		pkgIndex[strings.ToLower(pkg.Name)] = i
+	}
+
+	allpkgsmetadatastr, err := d.getPkgDetailsFunc(pkgNameList)
+	if err != nil {
+		return nil, nil, errorUnableToFetchPackageMetadata
+	}
+
+	// Metadata of all packages are separated by "---". Split all such occurances and trim to remove leading \n
+
+	a := regexp.MustCompile(pkgMetedataSeparator)
+	eachpkgsmetadatastr := a.Split(allpkgsmetadatastr, -1)
+	for i := range eachpkgsmetadatastr {
+		eachpkgsmetadatastr[i] = strings.TrimSpace(eachpkgsmetadatastr[i])
+	}
+
+	for _, metadatastr := range eachpkgsmetadatastr {
+		metadata = new(Metadata)
+		ParseMetadata(metadata, metadatastr)
+		getAddionalMataDataInfo(metadata)
+		metadata.Root = pkgs[pkgIndex[strings.ToLower(metadata.Name)]].Root
+		metaList = append(metaList, *metadata)
+		metainfo[strings.ToLower(metadata.Name)] = *metadata
+	}
+
+	return metainfo, metaList, nil
 }
 
 func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
@@ -137,25 +166,26 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	return module
 }
 
-func (d *MetadataDecoder) GetMetadataList(pkgs []Packages) (map[string]Metadata, []Metadata) {
-	metainfo := map[string]Metadata{}
-	metaList := []Metadata{}
-
-	for _, pkg := range pkgs {
-		metadata := d.BuildMetadata(pkg)
-		metaList = append(metaList, metadata)
-		metainfo[strings.ToLower(pkg.Name)] = metadata
+func (d *MetadataDecoder) GetMetadataList(pkgs []Packages) (map[string]Metadata, []Metadata, error) {
+	metainfo, metaList, err := d.BuildMetadata(pkgs)
+	if err != nil {
+		return nil, nil, err
 	}
-	return metainfo, metaList
+
+	return metainfo, metaList, nil
 }
 
-func (d *MetadataDecoder) ConvertMetadataToModules(pkgs []Packages, modules *[]models.Module) map[string]Metadata {
-	metainfo, metaList := d.GetMetadataList(pkgs)
+func (d *MetadataDecoder) ConvertMetadataToModules(pkgs []Packages, modules *[]models.Module) (map[string]Metadata, error) {
+	metainfo, metaList, err := d.GetMetadataList(pkgs)
+	if err != nil {
+		return nil, err
+	}
+
 	for _, metadata := range metaList {
 		mod := d.BuildModule(metadata)
 		*modules = append(*modules, mod)
 	}
-	return metainfo
+	return metainfo, nil
 }
 
 func BuildDependencyGraph(modules *[]models.Module, pkgsMetadata *map[string]Metadata) error {

@@ -103,8 +103,14 @@ func (m *poetry) ListUsedModules(path string) ([]models.Module, error) {
 	if err := m.LoadModuleList(path); err != nil {
 		return m.allModules, errFailedToConvertModules
 	}
+
 	decoder := worker.NewMetadataDecoder(m.GetPackageDetails)
-	m.metainfo = decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
+	metainfo, err := decoder.ConvertMetadataToModules(m.pkgs, &m.allModules)
+	if err != nil {
+		return m.allModules, err
+	}
+	m.metainfo = metainfo
+
 	return m.allModules, nil
 }
 
