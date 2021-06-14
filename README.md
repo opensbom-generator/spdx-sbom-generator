@@ -4,20 +4,23 @@
 
 [Software Package Data Exchange](https://spdx.org/tools) (SPDX) is an open standard for communicating software bill of materials (SBOM) information that supports accurate identification of software components, explicit mapping of relationships between components, and the association of security and licensing information with each component.
 
-The `spdx-sbom-generator` CLI generates the SPDX format files. These files understands the ecosystems with respect to most of the languages, and connects to the appropriate package management system (OR read it from a local machine) during the run time to get the following details:
+The `spdx-sbom-generator` CLI generates the SPDX format files. CLI understands the ecosystems with respect to most of the languages such as .NET, Python, Java-Maven, Golang, Rust, Node.js, Ruby, and PHP. It connects to the appropriate package management system (OR read it from a local machine) during the run time to get the following details:
 
-- Document creation 
-- Package, 
+- Document creation
+- Package,
 - Relationships
 - Other License information.
 
-The  `spdx-sbom-generator `  CLI performs the following actions:
-* Automatically recognize which package management system to connect (OR read it from local machine) based on package manifest file used in the project repository such as package.json, pom.xml.
-* Display ecosystem name in the form of npm and project manifest file which is package.json.
-* Output format: .spdx .spdx.json, .spdx.rdf ([SPDX Format Requirements](https://spdx.github.io/spdx-spec/1-rationale/#17-format-requirements))
-- Ecosystem to support: .NET, Python, Java-Maven, Java-Gradle, Golang, Rust, Node.js, Ruby, PHP, and Elixir
+spdx-sbom-generator provides:
 
-***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release. 
+* Produces Software Package Data Exchange (SPDX) documents for artifacts described in the package file i.e package.json, pom.xml etc
+* Follows SPDX v2.1 specification
+* Outputs result in Tag/Value(spdx) format
+* Supported languages are .NET, Python, Java-Maven, Golang, Rust, Node.js, Ruby, and PHP
+* Executable binaries are available for windows, darwin and linux
+
+
+***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release.
 
 ## Available command Options
 Run help:
@@ -42,11 +45,11 @@ Flags:
 
 - `spdx` (Default format)
 
-- `JSON`
+- `JSON` (In progress)
 
-- `RDF`
+- `RDF`  (In progress)
 
-  
+
 
 Command output sample option:
 ```BASH
@@ -336,26 +339,26 @@ To register for a new plugin, perform the following steps:
 
    ```
    /internal/modules/npm
-   
+
    ```
 
 3. Create a Handler file, for example:  `handler.go`, and follow Data Contract section above. Define package name, and import section as explained in the following code snippet:
 
    ```
    package npm
-   
+
    import (
    	"path/filepath"
-   
+
    	"spdx-sbom-generator/internal/helper"
    	"spdx-sbom-generator/internal/models"
    )
-   
+
    // rest of the file below
-   
+
    ```
 
-   
+
 
 4. In `handler.go`, define the plugin struct with at least the plugin metadata info as explained in the following code snippet:
 
@@ -363,10 +366,10 @@ To register for a new plugin, perform the following steps:
    type npm struct {
    	metadata models.PluginMetadata
    }
-   
+
    ```
 
-   
+
 
 5. Define plugin registration method (`New` func) with metadata values as explained in the following code snippet:
 
@@ -382,10 +385,10 @@ To register for a new plugin, perform the following steps:
    		},
    	}
    }
-   
+
    ```
 
-   
+
 
 6. In `handler.go`, create the required interface function (Data contract definition above).
 
@@ -394,7 +397,7 @@ To register for a new plugin, perform the following steps:
    func (m *npm) GetMetadata() models.PluginMetadata {
      return m.metadata
    }
-   
+
    // IsValid ...
    func (m *npm) IsValid(path string) bool {
      for i := range m.metadata.Manifest {
@@ -404,7 +407,7 @@ To register for a new plugin, perform the following steps:
      }
      return false
    }
-   
+
    // HasModulesInstalled ...
    func (m *npm) HasModulesInstalled(path string) error {
      for i := range m.metadata.ModulePath {
@@ -414,40 +417,40 @@ To register for a new plugin, perform the following steps:
      }
      return errDependenciesNotFound
    }
-   
+
    // GetVersion ...
    func (m *npm) GetVersion() (string, error) {
      output, err := exec.Command("npm", "--version").Output()
      if err != nil {
        return "", err
      }
-   
+
      return string(output), nil
    }
-   
+
    // SetRootModule ...
    func (m *npm) SetRootModule(path string) error {
      return nil
    }
-   
+
    // GetRootModule ...
    func (m *npm) GetRootModule(path string) (*models.Module, error) {
      return nil, nil
    }
-   
+
    // ListUsedModules...
    func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
      return nil, nil
    }
-   
+
    // ListModulesWithDeps ...
    func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
      return nil, nil
    }
-   
+
    ```
 
-   
+
 
 7. In `modules.go` at `./internal/modules/` directory, register the new plugin. Add the plugin to register to the existing definition.
 
@@ -458,10 +461,10 @@ To register for a new plugin, perform the following steps:
                npm.New(),
        )
    }
-   
+
    ```
 
-   
+
 
 ## How to Work With SPDX SBOM Generator
 A **Makefile** for the `spdx-sbom-generator` is described below with ability to run, test, lint, and build the project binary for different platforms (Linux, Mac, and Windows).
@@ -504,20 +507,20 @@ Perform the following steps to work with SPDX SBOM Generator:
    make build-win
    ```
 
-   
+
 
 Licensing
 ---------
 docker/cli is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/blob/master/LICENSE) for the full license text.
 
-## Additional Information 
+## Additional Information
 
 [SPDX](https://spdx.org)
 
 [SPDX SBOM](https://www.linuxfoundation.org/en/blog/spdx-its-already-in-use-for-global-software-bill-of-materials-sbom-and-supply-chain-security/)
 
-[SPDX Tools](https://tools.spdx.org/app/) 
+[SPDX Tools](https://tools.spdx.org/app/)
 
 [SPDX License List](https://spdx.org/licenses/)
 
-[SPDX GitHub Repos](https://github.com/spdx) 
+[SPDX GitHub Repos](https://github.com/spdx)
