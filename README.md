@@ -4,21 +4,27 @@
 
 [Software Package Data Exchange](https://spdx.org/tools) (SPDX) is an open standard for communicating software bill of materials (SBOM) information that supports accurate identification of software components, explicit mapping of relationships between components, and the association of security and licensing information with each component.
 
-The `spdx-sbom-generator` CLI generates the SPDX format files. CLI understands the ecosystems with respect to most of the languages such as .NET, Python, Java-Maven, Golang, Rust, Node.js, Ruby, and PHP. It connects to the appropriate package management system (OR read it from a local machine) during the run time to get the following details:
+`spdx-sbom-generator`tool to help those in the community that want to generate SPDX Software Bill of Materials (SBOMs) with current package managers.   It has a command line Interface (CLI) that lets you generate SBOM information, including components, licenses, copyrights, and security references of your software using SPDX v2.2 specification and aligning with the current known minimum elements from NTIA. It automatically determines which package managers or build systems are actually being used by the software.  
 
-- Document creation
-- Package,
-- Relationships
-- Other License information.
+`spdx-sbom-generator`is supporting the following package managers:
+ 
+ * GoMod (go)
+ * Cargo (Rust)
+ * Composer (PHP)
+ * DotNet (.NET)
+ * Maven (Java)
+ * NPM (Node.js)
+ * Yarn (Node.js)
+ * PIP (Python)
+ * Pipenv (Python)
+ * Gems (Ruby) 
 
-spdx-sbom-generator provides:
+## Installation:
 
-* Produces Software Package Data Exchange (SPDX) documents for artifacts described in the package file i.e package.json, pom.xml etc
-* Follows SPDX v2.1 specification
-* Outputs result in Tag/Value(spdx) format
-* Supported languages are .NET, Python, Java-Maven, Golang, Rust, Node.js, Ruby, and PHP
-* Executable binaries are available for windows, darwin and linux
-
+* [macOS](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-linux-386.tar.gz)
+* [Linux (x64]](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-linux-amd64.tar.gz)
+* [Windows (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-windows-amd64.zip)
+* [Windows (x86)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-windows-386.zip)
 
 ***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release.
 
