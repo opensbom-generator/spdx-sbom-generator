@@ -22,7 +22,7 @@
 ## Installation:
 
 * [macOS](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-linux-386.tar.gz)
-* [Linux (x64]](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-linux-amd64.tar.gz)
+* [Linux (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-linux-amd64.tar.gz)
 * [Windows (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-windows-amd64.zip)
 * [Windows (x86)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-windows-386.zip)
 
