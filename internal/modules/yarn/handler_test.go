@@ -96,7 +96,7 @@ func TestListAllModules(t *testing.T) {
 
 	count := 0
 	for _, mod := range mods {
-		if mod.Name == "axios-0.19.2" {
+		if mod.Name == "axios" {
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))) )
 			assert.Equal(t, "0.19.2", mod.Version)
 			assert.Equal(t, "registry.yarnpkg.com/axios/-/axios-0.19.2.tgz", mod.PackageURL)
@@ -107,7 +107,7 @@ func TestListAllModules(t *testing.T) {
 			count++
 			continue
 		}
-		if mod.Name == "react-16.14.0" {
+		if mod.Name == "react" {
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))) )
 
 			assert.Equal(t, "16.14.0", mod.Version)
@@ -119,7 +119,7 @@ func TestListAllModules(t *testing.T) {
 			count++
 			continue
 		}
-		if mod.Name == "react-dom-16.14.0" {
+		if mod.Name == "react-dom" {
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s", mod.Name))) )
 
 			assert.Equal(t, "16.14.0", mod.Version)
