@@ -174,6 +174,11 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		var mod models.Module
 		mod.Name = d.Name
 		mod.Version = d.Version
+		modules[0].Modules[d.Name] = &models.Module{
+			Name:     d.Name,
+			Version:  d.Version,
+			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", d.Name, d.Version))},
+		}
 		if len(d.Dependencies) != 0 {
 			mod.Modules = map[string]*models.Module{}
 			for _,depD := range d.Dependencies {
@@ -184,7 +189,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 				}
 				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "^"), "\"")
 				mod.Modules[name] = &models.Module{
-					Name:     fmt.Sprintf("%s-%s", name, version),
+					Name:     name,
 					Version:  version,
 					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
 				}
@@ -256,7 +261,7 @@ func readLockFile(path string) ([]dependency, error) {
 			if strings.HasPrefix(text, "  version ") {
 				p[i].Version = strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(text, "  version "), "\""), "\"")
 				n := p[i].Name[:strings.Index(p[i].Name, "@")]
-				p[i].Name = fmt.Sprintf("%s-%s", n, p[i].Version)
+				p[i].Name = n
 				p[i].PkPath = p[i].PkPath[:strings.LastIndex(p[i].PkPath, "@")]
 				continue
 			}
