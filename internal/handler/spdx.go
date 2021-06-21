@@ -7,7 +7,8 @@ import (
 	"fmt"
 	"path/filepath"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/gookit/color"
+	"github.com/i582/cfmt/cmd/cfmt"
 
 	"spdx-sbom-generator/internal/format"
 	"spdx-sbom-generator/internal/helper"
@@ -64,14 +65,23 @@ func (sh *spdxHandler) Run() error {
 		return errNoModuleManagerFound
 	}
 
+	reportError := func(pluginName string) {
+		cfmt.Println(cfmt.Sprintf("{{Could not build SBOM for Package Manager: }}::red|bold`%s`", color.White.Sprintf(pluginName)))
+	}
+
+	cfmt.Println()
+	cfmt.Println(cfmt.Sprintf("{{Searching for Package Managers ... }}::cyan|bold"))
 	for _, mm := range sh.modulesManager {
 		plugin := mm.Plugin.GetMetadata()
 		filename := fmt.Sprintf("bom-%s.spdx", plugin.Slug)
 		outputFile := filepath.Join(sh.config.OutputDir, filename)
 
-		log.Infof("Running generator for Module Manager: `%s` with output `%s`", plugin.Slug, outputFile)
+		cfmt.Println()
+		cfmt.Println(cfmt.Sprintf("{{Module Manager Detected: }}::cyan|bold`%s`", color.Yellow.Sprintf(plugin.Slug)))
+		cfmt.Println(cfmt.Sprintf("{{Output file will be at: }}::cyan|bold`%s`", color.Yellow.Sprintf(outputFile)))
 		if err := mm.Run(); err != nil {
 			sh.errors[plugin.Slug] = err
+			reportError(plugin.Slug)
 			continue
 		}
 
@@ -84,10 +94,12 @@ func (sh *spdxHandler) Run() error {
 		})
 		if err != nil {
 			sh.errors[plugin.Slug] = err
+			reportError(plugin.Slug)
 			continue
 		}
 		if err := format.Render(); err != nil {
 			sh.errors[plugin.Slug] = err
+			reportError(plugin.Slug)
 			continue
 		}
 		sh.outputFiles[plugin.Slug] = outputFile
@@ -98,18 +110,23 @@ func (sh *spdxHandler) Run() error {
 
 // Complete ...
 func (sh *spdxHandler) Complete() error {
-	if len(sh.errors) > 0 {
-		log.Info("Command has completed with errors for some package managers, see details below")
-		for plugin, err := range sh.errors {
-			log.Infof("Plugin %s return error %v", plugin, err)
+	cfmt.Println()
+	cfmt.Printf("{{                 Command has completed, below cli stats                      }}::bgBlue|#ffffff")
+	cfmt.Println()
+	cfmt.Println("PACKAGE MANAGER          | OUTPUT PATH                              | STATUS")
+	cfmt.Println("-------------------------| ---------------------------------------- | ------")
+
+	if len(sh.outputFiles) > 0 {
+		for plugin, filepath := range sh.outputFiles {
+			cfmt.Println(cfmt.Sprintf("%-15s          {{|}}::white|bold %-30s           {{|}}::white|bold %s", helper.DecorateResult(plugin, 15), helper.DecorateResult(filepath, 30), color.BgGreen.Sprintf("COMPLETED")))
 		}
 	}
 
-	if len(sh.outputFiles) > 0 {
-		log.Info("Command completed successful for below package managers")
-		for plugin, filepath := range sh.outputFiles {
-			log.Infof("Plugin %s generated output at %s", plugin, filepath)
+	if len(sh.errors) > 0 {
+		for plugin, err := range sh.errors {
+			cfmt.Println(cfmt.Sprintf("%-15s          {{|}}::white|bold %-30s           {{|}}::white|bold %s", helper.DecorateResult(plugin, 15), helper.DecorateResult("ERROR, output not generated", 30), color.BgRed.Sprintf(err.Error())))
 		}
 	}
+	cfmt.Println("-------------------------| ---------------------------------------- | ------")
 	return nil
 }

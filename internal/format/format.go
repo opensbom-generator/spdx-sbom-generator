@@ -10,6 +10,9 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/google/uuid"
+	"github.com/gookit/color"
+	"github.com/i582/cfmt/cmd/cfmt"
+	"github.com/schollz/progressbar/v3"
 
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
@@ -77,6 +80,8 @@ func (f *Format) Render() error {
 	file.WriteString(fmt.Sprintf("Creator: %s\n", document.Creator))
 	file.WriteString(fmt.Sprintf("Created: %v\n\n", document.Created))
 	//Print Package
+	cfmt.Println(cfmt.Sprintf("{{Building output file: }}::cyan|bold`%s`", color.Yellow.Sprintf(f.Config.Filename)))
+	bar := progressbar.Default(int64(len(packages)))
 	for _, pkg := range packages {
 		file.WriteString(fmt.Sprintf("##### Package representing the %s\n\n", pkg.PackageName))
 		generatePackage(file, pkg)
@@ -90,7 +95,7 @@ func (f *Format) Render() error {
 			}
 			file.WriteString("\n")
 		}
-
+		bar.Add(1)
 	}
 
 	//Print Other Licenses

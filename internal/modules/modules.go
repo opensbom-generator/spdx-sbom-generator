@@ -5,6 +5,8 @@ package modules
 import (
 	"errors"
 
+	"github.com/gookit/color"
+	"github.com/i582/cfmt/cmd/cfmt"
 	log "github.com/sirupsen/logrus"
 
 	"spdx-sbom-generator/internal/models"
@@ -86,7 +88,7 @@ func (m *Manager) Run() error {
 		return err
 	}
 
-	log.Infof("Current Language Version %s", version)
+	cfmt.Print(cfmt.Sprintf("{{Versions detected: }}::cyan|bold %s", color.Yellow.Sprintf(version)))
 	if err := m.Plugin.HasModulesInstalled(modulePath); err != nil {
 		return err
 	}

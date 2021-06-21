@@ -5,7 +5,10 @@ package main
 import (
 	"errors"
 	"os"
+	"strings"
 
+	"github.com/gookit/color"
+	"github.com/i582/cfmt/cmd/cfmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
@@ -72,7 +75,11 @@ func setupLogger() {
 }
 
 func generate(cmd *cobra.Command, args []string) {
-	log.Info("Starting to generate SPDX ...")
+	cfmt.Printf(`
+{{                                                       }}::bgBlue
+{{               Starting to generate SBOM file          }}::bgBlue|#ffffff
+{{                                                       }}::bgBlue
+`)
 	checkOpt := func(opt string) string {
 		cmdOpt, err := cmd.Flags().GetString(opt)
 		if err != nil {
@@ -90,6 +97,10 @@ func generate(cmd *cobra.Command, args []string) {
 		log.Fatalf("Failed to read command option: %v", err)
 	}
 
+	cfmt.Println()
+	cfmt.Println(cfmt.Sprintf("{{CLI version: }}::cyan|bold %s", color.Yellow.Sprintf(version)))
+	cfmt.Println(cfmt.Sprintf("{{Directory to analyze: }}::cyan|bold %s", color.Yellow.Sprintf(path)))
+	cfmt.Println(cfmt.Sprintf("{{Output Format: }}::cyan|bold %s", color.Yellow.Sprintf(strings.ToUpper(format))))
 	handler, err := handler.NewSPDX(handler.SPDXSettings{
 		Version:   version,
 		Path:      path,

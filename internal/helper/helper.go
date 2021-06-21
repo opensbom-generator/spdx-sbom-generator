@@ -193,7 +193,6 @@ func BuildManifestContent(path string) []byte {
 	return nil
 }
 
-
 func RemoveURLProtocol(url string) string {
 	trimmedURL := strings.TrimSpace(url)
 	trimmedURL = strings.TrimPrefix(trimmedURL, "https://")
@@ -201,3 +200,10 @@ func RemoveURLProtocol(url string) string {
 	return trimmedURL
 }
 
+func DecorateResult(result string, maxLength int) string {
+	trimmedResult := strings.TrimSpace(result)
+	if len(trimmedResult) > maxLength {
+		return trimmedResult[:maxLength]
+	}
+	return trimmedResult
+}
