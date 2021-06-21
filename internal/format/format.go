@@ -81,12 +81,12 @@ func (f *Format) Render() error {
 		file.WriteString(fmt.Sprintf("##### Package representing the %s\n\n", pkg.PackageName))
 		generatePackage(file, pkg)
 		if pkg.RootPackage {
-			file.WriteString(fmt.Sprintf("Relationship %s DESCRIBES %s \n\n", document.SPDXID, pkg.SPDXID))
+			file.WriteString(fmt.Sprintf("Relationship: %s DESCRIBES %s \n\n", document.SPDXID, pkg.SPDXID))
 		}
 		//Print DEPS ON
 		if len(pkg.DependsOn) > 0 {
 			for _, subPkg := range pkg.DependsOn {
-				file.WriteString(fmt.Sprintf("Relationship %s DEPENDS_ON %s \n", pkg.SPDXID, subPkg.SPDXID))
+				file.WriteString(fmt.Sprintf("Relationship: %s DEPENDS_ON %s \n", pkg.SPDXID, subPkg.SPDXID))
 			}
 			file.WriteString("\n")
 		}
