@@ -160,10 +160,12 @@ type Module struct {
   PackageComment   string
   Root             bool
   Modules          map[string]*Module
-}```
+}
+```
 
 `PluginMetadata` model definition:
-​```GO
+
+```GO
 type PluginMetadata struct {
     Name       string
     Slug       string
