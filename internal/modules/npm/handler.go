@@ -179,6 +179,11 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		Algorithm: "SHA256",
 		Value:     h,
 	}
+	rootDeps := getPackageDependencies(deps, "dependencies")
+	for k, v := range rootDeps {
+		de.Modules[k] = v
+	}
+
 	modules = append(modules, *de)
 	for key, dd := range deps {
 		d := dd.(map[string]interface{})
@@ -279,7 +284,7 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 			version = strings.TrimPrefix(v.(string), "^")
 		}
 		m[k] = &models.Module{
-			Name:     fmt.Sprintf("%s-%s", name, version),
+			Name:     name,
 			Version:  version,
 			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
 		}
