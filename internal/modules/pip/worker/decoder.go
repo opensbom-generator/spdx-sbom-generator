@@ -144,7 +144,13 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	}
 
 	module.PackageURL = metadata.PackageURL
-	module.CheckSum = GetPackageChecksum(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
+
+	checksum, downloadurl := GetPackageChecksumAndDownloadURL(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
+	module.CheckSum = checksum
+	if (metadata.Root) && (len(metadata.HomePage) != 0) {
+		downloadurl = metadata.HomePage
+	}
+	module.PackageDownloadLocation = downloadurl
 
 	licensePkg, err := helper.GetLicenses(metadata.DistInfoPath)
 	if err == nil {
