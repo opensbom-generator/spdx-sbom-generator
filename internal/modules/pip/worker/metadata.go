@@ -170,7 +170,7 @@ func IsAuthorAnOrganization(author string, authoremail string) bool {
 	return result
 }
 
-func GetPackageChecksum(packagename string, packageJsonURL string, packageWheelPath string) *models.CheckSum {
+func GetPackageChecksumAndDownloadURL(packagename string, packageJsonURL string, packageWheelPath string) (*models.CheckSum, string) {
 	checkfortag := true
 
 	wheeltag, err := GetWheelDistributionLastTag(packageWheelPath)
@@ -181,8 +181,8 @@ func GetPackageChecksum(packagename string, packageJsonURL string, packageWheelP
 		checkfortag = false
 	}
 
-	checksum := getPypiPackageChecksum(packagename, packageJsonURL, checkfortag, wheeltag)
-	return &checksum
+	checksum, downloadurl := getPypiPackageChecksumAndDownloadURL(packagename, packageJsonURL, checkfortag, wheeltag)
+	return &checksum, downloadurl
 }
 
 func GetWheelDistributionLastTag(packageWheelPath string) (string, error) {
