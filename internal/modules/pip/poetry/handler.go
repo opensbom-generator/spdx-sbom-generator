@@ -37,7 +37,7 @@ func New() *poetry {
 	return &poetry{
 		metadata: models.PluginMetadata{
 			Name:       "The Python Package Index (PyPI)",
-			Slug:       "pip",
+			Slug:       "poetry",
 			Manifest:   []string{manifestLockFile},
 			ModulePath: []string{},
 		},
@@ -169,7 +169,7 @@ func (m *poetry) PushRootModuleToVenv() (bool, error) {
 
 func (m *poetry) markRootModue() {
 	for i, pkg := range m.pkgs {
-		if pkg.Installer == "poetry" {
+		if worker.IsRootModule(pkg, m.metadata.Slug) {
 			m.pkgs[i].Root = true
 			break
 		}

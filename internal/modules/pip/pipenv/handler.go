@@ -15,6 +15,8 @@ const cmdName = "pipenv"
 const manifestFile = "Pipfile"
 const manifestLockFile = "Pipfile.lock"
 const placeholderPkgName = "{PACKAGE}"
+const packageSrcLocation = "/src/"
+const packageSiteLocation = "/site-packages"
 
 var errDependenciesNotFound = errors.New("Unable to generate SPDX file: no modules or vendors found. Please install them before running spdx-sbom-generator, e.g.: `pipenv install` or `pipenv update`")
 var errBuildlingModuleDependencies = errors.New("Error building module dependencies")
@@ -37,7 +39,7 @@ func New() *pipenv {
 	return &pipenv{
 		metadata: models.PluginMetadata{
 			Name:       "The Python Package Index (PyPI)",
-			Slug:       "pip",
+			Slug:       "pipenv",
 			Manifest:   []string{manifestLockFile},
 			ModulePath: []string{},
 		},
@@ -169,7 +171,7 @@ func (m *pipenv) PushRootModuleToVenv() (bool, error) {
 
 func (m *pipenv) markRootModue() {
 	for i, pkg := range m.pkgs {
-		if pkg.Installer == "" {
+		if worker.IsRootModule(pkg, m.metadata.Slug) {
 			m.pkgs[i].Root = true
 			break
 		}

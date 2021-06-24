@@ -4,7 +4,6 @@ package pyenv
 
 import (
 	"errors"
-	"path"
 	"path/filepath"
 	"runtime"
 	"spdx-sbom-generator/internal/helper"
@@ -45,7 +44,7 @@ func New() *pyenv {
 	return &pyenv{
 		metadata: models.PluginMetadata{
 			Name:       "The Python Package Index (PyPI)",
-			Slug:       "pip",
+			Slug:       "pyenv",
 			Manifest:   []string{manifestFile},
 			ModulePath: []string{},
 		},
@@ -198,9 +197,8 @@ func (m *pyenv) PushRootModuleToVenv() (bool, error) {
 }
 
 func (m *pyenv) markRootModue() {
-	nonRootModulePath := path.Join(m.basepath, m.venv)
 	for i, pkg := range m.pkgs {
-		if !strings.Contains(pkg.Location, nonRootModulePath) {
+		if worker.IsRootModule(pkg, m.metadata.Slug) {
 			m.pkgs[i].Root = true
 			break
 		}
