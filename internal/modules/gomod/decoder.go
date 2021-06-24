@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/go-git/go-git/v5"
+
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
@@ -113,6 +115,7 @@ func (d *Decoder) ConvertJSONReaderToModules(path string, modules *[]models.Modu
 
 		if j.Module.Path == path {
 			md.Root = true
+			md.PackageDownloadLocation = buildRootDownloadURL(md.LocalPath)
 		}
 		*modules = append(*modules, *md)
 	}
@@ -134,13 +137,18 @@ func buildModule(m *Module) (*models.Module, error) {
 	localDir := buildLocalPath(m.Path, m.Dir)
 	contentCheckSum := helper.BuildManifestContent(localDir)
 	module := models.Module{
-		Name:       helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),
-		Version:    m.Version,
-		LocalPath:  localDir,
-		PackageURL: m.Path,
+		Name:                    helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),
+		Version:                 m.Version,
+		LocalPath:               localDir,
+		PackageURL:              m.Path,
+		PackageDownloadLocation: buildDownloadURL(m.Path, m.Version),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA256,
 			Content:   contentCheckSum,
+		},
+		Supplier: models.SupplierContact{
+			Type: models.Organization,
+			Name: helper.BuildModuleName(m.Path, m.Replace.Path, m.Replace.Dir),
 		},
 	}
 	licensePkg, err := helper.GetLicenses(localDir)
@@ -181,4 +189,44 @@ func buildLocalPath(path, dir string) string {
 	}
 
 	return dir
+}
+
+// buildRootDownloadURL only support origin for now
+// todo: figure out a valid git value
+func buildRootDownloadURL(localPath string) string {
+	localGit, err := git.PlainOpen(localPath)
+	if err != nil {
+		return ""
+	}
+
+	remote, err := localGit.Remote("origin")
+	if err != nil {
+		return ""
+	}
+
+	config := remote.Config()
+	if err := config.Validate(); err != nil {
+		return ""
+	}
+
+	url := config.URLs[0]
+	// let's convert git@gitxxx format to https
+	if strings.HasPrefix(url, "git@") {
+		re := strings.NewReplacer("git@", "https://", ":", "/")
+		url = re.Replace(url)
+	}
+
+	return fmt.Sprintf("git+%s", url)
+}
+
+func buildDownloadURL(path, version string) string {
+	if strings.HasPrefix(path, "github.com") {
+		if version != "" {
+			return fmt.Sprintf("https://%s/releases/tag/%s", path, version)
+		}
+
+		return fmt.Sprintf("git+https://%s.git", path)
+	}
+
+	return fmt.Sprintf("https://%s", path)
 }
