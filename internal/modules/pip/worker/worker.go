@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"runtime"
 	"spdx-sbom-generator/internal/helper"
 	"strings"
 )
@@ -109,6 +110,30 @@ func IsValidRootModule(path string) bool {
 	modules := []string{manifestSetupCfg, manifestSetupPy}
 	for i := range modules {
 		if helper.Exists(filepath.Join(path, modules[i])) {
+			return true
+		}
+	}
+	return false
+}
+
+func IsRootModule(pkg Packages, pip_type string) bool {
+	osWin := "windows"
+	osDarwin := "darwin"
+	osLinux := "linux"
+	pipenv := "pipenv"
+	poetry := "poetry"
+	pyenv := "pyenv"
+	os := runtime.GOOS
+	if os == osWin && (pip_type == pipenv || pip_type == pyenv) {
+		if !strings.Contains(pkg.Location, "\\src\\") && !strings.Contains(pkg.Location, "\\site-packages") {
+			return true
+		}
+	} else if (os == osDarwin || os == osLinux) && (pip_type == pipenv || pip_type == pyenv) {
+		if !strings.Contains(pkg.Location, "/src/") && !strings.Contains(pkg.Location, "/site-packages") {
+			return true
+		}
+	} else if (os == osWin || os == osLinux || os == osDarwin) && pip_type == poetry {
+		if pkg.Installer == poetry {
 			return true
 		}
 	}
