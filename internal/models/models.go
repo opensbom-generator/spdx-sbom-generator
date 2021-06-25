@@ -33,29 +33,48 @@ type PluginMetadata struct {
 
 // Module ... ...
 type Module struct {
-	Version          string `json:"Version,omitempty"`
-	Name             string
-	Path             string `json:"Path,omitempty"`
-	LocalPath        string `json:"Dir,noempty"`
-	Supplier         SupplierContact
-	PackageURL       string
-	CheckSum         *CheckSum
-	PackageHomePage  string
-	LicenseConcluded string
-	LicenseDeclared  string
-	CommentsLicense  string
-	OtherLicense     []*License
-	Copyright        string
-	PackageComment   string
-	Root             bool
-	Modules          map[string]*Module
+	Version                 string `json:"Version,omitempty"`
+	Name                    string
+	Path                    string `json:"Path,omitempty"`
+	LocalPath               string `json:"Dir,noempty"`
+	Supplier                SupplierContact
+	PackageURL              string
+	CheckSum                *CheckSum
+	PackageHomePage         string
+	PackageDownloadLocation string
+	LicenseConcluded        string
+	LicenseDeclared         string
+	CommentsLicense         string
+	OtherLicense            []*License
+	Copyright               string
+	PackageComment          string
+	Root                    bool
+	Modules                 map[string]*Module
 }
 
 // SupplierContact ...
 type SupplierContact struct {
-	Type  TypeContact
-	Name  string
-	Email string
+	Type            TypeContact
+	Name            string
+	Email           string
+	FuncGetSupplier func() string
+}
+
+// Get default supplier based on Name value or let each plugin build its own logic
+func (s *SupplierContact) Get() string {
+	if s.FuncGetSupplier != nil {
+		return s.FuncGetSupplier()
+	}
+
+	if s.Name == "" {
+		return ""
+	}
+
+	if s.Type == "" {
+		s.Type = Organization
+	}
+
+	return fmt.Sprintf("%s: %s", s.Type, s.Name)
 }
 
 // TypeContact ...

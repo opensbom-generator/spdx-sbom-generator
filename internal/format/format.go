@@ -11,7 +11,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/google/uuid"
 
-	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 )
 
@@ -25,7 +24,6 @@ var replacer *strings.Replacer
 // Format ...
 type Format struct {
 	Config Config
-	Client *helper.Client
 }
 
 // Config ...
@@ -44,7 +42,6 @@ func init() {
 func New(cfg Config) (Format, error) {
 	return Format{
 		Config: cfg,
-		Client: helper.NewClient(),
 	}, nil
 }
 
@@ -176,12 +173,11 @@ func (f *Format) buildPackages(modules []models.Module) ([]models.Package, map[s
 // WIP
 func (f *Format) convertToPackage(module models.Module) (models.Package, error) {
 	return models.Package{
-		PackageName:     module.Name,
-		SPDXID:          setPkgSPDXID(module.Name, module.Version, module.Root),
-		PackageVersion:  buildVersion(module),
-		PackageSupplier: noAssertion,
-		//PackageDownloadLocation: f.buildDownloadURL(module.PackageURL, module.Version),
-		PackageDownloadLocation: noAssertion,
+		PackageName:             module.Name,
+		SPDXID:                  setPkgSPDXID(module.Name, module.Version, module.Root),
+		PackageVersion:          buildVersion(module),
+		PackageSupplier:         setPkgValue(module.Supplier.Get()),
+		PackageDownloadLocation: setPkgValue(module.PackageDownloadLocation),
 		FilesAnalyzed:           false,
 		PackageChecksum:         module.CheckSum.String(),
 		PackageHomePage:         buildHomepageURL(module.PackageURL),
@@ -192,29 +188,6 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 		PackageComment:          setPkgValue(""),
 		RootPackage:             module.Root,
 	}, nil
-}
-
-func (f *Format) buildDownloadURL(url, version string) string {
-	if url == "" {
-		return noAssertion
-	}
-
-	u := f.Client.ParseURL(url)
-	if u == nil {
-		return noAssertion
-	}
-
-	if !f.Client.CheckURL(u.String()) {
-		return noAssertion
-	}
-
-	if u.Host == "github.com" {
-		if version != "" {
-			return fmt.Sprintf("%s/releases/tag/%s", u.String(), version)
-		}
-	}
-
-	return u.String()
 }
 
 // todo: complete build package homepage rules
