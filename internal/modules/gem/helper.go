@@ -134,9 +134,17 @@ func getGemRootModule(path string) (*models.Module, error) {
 		return nil, err
 	}
 
+	var supplier models.SupplierContact
+	authors := spec.Authors
+	if len(authors) > 0 {
+		supplier.Type = models.Person
+		supplier.Name = authors[0]
+	}
+
 	setLicenseInfo(spec.GemLocationDir, &rootModule)
 	rootModule.Name = gemName(spec.Name)
 	rootModule.Version = spec.Version
+	rootModule.Supplier = supplier
 	rootModule.Root = true
 	rootModule.Path = spec.GemLocationDir
 	rootModule.PackageHomePage = cleanURI(spec.HomePage)
@@ -252,11 +260,18 @@ func listGemRootModule(path string) ([]models.Module, error) {
 // Parses spec info into module object
 func parseSpec(spec Spec) models.Module {
 
+	var supplier models.SupplierContact
+	authors := spec.Authors
+	if len(authors) > 0 {
+		supplier.Type = models.Person
+		supplier.Name = authors[0]
+	}
 	return models.Module{
-		Name:            spec.Name,
+		Name:            gemName(spec.Name),
 		Version:         spec.Version,
 		Root:            false,
 		PackageHomePage: cleanURI(spec.HomePage),
+		Supplier:        supplier,
 		PackageURL:      cleanURI(spec.HomePage),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA256,
