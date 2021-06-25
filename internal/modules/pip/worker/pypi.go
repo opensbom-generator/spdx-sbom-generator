@@ -71,6 +71,7 @@ type PackageDigest struct {
 	Filename    string
 	PackageType string
 	Digests     DigestTypes
+	DownloadURL string
 }
 
 // Order in which we want to pick the package digest
@@ -85,7 +86,7 @@ var HashAlgoPickOrder []models.HashAlgorithm = []models.HashAlgorithm{
 	models.HashAlgoMD4,
 	models.HashAlgoMD2}
 
-func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfortag bool, wheeltag string) models.CheckSum {
+func getPypiPackageChecksumAndDownloadURL(packagename string, packageJsonURL string, checkfortag bool, wheeltag string) (models.CheckSum, string) {
 	checksum := models.CheckSum{
 		Algorithm: models.HashAlgoSHA1,
 	}
@@ -93,7 +94,7 @@ func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfort
 	packagedigests, err := fetchAndDecodePypiPackageDataJSON(packagename, packageJsonURL)
 	if err != nil {
 		checksum.Content = []byte(packagename)
-		return checksum
+		return checksum, ""
 	}
 
 	// Our preference of picking the digest is first from "bdist" and them from "sdist"
@@ -103,7 +104,7 @@ func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfort
 			algoType, digestValue := getHighestHashData(pkgdigest)
 			checksum.Algorithm = algoType
 			checksum.Value = digestValue
-			return checksum
+			return checksum, pkgdigest.DownloadURL
 		}
 	}
 
@@ -112,10 +113,10 @@ func getPypiPackageChecksum(packagename string, packageJsonURL string, checkfort
 		algoType, digestValue := getHighestHashData(pkgdigest)
 		checksum.Algorithm = algoType
 		checksum.Value = digestValue
-		return checksum
+		return checksum, pkgdigest.DownloadURL
 	}
 
-	return checksum
+	return checksum, ""
 }
 
 func getHighestHashData(packagedigests PackageDigest) (models.HashAlgorithm, string) {
@@ -179,8 +180,8 @@ func fetchAndDecodePypiPackageDataJSON(packagename string, packageJsonURL string
 			Filename:    url.Filename,
 			PackageType: url.PackageType,
 			Digests:     url.Digests,
+			DownloadURL: url.URL,
 		}
-
 		packagedigests = append(packagedigests, pkgDigest)
 	}
 	return packagedigests, nil
