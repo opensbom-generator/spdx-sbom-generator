@@ -251,12 +251,19 @@ func listGemRootModule(path string) ([]models.Module, error) {
 
 // Parses spec info into module object
 func parseSpec(spec Spec) models.Module {
-
+	
+	var supplier models.SupplierContact
+	authors := spec.Authors
+	if len(authors) > 0 {
+		supplier.Type = models.Person
+		supplier.Name = authors[0]
+	}
 	return models.Module{
-		Name:            spec.Name,
+		Name:            gemName(spec.Name),
 		Version:         spec.Version,
 		Root:            false,
 		PackageHomePage: cleanURI(spec.HomePage),
+		Supplier:        supplier,
 		PackageURL:      cleanURI(spec.HomePage),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA256,
