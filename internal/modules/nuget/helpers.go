@@ -4,7 +4,6 @@ package nuget
 
 import (
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -27,10 +26,4 @@ func getHttpResponseWithHeaders(url string, headers map[string]string) (*http.Re
 	}
 
 	return response, err
-}
-
-func removeURLProtocol(str string) string {
-	value := strings.ReplaceAll(str, "https://", "")
-	value = strings.ReplaceAll(value, "http://", "")
-	return value
 }
