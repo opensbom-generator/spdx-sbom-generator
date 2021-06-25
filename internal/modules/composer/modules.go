@@ -198,10 +198,11 @@ func (m *composer) getModulesFromComposerLockFile(path string) ([]models.Module,
 func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 
 	module := models.Module{
-		Version:    normalizePackageVersion(dep.Version),
-		Name:       getName(dep.Name),
-		Root:       false,
-		PackageURL: genUrlFromComposerPackage(dep),
+		Version:                 normalizePackageVersion(dep.Version),
+		Name:                    getName(dep.Name),
+		Root:                    false,
+		PackageURL:              genUrlFromComposerPackage(dep),
+		PackageDownloadLocation: dep.Source.URL,
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     getCheckSumValue(dep),

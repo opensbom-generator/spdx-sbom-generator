@@ -79,10 +79,11 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 	localPath := convertToLocalPath(dep.ManifestPath)
 
 	module := models.Module{
-		Version:    dep.Version,
-		Name:       dep.Name,
-		Root:       false,
-		PackageURL: formatPackageURL(dep),
+		Version:                 dep.Version,
+		Name:                    dep.Name,
+		Root:                    false,
+		PackageURL:              formatPackageURL(dep),
+		PackageDownloadLocation: dep.Repository,
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
