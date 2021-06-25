@@ -288,6 +288,7 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 	}
 	// parse targets from the asset json
 	targetsData := moduleData[assetTargets].(map[string]interface{})
+	packageNameMap := map[string]string{}
 	for _, packageData := range targetsData {
 		data := packageData.(map[string]interface{})
 		for name, info := range data {
@@ -308,15 +309,22 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 					for dName, dInfo := range dependencyPackages {
 						dVersion, ok := dInfo.(string)
 						if ok {
-							dependencies[dName] = dVersion
+							dUniqueName := fmt.Sprintf("%s-%s", dName, dVersion)
+							if _, ok := packageNameMap[dUniqueName]; ok {
+								dependencies[dName] = dVersion
+							}
 						}
 					}
 				}
-				module, err := buildModule(packageName, packageVersion, dependencies)
-				if err != nil {
-					return modules, err
+				packageUniqueName := fmt.Sprintf("%s-%s", packageName, packageVersion)
+				if _, ok := packageNameMap[packageUniqueName]; !ok {
+					module, err := buildModule(packageName, packageVersion, dependencies)
+					if err != nil {
+						return modules, err
+					}
+					modules = append(modules, module)
 				}
-				modules = append(modules, module)
+				packageNameMap[packageUniqueName] = packageVersion
 			}
 		}
 	}
@@ -365,7 +373,7 @@ func buildModule(name string, version string, dependencies map[string]string) (m
 	}
 	if nuSpecFile != nil {
 		if nuSpecFile.Meta.ProjectURL != "" {
-			module.PackageURL = removeURLProtocol(nuSpecFile.Meta.ProjectURL)
+			module.PackageURL = nuSpecFile.Meta.ProjectURL
 		}
 		if helper.LicenseSPDXExists(nuSpecFile.Meta.License) {
 			module.LicenseDeclared = helper.BuildLicenseDeclared(nuSpecFile.Meta.License)
