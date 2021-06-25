@@ -66,6 +66,10 @@ func (s *SupplierContact) Get() string {
 		return s.FuncGetSupplier()
 	}
 
+	if s.Name == "" {
+		return ""
+	}
+
 	if s.Type == "" {
 		s.Type = Organization
 	}
