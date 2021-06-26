@@ -20,7 +20,7 @@ import (
 )
 
 // Update package supplier information
-func updatePackageSuppier(project gopom.Project, mod models.Module, developers []gopom.Developer) {
+func updatePackageSuppier(project gopom.Project, mod *models.Module, developers []gopom.Developer) {
 	for _, developer := range developers {
 		if len(developer.Name) > 0 && len(developer.Email) > 0 {
 			mod.Supplier.Type = models.Person
@@ -39,13 +39,10 @@ func updatePackageSuppier(project gopom.Project, mod models.Module, developers [
 }
 
 // Update package download location
-func updatePackageDownloadLocation(mod models.Module, distManagement gopom.DistributionManagement) {
+func updatePackageDownloadLocation(mod *models.Module, distManagement gopom.DistributionManagement) {
 	if len(distManagement.DownloadURL) > 0 && (strings.HasPrefix(distManagement.DownloadURL, "http") ||
 		strings.HasPrefix(distManagement.DownloadURL, "https")) {
-		// ******** TODO Module has only PackageHomePage, it does not have PackageDownloadLocation field
-		//mod.PackageDownloadLocation = distManagement.DownloadURL
-		// To avoid lint error
-		return
+		mod.PackageDownloadLocation = distManagement.DownloadURL
 	}
 }
 
@@ -153,8 +150,8 @@ func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
 		Value:     readCheckSum(modName),
 	}
 	mod.Root = true
-	updatePackageSuppier(project, mod, project.Developers)
-	updatePackageDownloadLocation(mod, project.DistributionManagement)
+	updatePackageSuppier(project, &mod, project.Developers)
+	updatePackageDownloadLocation(&mod, project.DistributionManagement)
 	updateLicenseInformationToModule(&mod)
 	if len(project.URL) > 0 {
 		mod.PackageURL = project.URL
@@ -504,21 +501,22 @@ func buildDependenciesGraph(modules []models.Module, tdList map[string][]string)
 				}
 
 				modules[moduleIndex[moduleName]].Modules[depName] = &models.Module{
-					Name:             depModule.Name,
-					Version:          depModule.Version,
-					Path:             depModule.Path,
-					LocalPath:        depModule.LocalPath,
-					Supplier:         depModule.Supplier,
-					PackageURL:       depModule.PackageURL,
-					CheckSum:         depModule.CheckSum,
-					PackageHomePage:  depModule.PackageHomePage,
-					LicenseConcluded: depModule.LicenseConcluded,
-					LicenseDeclared:  depModule.LicenseDeclared,
-					CommentsLicense:  depModule.CommentsLicense,
-					OtherLicense:     depModule.OtherLicense,
-					Copyright:        depModule.Copyright,
-					PackageComment:   depModule.PackageComment,
-					Root:             depModule.Root,
+					Name:                    depModule.Name,
+					Version:                 depModule.Version,
+					Path:                    depModule.Path,
+					LocalPath:               depModule.LocalPath,
+					Supplier:                depModule.Supplier,
+					PackageURL:              depModule.PackageURL,
+					CheckSum:                depModule.CheckSum,
+					PackageHomePage:         depModule.PackageHomePage,
+					PackageDownloadLocation: depModule.PackageDownloadLocation,
+					LicenseConcluded:        depModule.LicenseConcluded,
+					LicenseDeclared:         depModule.LicenseDeclared,
+					CommentsLicense:         depModule.CommentsLicense,
+					OtherLicense:            depModule.OtherLicense,
+					Copyright:               depModule.Copyright,
+					PackageComment:          depModule.PackageComment,
+					Root:                    depModule.Root,
 				}
 			}
 		}
