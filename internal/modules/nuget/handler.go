@@ -387,6 +387,9 @@ func buildModule(name string, version string, dependencies map[string]string) (m
 		if module.Supplier.Name != "" {
 			module.Supplier.Name = nuSpecFile.Meta.Owners
 		}
+		if nuSpecFile.Meta.Repository.URL != "" {
+			module.PackageDownloadLocation = nuSpecFile.Meta.Repository.URL
+		}
 	}
 	// set dependencies
 	dependencyModules := map[string]*models.Module{}
