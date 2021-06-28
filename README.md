@@ -117,7 +117,9 @@ Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 You can run this program using a Docker image that contains `spdx-sbom-generator`.
 To do this, first [install Docker](https://docs.docker.com/get-docker/).
 
-You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull [spdx/spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator)` ; this is an Alpine image with the spdx-sbom-generator binary installed. You can re-run the pull command to update the image.
+You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull spdx/spdx-sbom-generator` 
+
+[spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator): this is an Alpine image with the spdx-sbom-generator binary installed. You can re-run the pull command to update the image.
 
 Finally, run the program, using this form
 
