@@ -148,6 +148,7 @@ func getGemRootModule(path string) (*models.Module, error) {
 	rootModule.Root = true
 	rootModule.Path = spec.GemLocationDir
 	rootModule.PackageHomePage = cleanURI(spec.HomePage)
+	rootModule.PackageDownloadLocation = cleanURI(spec.HomePage)
 	rootModule.PackageURL = cleanURI(spec.HomePage)
 	rootModule.CheckSum = &models.CheckSum{
 		Algorithm: models.HashAlgoSHA256,
@@ -271,6 +272,7 @@ func parseSpec(spec Spec) models.Module {
 		Version:         spec.Version,
 		Root:            false,
 		PackageHomePage: cleanURI(spec.HomePage),
+		PackageDownloadLocation: cleanURI(spec.HomePage),
 		Supplier:        supplier,
 		PackageURL:      cleanURI(spec.HomePage),
 		CheckSum: &models.CheckSum{
@@ -482,8 +484,7 @@ func ReduceSpec(row, column string, spec *Spec) {
 	case "s.authors":
 		fallthrough
 	case "spec.authors":
-		_, value := strings.SplitN(strings.TrimLeft(row, "="), " ", 2)[0], strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[1], " ", "")
-		spec.Authors = list(value)
+		 spec.Authors = getAuthors(row)
 	case "s.summary":
 		fallthrough
 	case "spec.summary":
@@ -1317,6 +1318,16 @@ func gemDir() string {
 		fmt.Println(err)
 	}
 	return filepath.Join(strings.Fields(string(output))[0], CACHE_DEFAULT_DIR)
+}
+
+// extracts authors from row
+func getAuthors(row string) []string {
+		value :=  strings.SplitN(strings.TrimLeft(unfreeze(row), " "), " ", 2)[1]
+		s := []string{`[`,`]`,`"`,`=`}
+		for _,v := range s {
+			value=strings.ReplaceAll(value,v,"")
+		}
+	return strings.Split(value,",")
 }
 
 // computes the SHA 256 checkSum of a gem
