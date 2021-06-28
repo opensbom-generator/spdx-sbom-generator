@@ -182,13 +182,12 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		Value:     h,
 	}
 	rootDeps := getPackageDependencies(deps, "dependencies")
-	allDeps := appendNestedDependencies(deps)
-
 	for k, v := range rootDeps {
 		de.Modules[k] = v
 	}
-
 	modules = append(modules, *de)
+
+	allDeps := appendNestedDependencies(deps)
 	for key, dd := range allDeps {
 		depName := strings.TrimPrefix(key, "@")
 		for nkey := range dd {
@@ -206,8 +205,8 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 				}
 			}
 
-			mod.PackageURL = helper.RemoveURLProtocol(r)
-
+			mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], key, m.metadata.Manifest[0]))
+			mod.PackageDownloadLocation = r
 			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 			mod.CheckSum = &models.CheckSum{
 				Algorithm: "SHA256",
@@ -308,6 +307,18 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 	return m
 }
 
+func getPackageHomepage(path string) string {
+	r := reader.New(path)
+	pkResult, err := r.ReadJson()
+	if err != nil {
+		return ""
+	}
+	if pkResult["homepage"] != nil {
+		return helper.RemoveURLProtocol(pkResult["homepage"].(string))
+	}
+	return ""
+}
+
 func appendNestedDependencies(deps map[string]interface{}) map[string]map[string]interface{} {
 	allDeps := make(map[string]map[string]interface{})
 	for k, v := range deps {
@@ -320,42 +331,38 @@ func appendNestedDependencies(deps map[string]interface{}) map[string]map[string
 		allDeps[k] = mainDeps
 
 		if r, ok := v.(map[string]interface{})["requires"]; ok {
-
-			for rk, rv := range r.(map[string]interface{}) {
-				if rv.(string) == "*" {
-					continue
-				}
-				nestedDeps := allDeps[rk]
-				if nestedDeps == nil {
-					nestedDeps = make(map[string]interface{})
-				}
-				nestedDeps[rv.(string)] = map[string]interface{}{"version": rv}
-				allDeps[rk] = nestedDeps
-			}
+			appendRequired(r, allDeps)
 		}
 
 		if d, ok := v.(map[string]interface{})["dependencies"]; ok {
-			for dk, dv := range d.(map[string]interface{}) {
-				m := allDeps[dk]
-				if m == nil {
-					m = make(map[string]interface{})
-				}
-				m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
-				allDeps[dk] = m
-			}
+			appendDependencies(d, allDeps)
 		}
 
 	}
 	return allDeps
 }
 
-func appendDependencies(d interface{},x map[string]map[string]interface{} ) {
+func appendDependencies(d interface{}, allDeps map[string]map[string]interface{} ) {
 	for dk, dv := range d.(map[string]interface{}) {
-		m := x[dk]
+		m := allDeps[dk]
 		if m == nil {
 			m = make(map[string]interface{})
 		}
 		m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
-		x[dk] = m
+		allDeps[dk] = m
+	}
+}
+
+func appendRequired(r interface{}, allDeps map[string]map[string]interface{}) {
+	for rk, rv := range r.(map[string]interface{}) {
+		if rv.(string) == "*" {
+			continue
+		}
+		nestedDeps := allDeps[rk]
+		if nestedDeps == nil {
+			nestedDeps = make(map[string]interface{})
+		}
+		nestedDeps[rv.(string)] = map[string]interface{}{"version": rv}
+		allDeps[rk] = nestedDeps
 	}
 }

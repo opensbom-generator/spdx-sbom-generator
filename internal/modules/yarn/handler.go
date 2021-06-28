@@ -151,11 +151,12 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 // ListModulesWithDeps return all info of installed modules
 func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
 	deps, err := readLockFile(filepath.Join(path, lockFile))
+	allDeps := appendNestedDependencies(deps)
 	if err != nil {
 		return nil, err
 	}
 
-	return m.buildDependencies(path, deps)
+	return m.buildDependencies(path, allDeps)
 }
 
 func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Module, error) {
@@ -173,11 +174,11 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 	for _, d := range deps {
 		var mod models.Module
 		mod.Name = d.Name
-		mod.Version = d.Version
+		mod.Version = trimPrefixes(d.Version)
 		modules[0].Modules[d.Name] = &models.Module{
 			Name:     d.Name,
-			Version:  d.Version,
-			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", d.Name, d.Version))},
+			Version:  mod.Version,
+			CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", d.Name, mod.Version))},
 		}
 		if len(d.Dependencies) != 0 {
 			mod.Modules = map[string]*models.Module{}
@@ -187,10 +188,11 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 				if name == "optionalDependencies:" {
 					continue
 				}
-				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "^"), "\"")
+
+				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "\"")
 				mod.Modules[name] = &models.Module{
 					Name:     name,
-					Version:  version,
+					Version:  trimPrefixes(version),
 					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
 				}
 			}
@@ -203,7 +205,8 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 			mod.Supplier.Name = "NOASSERTION"
 		}
 
-		mod.PackageURL = helper.RemoveURLProtocol(r)
+		mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, m.metadata.Manifest[0]))
+		mod.PackageDownloadLocation = r
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
@@ -218,6 +221,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 
 		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath ))
 		if err != nil {
+			modules = append(modules, mod)
 			continue
 		}
 		mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
@@ -327,4 +331,52 @@ func getCopyright(path string) string {
 	}
 
 	return ""
+}
+
+
+func getPackageHomepage(path string) string {
+	r := reader.New(path)
+	pkResult, err := r.ReadJson()
+	if err != nil {
+		return ""
+	}
+	if pkResult["homepage"] != nil {
+		return helper.RemoveURLProtocol(pkResult["homepage"].(string))
+	}
+	return ""
+}
+
+
+func trimPrefixes(s string) string{
+	t := strings.TrimPrefix(s, "^")
+	t = strings.TrimPrefix(t, "~")
+	t = strings.TrimPrefix(t, ">")
+	t = strings.TrimPrefix(t, "=")
+
+	t = strings.Split(t, " ")[0]
+	return t
+}
+
+
+func appendNestedDependencies(deps []dependency) []dependency{
+	allDeps := make([]dependency, 0)
+	for _,d := range deps {
+		allDeps = append(allDeps, d)
+		if len(d.Dependencies) > 0 {
+			for _,depD := range d.Dependencies {
+				ar := strings.Split(strings.TrimSpace(depD), " ")
+				name := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(ar[0], "\""), "\""), "@")
+				if name == "optionalDependencies:" {
+					continue
+				}
+
+				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "\"")
+				if trimPrefixes(version) == "*"{
+					continue
+				}
+				allDeps = append(allDeps, dependency{Name: name, Version: trimPrefixes(version)})
+			}
+		}
+	}
+	return allDeps
 }

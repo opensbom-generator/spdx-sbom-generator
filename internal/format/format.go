@@ -94,7 +94,7 @@ func (f *Format) Render() error {
 	if len(otherLicenses) > 0 {
 		file.WriteString("##### Non-standard license\n\n")
 		for lic := range otherLicenses {
-			file.WriteString(fmt.Sprintf("LicenseID: %s\n", lic))
+			file.WriteString(fmt.Sprintf("LicenseID: LicenseRef-%s\n", lic))
 			file.WriteString(fmt.Sprintf("ExtractedText: %s\n", otherLicenses[lic].ExtractedText))
 			file.WriteString(fmt.Sprintf("LicenseName: %s\n", otherLicenses[lic].Name))
 			file.WriteString(fmt.Sprintf("LicenseComment: %s\n\n", otherLicenses[lic].Comments))
