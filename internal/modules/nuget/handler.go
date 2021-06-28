@@ -158,12 +158,13 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 			fileName := filepath.Base(projectPath)
 			rootProjectName := fileName[0 : len(fileName)-len(pathExtension)]
 			module.Name = rootProjectName
-			module.Version = "0.0.0" // default version for root
 			module.Root = true
 			module.CheckSum = &models.CheckSum{
 				Algorithm: models.HashAlgoSHA256,
 				Content:   []byte(fmt.Sprintf("%s%s", module.Name, module.Version)),
 			}
+			module.Supplier.Name = rootProjectName
+			module.PackageDownloadLocation = buildRootPackageURL(path)
 		}
 		m.rootModule = &module
 	}
@@ -186,14 +187,14 @@ func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 	for _, project := range projectPaths {
 		projectDirectory := filepath.Dir(project)
 		if helper.Exists(filepath.Join(projectDirectory, modulePath)) {
-			packages, err := parseAssetModules(filepath.Join(projectDirectory, modulePath))
+			packages, err := m.parseAssetModules(filepath.Join(projectDirectory, modulePath))
 			if err != nil {
 				return modules, err
 			}
 			modules = append(modules, packages...)
 			log.Infof("dependency tree completed for project(a): %s", project)
 		} else if helper.Exists(filepath.Join(projectDirectory, configModuleFile)) {
-			packages, err := parsePackagesConfigModules(filepath.Join(projectDirectory, configModuleFile))
+			packages, err := m.parsePackagesConfigModules(filepath.Join(projectDirectory, configModuleFile))
 			if err != nil {
 				return modules, err
 			}
@@ -252,7 +253,7 @@ func (m *nuget) GetProjectManifestPath(path string) string {
 }
 
 // parsePackagesConfigModules parses the output -- works for the packages.config
-func parsePackagesConfigModules(modulePath string) ([]models.Module, error) {
+func (m *nuget) parsePackagesConfigModules(modulePath string) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	raw, err := ioutil.ReadFile(modulePath)
 	if err != nil {
@@ -264,7 +265,7 @@ func parsePackagesConfigModules(modulePath string) ([]models.Module, error) {
 		return modules, err
 	}
 	for _, modulePackage := range moduleData.Packages {
-		module, err := buildModule(modulePackage.ID, modulePackage.Version, nil)
+		module, err := m.buildModule(modulePackage.ID, modulePackage.Version, nil)
 		if err != nil {
 			return modules, err
 		}
@@ -274,7 +275,7 @@ func parsePackagesConfigModules(modulePath string) ([]models.Module, error) {
 }
 
 // parseAssetModules parses the output -- works for the project.assets.json
-func parseAssetModules(modulePath string) ([]models.Module, error) {
+func (m *nuget) parseAssetModules(modulePath string) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	raw, err := ioutil.ReadFile(modulePath)
 	if err != nil {
@@ -318,7 +319,7 @@ func parseAssetModules(modulePath string) ([]models.Module, error) {
 				}
 				packageUniqueName := fmt.Sprintf("%s-%s", packageName, packageVersion)
 				if _, ok := packageNameMap[packageUniqueName]; !ok {
-					module, err := buildModule(packageName, packageVersion, dependencies)
+					module, err := m.buildModule(packageName, packageVersion, dependencies)
 					if err != nil {
 						return modules, err
 					}
@@ -356,7 +357,7 @@ func getProjectPaths(path string) ([]string, error) {
 }
 
 // buildModule .. set the properties
-func buildModule(name string, version string, dependencies map[string]string) (models.Module, error) {
+func (m *nuget) buildModule(name string, version string, dependencies map[string]string) (models.Module, error) {
 	var module models.Module
 	module.Name = name
 	module.Version = version
@@ -383,12 +384,17 @@ func buildModule(name string, version string, dependencies map[string]string) (m
 			module.LicenseConcluded = extractLicence(nuSpecFile.Meta.License)
 		}
 		module.Copyright = nuSpecFile.Meta.Copyright
-		module.Supplier.Name = nuSpecFile.Meta.Authors
-		if module.Supplier.Name != "" {
+		if nuSpecFile.Meta.Authors != "" {
+			module.Supplier.Name = nuSpecFile.Meta.Authors
+		} else if nuSpecFile.Meta.Owners != "" {
 			module.Supplier.Name = nuSpecFile.Meta.Owners
+		} else {
+			module.Supplier.Name = m.rootModule.Supplier.Name
 		}
 		if nuSpecFile.Meta.Repository.URL != "" {
-			module.PackageDownloadLocation = nuSpecFile.Meta.Repository.URL
+			module.PackageDownloadLocation = buildDownloadURL(nuSpecFile.Meta.Repository.URL)
+		} else {
+			module.PackageDownloadLocation = m.rootModule.PackageDownloadLocation
 		}
 	}
 	// set dependencies
