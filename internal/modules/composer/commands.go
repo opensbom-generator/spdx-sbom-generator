@@ -15,6 +15,7 @@ var (
 	projectInfoCmd          command = "composer show -s -f json"
 	COMPOSER_LOCK_FILE_NAME string  = "composer.lock"
 	COMPOSER_JSON_FILE_NAME string  = "composer.json"
+	PACKAGE_JSON            string  = "package.json"
 	COMPOSER_VENDOR_FOLDER  string  = "vendor"
 )
 

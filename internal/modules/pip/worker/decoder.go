@@ -147,7 +147,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 
 	checksum, downloadurl := GetPackageChecksumAndDownloadURL(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
 	module.CheckSum = checksum
-	if (metadata.Root) && (len(metadata.HomePage) != 0) {
+	if (metadata.Root) && (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
 		downloadurl = metadata.HomePage
 	}
 	module.PackageDownloadLocation = downloadurl
