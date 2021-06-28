@@ -97,6 +97,8 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	}
 	mod := &models.Module{}
 
+	splitedPath := strings.Split(path, "/")
+	mod.Name = splitedPath[len(splitedPath)-1]
 	if pkResult["name"] != nil {
 		mod.Name = pkResult["name"].(string)
 	}
@@ -180,60 +182,74 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		Value:     h,
 	}
 	rootDeps := getPackageDependencies(deps, "dependencies")
+	allDeps := appendNestedDependencies(deps)
+
 	for k, v := range rootDeps {
 		de.Modules[k] = v
 	}
 
 	modules = append(modules, *de)
-	for key, dd := range deps {
-		d := dd.(map[string]interface{})
-		var mod models.Module
-		mod.Version = d["version"].(string)
-		mod.Name = strings.TrimPrefix(key, "@")
+	for key, dd := range allDeps {
+		depName := strings.TrimPrefix(key, "@")
+		for nkey := range dd {
+			var mod models.Module
+			d := dd[nkey].(map[string]interface{})
+			mod.Version = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(nkey, "^"), "~"), ">"),"="))
+			mod.Version = strings.Split(mod.Version, " ")[0]
+			mod.Name = depName
 
-		r := ""
-		if d["resolved"] != nil {
-			r = d["resolved"].(string)
-			if strings.Contains(r, npmRegistry) {
-				mod.Supplier.Name = "NOASSERTION"
+			r := ""
+			if d["resolved"] != nil {
+				r = d["resolved"].(string)
+				if strings.Contains(r, npmRegistry) {
+					mod.Supplier.Name = "NOASSERTION"
+				}
 			}
-		}
-		mod.PackageURL = helper.RemoveURLProtocol(r)
-		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
-		mod.CheckSum = &models.CheckSum{
-			Algorithm: "SHA256",
-			Value:     h,
-		}
-		mod.Copyright = getCopyright(filepath.Join(path, m.metadata.ModulePath[0], key))
-		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key))
-		if err != nil {
-			continue
-		}
-		mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
-		mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
-		mod.CommentsLicense = modLic.Comments
-		if !helper.LicenseSPDXExists(modLic.ID) {
-			mod.OtherLicense = append(mod.OtherLicense, modLic)
-		}
-		mod.Modules = map[string]*models.Module{}
-		if d["requires"] != nil {
-			modDeps := d["requires"].(map[string]interface{})
-			deps := getPackageDependencies(modDeps, "requires")
-			for k, v := range deps {
-				mod.Modules[k] = v
+
+			mod.PackageURL = helper.RemoveURLProtocol(r)
+
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
+			mod.CheckSum = &models.CheckSum{
+				Algorithm: "SHA256",
+				Value:     h,
 			}
+
+			mod.Copyright = getCopyright(filepath.Join(path, m.metadata.ModulePath[0], key))
+			mod.Modules = map[string]*models.Module{}
+			if dd["requires"] != nil {
+				modDeps := dd["requires"].(map[string]interface{})
+				deps := getPackageDependencies(modDeps, "requires")
+				for k, v := range deps {
+					mod.Modules[k] = v
+				}
+			}
+
+			if dd["dependencies"] != nil {
+				modDeps := dd["dependencies"].(map[string]interface{})
+				deps := getPackageDependencies(modDeps, "dependencies")
+				for k, v := range deps {
+					mod.Modules[k] = v
+				}
+			}
+
+			modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], key))
+			if err != nil {
+				modules = append(modules, mod)
+				continue
+			}
+			mod.LicenseDeclared = helper.BuildLicenseDeclared(modLic.ID)
+			mod.LicenseConcluded = helper.BuildLicenseConcluded(modLic.ID)
+			mod.CommentsLicense = modLic.Comments
+			if !helper.LicenseSPDXExists(modLic.ID) {
+				mod.OtherLicense = append(mod.OtherLicense, modLic)
+			}
+
+			modules = append(modules, mod)
+
 		}
 
-		if d["dependencies"] != nil {
-			modDeps := d["dependencies"].(map[string]interface{})
-			deps := getPackageDependencies(modDeps, "dependencies")
-			for k, v := range deps {
-				mod.Modules[k] = v
-			}
-		}
-
-		modules = append(modules, mod)
 	}
+
 	return modules, nil
 }
 
@@ -290,4 +306,56 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 		}
 	}
 	return m
+}
+
+func appendNestedDependencies(deps map[string]interface{}) map[string]map[string]interface{} {
+	allDeps := make(map[string]map[string]interface{})
+	for k, v := range deps {
+		mainDeps := make(map[string]interface{})
+
+		if allDeps[k] != nil {
+			mainDeps = allDeps[k]
+		}
+		mainDeps[v.(map[string]interface{})["version"].(string)] = v
+		allDeps[k] = mainDeps
+
+		if r, ok := v.(map[string]interface{})["requires"]; ok {
+
+			for rk, rv := range r.(map[string]interface{}) {
+				if rv.(string) == "*" {
+					continue
+				}
+				nestedDeps := allDeps[rk]
+				if nestedDeps == nil {
+					nestedDeps = make(map[string]interface{})
+				}
+				nestedDeps[rv.(string)] = map[string]interface{}{"version": rv}
+				allDeps[rk] = nestedDeps
+			}
+		}
+
+		if d, ok := v.(map[string]interface{})["dependencies"]; ok {
+			for dk, dv := range d.(map[string]interface{}) {
+				m := allDeps[dk]
+				if m == nil {
+					m = make(map[string]interface{})
+				}
+				m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+				allDeps[dk] = m
+			}
+		}
+
+	}
+	return allDeps
+}
+
+func appendDependencies(d interface{},x map[string]map[string]interface{} ) {
+	for dk, dv := range d.(map[string]interface{}) {
+		m := x[dk]
+		if m == nil {
+			m = make(map[string]interface{})
+		}
+		m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+		x[dk] = m
+	}
 }
