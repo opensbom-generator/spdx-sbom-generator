@@ -154,10 +154,11 @@ func convertCargoPackageToPluginModule(dep CargoPackage) models.Module {
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
 		},
-		LocalPath:       localPath,
-		PackageHomePage: removeURLProtocol(dep.Homepage),
-		Supplier:        getSupplier(dep.Authors),
-		Modules:         map[string]*models.Module{},
+		LocalPath:               localPath,
+		PackageHomePage:         removeURLProtocol(dep.Homepage),
+		Supplier:                getSupplier(dep.Authors),
+		Modules:                 map[string]*models.Module{},
+		PackageDownloadLocation: dep.Repository,
 	}
 
 	licensePkg, err := helper.GetLicenses(localPath)

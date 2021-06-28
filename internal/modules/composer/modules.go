@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-func (m *composer) getProjectInfo(path string) (models.Module, error) {
+func (m *composer) getRootProjectInfo(path string) (models.Module, error) {
 	if err := m.buildCmd(projectInfoCmd, path); err != nil {
 		return models.Module{}, err
 	}
@@ -43,8 +43,30 @@ func (m *composer) getProjectInfo(path string) (models.Module, error) {
 }
 
 func convertProjectInfoToModule(project ComposerProjectInfo, path string) (models.Module, error) {
+
+	var supplier models.SupplierContact
+	composerJson, _ := getComposerJSONFileData()
+	if len(composerJson.Authors) > 0 {
+		author := composerJson.Authors[0]
+		supplier = models.SupplierContact{
+			Name:  author.Name,
+			Email: author.Email,
+		}
+	}
+
+	var packageDownloadLocation string
+	packageJson, _ := getPackageJSONFileData()
+	if packageJson.Repository.URL != "" {
+		packageDownloadLocation = packageJson.Repository.URL
+	}
+
 	version := normalizePackageVersion(project.Versions[0])
 	packageUrl := genComposerUrl(project.Name, version)
+
+	if packageUrl == "" {
+		packageUrl = composerJson.Homepage
+	}
+
 	checkSumValue := readCheckSum(packageUrl)
 	name := getName(project.Name)
 	module := models.Module{
@@ -56,6 +78,8 @@ func convertProjectInfoToModule(project ComposerProjectInfo, path string) (model
 			Algorithm: models.HashAlgoSHA1,
 			Value:     checkSumValue,
 		},
+		PackageDownloadLocation: packageDownloadLocation,
+		Supplier:                supplier,
 	}
 
 	licensePkg, err := helper.GetLicenses(path)
@@ -161,6 +185,34 @@ func getComposerLockFileData() (ComposerLockFile, error) {
 	}
 	return fileData, nil
 }
+func getComposerJSONFileData() (ComposerJSONObject, error) {
+
+	raw, err := ioutil.ReadFile(COMPOSER_JSON_FILE_NAME)
+	if err != nil {
+		return ComposerJSONObject{}, err
+	}
+
+	var fileData ComposerJSONObject
+	err = json.Unmarshal(raw, &fileData)
+	if err != nil {
+		return ComposerJSONObject{}, err
+	}
+	return fileData, nil
+}
+func getPackageJSONFileData() (PackageJSONObject, error) {
+
+	raw, err := ioutil.ReadFile(PACKAGE_JSON)
+	if err != nil {
+		return PackageJSONObject{}, err
+	}
+
+	var fileData PackageJSONObject
+	err = json.Unmarshal(raw, &fileData)
+	if err != nil {
+		return PackageJSONObject{}, err
+	}
+	return fileData, nil
+}
 
 func (m *composer) getModulesFromComposerLockFile(path string) ([]models.Module, error) {
 
@@ -171,7 +223,7 @@ func (m *composer) getModulesFromComposerLockFile(path string) ([]models.Module,
 		return nil, err
 	}
 
-	mainMod, err := m.getProjectInfo(path)
+	mainMod, err := m.getRootProjectInfo(path)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +259,7 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 			Algorithm: models.HashAlgoSHA1,
 			Value:     getCheckSumValue(dep),
 		},
-		Supplier:  getAuthor(dep),
+		Supplier:  getAuthorFromComposerLockFileDep(dep),
 		LocalPath: getLocalPath(dep),
 		Modules:   map[string]*models.Module{},
 	}
@@ -227,7 +279,7 @@ func convertLockPackageToModule(dep ComposerLockPackage) models.Module {
 	return module
 }
 
-func getAuthor(dep ComposerLockPackage) models.SupplierContact {
+func getAuthorFromComposerLockFileDep(dep ComposerLockPackage) models.SupplierContact {
 
 	authors := dep.Authors
 	if len(authors) == 0 {

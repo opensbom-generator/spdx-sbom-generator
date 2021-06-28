@@ -51,3 +51,27 @@ type ComposerTreeComponent struct {
 	Description string
 	Requires    []ComposerTreeComponent
 }
+
+type ComposerJSONObject struct {
+	Name        string   `json:"name"`
+	Type        string   `json:"type"`
+	Description string   `json:"description"`
+	Keywords    []string `json:"keywords"`
+	Homepage    string   `json:"homepage"`
+	License     string   `json:"license"`
+	Authors     []struct {
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"authors"`
+}
+
+type PackageJSONObject struct {
+	Name       string `json:"name"`
+	Title      string `json:"title"`
+	Version    string `json:"version"`
+	Homepage   string `json:"homepage"`
+	Repository struct {
+		Type string `json:"type"`
+		URL  string `json:"url"`
+	} `json:"repository"`
+}
