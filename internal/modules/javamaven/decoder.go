@@ -19,32 +19,8 @@ import (
 	"github.com/vifraa/gopom"
 )
 
-// Update package supplier information
-func updatePackageSuppier(project gopom.Project, mod *models.Module, developers []gopom.Developer) {
-	for _, developer := range developers {
-		if len(developer.Name) > 0 && len(developer.Email) > 0 {
-			mod.Supplier.Type = models.Person
-			mod.Supplier.Name = developer.Name
-			mod.Supplier.Email = developer.Email
-		} else if len(developer.Email) == 0 && len(developer.Name) > 0 {
-			mod.Supplier.Type = models.Person
-			mod.Supplier.Name = developer.Name
-		}
-	}
-
-	// check for organization tag
-	if len(project.Organization.Name) > 0 {
-		mod.Supplier.Type = models.Organization
-	}
-}
-
-// Update package download location
-func updatePackageDownloadLocation(mod *models.Module, distManagement gopom.DistributionManagement) {
-	if len(distManagement.DownloadURL) > 0 && (strings.HasPrefix(distManagement.DownloadURL, "http") ||
-		strings.HasPrefix(distManagement.DownloadURL, "https")) {
-		mod.PackageDownloadLocation = distManagement.DownloadURL
-	}
-}
+// RepositoryUrl is the repository url
+var RepositoryUrl string = "https://mvnrepository.com/artifact/"
 
 // captures os.Stdout data and writes buffers
 func stdOutCapture() func() (string, error) {
@@ -114,6 +90,53 @@ func updateLicenseInformationToModule(mod *models.Module) {
 	}
 }
 
+// Update package supplier information
+func updatePackageSuppier(project gopom.Project, mod *models.Module, developers []gopom.Developer) {
+	// By Default set name as project name
+	if mod.Root {
+		if len(project.Name) > 0 {
+			mod.Supplier.Name = project.Name
+		} else if len(project.GroupID) > 0 {
+			mod.Supplier.Name = project.GroupID
+		} else if len(project.ArtifactID) > 0 {
+			mod.Supplier.Name = project.ArtifactID
+		}
+
+		for _, developer := range developers {
+			if len(developer.Name) > 0 && len(developer.Email) > 0 {
+				mod.Supplier.Type = models.Person
+				mod.Supplier.Name = developer.Name
+				mod.Supplier.Email = developer.Email
+			} else if len(developer.Email) == 0 && len(developer.Name) > 0 {
+				mod.Supplier.Type = models.Person
+				mod.Supplier.Name = developer.Name
+			}
+		}
+	} else {
+		mod.Supplier.Name = mod.Name
+	}
+}
+
+// Update package download location
+func updatePackageDownloadLocation(groupID string, project gopom.Project, mod *models.Module, distManagement gopom.DistributionManagement) {
+	if len(distManagement.DownloadURL) > 0 && (strings.HasPrefix(distManagement.DownloadURL, "http") ||
+		strings.HasPrefix(distManagement.DownloadURL, "https")) {
+		mod.PackageDownloadLocation = distManagement.DownloadURL
+	} else {
+		if mod.Root {
+			if len(project.URL) > 0 {
+				mod.PackageDownloadLocation = project.URL
+			} else if len(project.GroupID) > 0 {
+				mod.PackageDownloadLocation = RepositoryUrl + project.GroupID
+			} else {
+				mod.PackageDownloadLocation = RepositoryUrl + project.ArtifactID
+			}
+		} else {
+			mod.PackageDownloadLocation = RepositoryUrl + groupID + "/" + mod.Name + "/" + mod.Version
+		}
+	}
+}
+
 func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
 	// package to module
 	var modName string
@@ -151,7 +174,7 @@ func convertProjectLevelPackageToModule(project gopom.Project) models.Module {
 	}
 	mod.Root = true
 	updatePackageSuppier(project, &mod, project.Developers)
-	updatePackageDownloadLocation(&mod, project.DistributionManagement)
+	updatePackageDownloadLocation(project.GroupID, project, &mod, project.DistributionManagement)
 	updateLicenseInformationToModule(&mod)
 	if len(project.URL) > 0 {
 		mod.PackageURL = project.URL
@@ -178,7 +201,7 @@ func findInPlugins(slice []gopom.Plugin, val string) bool {
 	return false
 }
 
-func createModule(name string, version string, project gopom.Project) models.Module {
+func createModule(groupID string, name string, version string, project gopom.Project) models.Module {
 	var mod models.Module
 	modVersion := version
 	if strings.HasPrefix(version, "$") {
@@ -195,7 +218,8 @@ func createModule(name string, version string, project gopom.Project) models.Mod
 		Algorithm: models.HashAlgoSHA1,
 		Value:     readCheckSum(name),
 	}
-
+	updatePackageSuppier(project, &mod, project.Developers)
+	updatePackageDownloadLocation(groupID, project, &mod, project.DistributionManagement)
 	updateLicenseInformationToModule(&mod)
 	return mod
 }
@@ -261,7 +285,7 @@ func convertPkgModulesToModule(existingModules []models.Module, fpath string, mo
 		if !found {
 			found1 = findInDependency(parentPom.DependencyManagement.Dependencies, name)
 			if !found1 {
-				mod := createModule(name, element.Version, project)
+				mod := createModule(element.GroupID, name, element.Version, project)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
@@ -283,7 +307,7 @@ func convertPkgModulesToModule(existingModules []models.Module, fpath string, mo
 		if !found {
 			found1 = findInPlugins(parentPom.Build.PluginManagement.Plugins, name)
 			if !found1 {
-				mod := createModule(name, element.Version, project)
+				mod := createModule(element.GroupID, name, element.Version, project)
 				modules = append(modules, mod)
 				parentMod.Modules[mod.Name] = &mod
 			}
@@ -311,14 +335,14 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 
 	// iterate over dependencyManagement
 	for _, dependencyManagement := range project.DependencyManagement.Dependencies {
-		mod := createModule(dependencyManagement.ArtifactID, dependencyManagement.Version, project)
+		mod := createModule(dependencyManagement.GroupID, dependencyManagement.ArtifactID, dependencyManagement.Version, project)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
 
 	// iterate over dependencies
 	for _, dep := range project.Dependencies {
-		mod := createModule(dep.ArtifactID, dep.Version, project)
+		mod := createModule(dep.GroupID, dep.ArtifactID, dep.Version, project)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
@@ -327,7 +351,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	for _, plugin := range project.Build.Plugins {
 		// If plugin has groupId, skip here. Plugin details will be available at PluginManagement
 		if len(plugin.GroupID) == 0 {
-			mod := createModule(plugin.ArtifactID, plugin.Version, project)
+			mod := createModule(plugin.GroupID, plugin.ArtifactID, plugin.Version, project)
 			modules = append(modules, mod)
 			parentMod.Modules[mod.Name] = &mod
 		}
@@ -335,7 +359,7 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 
 	// iterate over PluginManagement
 	for _, plugin := range project.Build.PluginManagement.Plugins {
-		mod := createModule(plugin.ArtifactID, plugin.Version, project)
+		mod := createModule(plugin.GroupID, plugin.ArtifactID, plugin.Version, project)
 		modules = append(modules, mod)
 		parentMod.Modules[mod.Name] = &mod
 	}
@@ -375,8 +399,9 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 		}
 
 		if !found {
+			groupID := strings.Split(dependencyList[i], ":")[0]
 			version := strings.Split(dependencyList[i], ":")[3]
-			mod := createModule(dependencyItem, version, project)
+			mod := createModule(strings.TrimSpace(groupID), dependencyItem, version, project)
 			modules = append(modules, mod)
 			parentMod.Modules[mod.Name] = &mod
 		}
