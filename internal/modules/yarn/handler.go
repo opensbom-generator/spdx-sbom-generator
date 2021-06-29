@@ -165,16 +165,17 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 	if err != nil {
 		return modules, err
 	}
-	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))) )
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
 	de.CheckSum = &models.CheckSum{
 		Algorithm: "SHA256",
-		Value: h,
+		Value:     h,
 	}
+	de.Supplier.Name = de.Name
 	modules = append(modules, *de)
 	for _, d := range deps {
 		var mod models.Module
 		mod.Name = d.Name
-		mod.Version = trimPrefixes(d.Version)
+		mod.Version = extractVersion(d.Version)
 		modules[0].Modules[d.Name] = &models.Module{
 			Name:     d.Name,
 			Version:  mod.Version,
@@ -182,17 +183,20 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		}
 		if len(d.Dependencies) != 0 {
 			mod.Modules = map[string]*models.Module{}
-			for _,depD := range d.Dependencies {
+			for _, depD := range d.Dependencies {
 				ar := strings.Split(strings.TrimSpace(depD), " ")
 				name := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(ar[0], "\""), "\""), "@")
 				if name == "optionalDependencies:" {
 					continue
 				}
 
-				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "\"")
+				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\""), "\"")
+				if extractVersion(version) == "*" {
+					continue
+				}
 				mod.Modules[name] = &models.Module{
 					Name:     name,
-					Version:  trimPrefixes(version),
+					Version:  extractVersion(version),
 					CheckSum: &models.CheckSum{Content: []byte(fmt.Sprintf("%s-%s", name, version))},
 				}
 			}
@@ -201,16 +205,14 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		if strings.Index(r, "#") > 0 {
 			r = r[:strings.Index(r, "#")]
 		}
-		if strings.Contains(r, yarnRegistry) {
-			mod.Supplier.Name = "NOASSERTION"
-		}
+		mod.Supplier.Name = mod.Name
 
 		mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, m.metadata.Manifest[0]))
 		mod.PackageDownloadLocation = r
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
-			Value: h,
+			Value:     h,
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, "LICENSE")
 		if helper.Exists(licensePath) {
@@ -219,7 +221,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 			mod.Copyright = helper.GetCopyright(s)
 		}
 
-		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath ))
+		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath))
 		if err != nil {
 			modules = append(modules, mod)
 			continue
@@ -333,7 +335,6 @@ func getCopyright(path string) string {
 	return ""
 }
 
-
 func getPackageHomepage(path string) string {
 	r := reader.New(path)
 	pkResult, err := r.ReadJson()
@@ -346,8 +347,7 @@ func getPackageHomepage(path string) string {
 	return ""
 }
 
-
-func trimPrefixes(s string) string{
+func extractVersion(s string) string {
 	t := strings.TrimPrefix(s, "^")
 	t = strings.TrimPrefix(t, "~")
 	t = strings.TrimPrefix(t, ">")
@@ -357,24 +357,23 @@ func trimPrefixes(s string) string{
 	return t
 }
 
-
-func appendNestedDependencies(deps []dependency) []dependency{
+func appendNestedDependencies(deps []dependency) []dependency {
 	allDeps := make([]dependency, 0)
-	for _,d := range deps {
+	for _, d := range deps {
 		allDeps = append(allDeps, d)
 		if len(d.Dependencies) > 0 {
-			for _,depD := range d.Dependencies {
+			for _, depD := range d.Dependencies {
 				ar := strings.Split(strings.TrimSpace(depD), " ")
 				name := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(ar[0], "\""), "\""), "@")
 				if name == "optionalDependencies:" {
 					continue
 				}
 
-				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "\"")
-				if trimPrefixes(version) == "*"{
+				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\""), "\"")
+				if extractVersion(version) == "*" {
 					continue
 				}
-				allDeps = append(allDeps, dependency{Name: name, Version: trimPrefixes(version)})
+				allDeps = append(allDeps, dependency{Name: name, Version: extractVersion(version)})
 			}
 		}
 	}

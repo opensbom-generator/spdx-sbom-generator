@@ -181,6 +181,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		Algorithm: "SHA256",
 		Value:     h,
 	}
+	de.Supplier.Name = de.Name
 	rootDeps := getPackageDependencies(deps, "dependencies")
 	for k, v := range rootDeps {
 		de.Modules[k] = v
@@ -193,17 +194,15 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		for nkey := range dd {
 			var mod models.Module
 			d := dd[nkey].(map[string]interface{})
-			mod.Version = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(nkey, "^"), "~"), ">"),"="))
+			mod.Version = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(nkey, "^"), "~"), ">"), "="))
 			mod.Version = strings.Split(mod.Version, " ")[0]
 			mod.Name = depName
 
 			r := ""
 			if d["resolved"] != nil {
 				r = d["resolved"].(string)
-				if strings.Contains(r, npmRegistry) {
-					mod.Supplier.Name = "NOASSERTION"
-				}
 			}
+			mod.Supplier.Name = mod.Name
 
 			mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], key, m.metadata.Manifest[0]))
 			mod.PackageDownloadLocation = r
@@ -292,7 +291,7 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 	for k, v := range modDeps {
 		name := strings.TrimPrefix(k, "@")
 		version := ""
-		if t == "dependencies"{
+		if t == "dependencies" {
 			version = strings.TrimPrefix(v.(map[string]interface{})["version"].(string), "^")
 		}
 		if t == "requires" {
@@ -342,7 +341,7 @@ func appendNestedDependencies(deps map[string]interface{}) map[string]map[string
 	return allDeps
 }
 
-func appendDependencies(d interface{}, allDeps map[string]map[string]interface{} ) {
+func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}) {
 	for dk, dv := range d.(map[string]interface{}) {
 		m := allDeps[dk]
 		if m == nil {
