@@ -5,12 +5,9 @@ package worker
 import (
 	"bufio"
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"path"
-	"reflect"
 	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
 )
 
@@ -220,44 +217,6 @@ func IsAuthorAnOrganization(author string, authoremail string) bool {
 	return result
 }
 
-func GetPackageChecksumAndDownloadURL(packagename string, packageJsonURL string, packageWheelPath string) (*models.CheckSum, string) {
-	checkfortag := true
-
-	wheeltag, err := GetWheelDistributionLastTag(packageWheelPath)
-	if err != nil {
-		checkfortag = false
-	}
-	if checkfortag && len(wheeltag) == 0 {
-		checkfortag = false
-	}
-
-	checksum, downloadurl := getPypiPackageChecksumAndDownloadURL(packagename, packageJsonURL, checkfortag, wheeltag)
-	return &checksum, downloadurl
-}
-
-func GetWheelDistributionLastTag(packageWheelPath string) (string, error) {
-	if !helper.Exists(packageWheelPath) {
-		return "", errorWheelFileNotFound
-	}
-
-	file, err := os.Open(packageWheelPath)
-	if err != nil {
-		return "", errorUnableToOpenWheelFile
-	}
-	defer file.Close()
-
-	lasttag := ""
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		res := strings.Split(scanner.Text(), ":")
-		if strings.Compare(strings.ToLower(res[0]), "tag") == 0 {
-			lasttag = strings.TrimSpace(res[1])
-		}
-	}
-
-	return lasttag, nil
-}
-
 func GetWheelDistributionInfo(metadata *Metadata) (string, string, error) {
 	if !helper.Exists(metadata.WheelPath) {
 		return "", "", errorWheelFileNotFound
@@ -285,123 +244,4 @@ func GetWheelDistributionInfo(metadata *Metadata) (string, string, error) {
 	}
 
 	return generator, tag, nil
-}
-
-func GetPackageDataFromPyPi(packageJsonUrl string) (PypiPackageData, error) {
-	packageInfo := PypiPackageData{}
-
-	response, err := makeGetRequest(packageJsonUrl)
-	if err != nil {
-		return packageInfo, err
-	}
-	defer response.Body.Close()
-
-	jsondata, _ := ioutil.ReadAll(response.Body)
-
-	err = json.Unmarshal(jsondata, &packageInfo)
-	if err != nil {
-		return packageInfo, err
-	}
-	return packageInfo, nil
-}
-
-func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, string) {
-	var name string
-	var email string
-	if len(pkgData.Info.Maintainer) > 0 {
-		name = strings.TrimSpace(pkgData.Info.Maintainer)
-	}
-	if len(pkgData.Info.MaintainerEmail) > 0 {
-		email = strings.TrimSpace(pkgData.Info.MaintainerEmail)
-	}
-	return name, email
-}
-
-func GetHighestOrderHashData(digests DigestTypes) (models.HashAlgorithm, string) {
-	var algoType models.HashAlgorithm
-	var digestValue string
-
-	v := reflect.ValueOf(digests)
-	for _, algo := range HashAlgoPickOrder {
-
-		f := v.FieldByName(string(algo))
-		if f.IsValid() {
-			algoType = algo
-			digestValue = f.String()
-			return algoType, digestValue
-		}
-	}
-
-	return algoType, digestValue
-}
-
-func GetPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string, tag string, cpversion string) (PypiPackageDistInfo, bool) {
-	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
-	Tag := strings.Contains(strings.ToLower(distInfo.Filename), strings.ToLower(tag))
-	CPVeriosn := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower(cpversion))
-	Py2Py3 := (strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion)))
-
-	status := false
-
-	if PackageType && Tag && (CPVeriosn || Py2Py3) {
-		status = true
-	}
-
-	return distInfo, status
-}
-
-func GetPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPackageDistInfo, bool) {
-	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
-	Source := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower("source"))
-
-	status := false
-
-	if PackageType && Source {
-		status = true
-	}
-
-	return distInfo, status
-}
-
-func GetChecksumeFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) *models.CheckSum {
-	checksum := models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-		Content:   []byte(pkgData.Info.Name),
-	}
-
-	for _, packageDistInfo := range pkgData.Urls {
-		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
-		if status {
-			algo, value := GetHighestOrderHashData(distInfo.Digests)
-			checksum.Algorithm = algo
-			checksum.Value = value
-			return &checksum
-		}
-
-		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
-		if status {
-			algo, value := GetHighestOrderHashData(distInfo.Digests)
-			checksum.Algorithm = algo
-			checksum.Value = value
-			return &checksum
-		}
-	}
-
-	return &checksum
-}
-
-func GetDownloadLocationFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) string {
-	for _, packageDistInfo := range pkgData.Urls {
-		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
-		if status {
-			return distInfo.URL
-		}
-
-		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
-		if status {
-			return distInfo.URL
-		}
-	}
-
-	return ""
 }

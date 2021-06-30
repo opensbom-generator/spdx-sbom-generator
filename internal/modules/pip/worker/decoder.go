@@ -131,6 +131,7 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	var module models.Module
 
+	// Prepare basic module info
 	module.Root = metadata.Root
 	module.Version = metadata.Version
 	module.Name = metadata.Name
@@ -152,6 +153,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		}
 	}
 
+	// Prepare supplier contact
 	if len(metadata.Author) > 0 && metadata.Author == "None" {
 		metadata.Author, metadata.AuthorEmail = GetMaintenerDataFromPyPiPackageData(pypiData)
 	}
@@ -161,17 +163,17 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		contactType = models.Organization
 	}
 
-	// Prepare SupplierContact
-	if len(metadata.AuthorEmail) > 0 {
-		module.Supplier = models.SupplierContact{
-			Type:  contactType,
-			Name:  metadata.Author,
-			Email: metadata.AuthorEmail,
-		}
+	module.Supplier = models.SupplierContact{
+		Type:  contactType,
+		Name:  metadata.Author,
+		Email: metadata.AuthorEmail,
 	}
 
+	// Prepare checksum
 	checksum := GetChecksumeFromPyPiPackageData(pypiData, metadata)
 	module.CheckSum = checksum
+
+	// Prepare download location
 	downloadUrl := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
 	module.PackageDownloadLocation = downloadUrl
 	if len(downloadUrl) == 0 {
@@ -182,6 +184,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		}
 	}
 
+	// Prepare licenses
 	licensePkg, err := helper.GetLicenses(metadata.DistInfoPath)
 	if err == nil {
 		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
@@ -195,6 +198,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		}
 	}
 
+	// Prepare dependency module
 	module.Modules = map[string]*models.Module{}
 
 	return module

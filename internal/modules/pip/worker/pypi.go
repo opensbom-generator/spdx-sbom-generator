@@ -4,7 +4,7 @@ package worker
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -12,8 +12,8 @@ import (
 	"strings"
 )
 
-var errorPackageDigestNotFound = fmt.Errorf("Digest not found")
-var errorPypiCouldNotFetchPkgData = fmt.Errorf("Could not fetch package data from PyPI")
+var errorPackageDigestNotFound = errors.New("Digest not found")
+var errorPypiCouldNotFetchPkgData = errors.New("Could not fetch package data from PyPI")
 
 type PypiPackageData struct {
 	Info PypiPackageInfo       `json:"info"`
@@ -67,13 +67,6 @@ type DigestTypes struct {
 	SHA256 string `json:"sha256"`
 }
 
-type PackageDigest struct {
-	Filename    string
-	PackageType string
-	Digests     DigestTypes
-	DownloadURL string
-}
-
 // Order in which we want to pick the package digest
 var HashAlgoPickOrder []models.HashAlgorithm = []models.HashAlgorithm{
 	models.HashAlgoSHA512,
@@ -84,127 +77,7 @@ var HashAlgoPickOrder []models.HashAlgorithm = []models.HashAlgorithm{
 	models.HashAlgoMD6,
 	models.HashAlgoMD5,
 	models.HashAlgoMD4,
-	models.HashAlgoMD2}
-
-func getPypiPackageChecksumAndDownloadURL(packagename string, packageJsonURL string, checkfortag bool, wheeltag string) (models.CheckSum, string) {
-	checksum := models.CheckSum{
-		Algorithm: models.HashAlgoSHA1,
-	}
-
-	packagedigests, err := fetchAndDecodePypiPackageDataJSON(packagename, packageJsonURL)
-	if err != nil {
-		checksum.Content = []byte(packagename)
-		return checksum, ""
-	}
-
-	// Our preference of picking the digest is first from "bdist" and them from "sdist"
-	if checkfortag {
-		pkgdigest, err := getPackageTypeDigestBDist(&packagedigests, wheeltag)
-		if err == nil {
-			algoType, digestValue := getHighestHashData(pkgdigest)
-			checksum.Algorithm = algoType
-			checksum.Value = digestValue
-			return checksum, pkgdigest.DownloadURL
-		}
-	}
-
-	pkgdigest, err := getPackageTypeDigestSDist(&packagedigests)
-	if err == nil {
-		algoType, digestValue := getHighestHashData(pkgdigest)
-		checksum.Algorithm = algoType
-		checksum.Value = digestValue
-		return checksum, pkgdigest.DownloadURL
-	}
-
-	return checksum, ""
-}
-
-func getHighestHashData(packagedigests PackageDigest) (models.HashAlgorithm, string) {
-	var algoType models.HashAlgorithm
-	var digestValue string
-
-	v := reflect.ValueOf(packagedigests.Digests)
-	for _, algo := range HashAlgoPickOrder {
-
-		f := v.FieldByName(string(algo))
-		if f.IsValid() {
-			algoType = algo
-			digestValue = f.String()
-			return algoType, digestValue
-		}
-	}
-
-	return algoType, digestValue
-}
-
-func getPackageTypeDigestBDist(packagedigests *[]PackageDigest, wheeltag string) (PackageDigest, error) {
-	packageType := "bdist"
-	for _, pkddigest := range *packagedigests {
-		if strings.Contains(strings.ToLower(pkddigest.PackageType), strings.ToLower(packageType)) &&
-			strings.Contains(strings.ToLower(pkddigest.Filename), strings.ToLower(wheeltag)) {
-			return pkddigest, nil
-		}
-	}
-	return PackageDigest{}, errorPackageDigestNotFound
-}
-
-func getPackageTypeDigestSDist(packagedigests *[]PackageDigest) (PackageDigest, error) {
-	packageType := "sdist"
-	for _, pkddigest := range *packagedigests {
-		if strings.Contains(strings.ToLower(pkddigest.PackageType), strings.ToLower(packageType)) {
-			return pkddigest, nil
-		}
-	}
-	return PackageDigest{}, errorPackageDigestNotFound
-}
-
-func fetchAndDecodePypiPackageDataJSON(packagename string, packageJsonURL string) ([]PackageDigest, error) {
-	var pypipackagedata PypiPackageData
-	var packagedigests []PackageDigest
-
-	packageDataResponse, err := fetchPypiPackageDataJSON(packageJsonURL)
-	if err != nil {
-		return nil, err
-	}
-	defer packageDataResponse.Body.Close()
-
-	jsondata, _ := ioutil.ReadAll(packageDataResponse.Body)
-
-	err = json.Unmarshal(jsondata, &pypipackagedata)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, url := range pypipackagedata.Urls {
-		pkgDigest := PackageDigest{
-			Filename:    url.Filename,
-			PackageType: url.PackageType,
-			Digests:     url.Digests,
-			DownloadURL: url.URL,
-		}
-		packagedigests = append(packagedigests, pkgDigest)
-	}
-	return packagedigests, nil
-}
-
-func fetchPypiPackageDataJSON(packageJSONURL string) (*http.Response, error) {
-
-	packageJSONHttpsURL := "https://" + packageJSONURL
-
-	request, _ := http.NewRequest("GET", packageJSONHttpsURL, nil)
-	request.Header.Set("Accept", "application/json")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return nil, err
-	}
-
-	if response.StatusCode != http.StatusOK {
-		return nil, errorPypiCouldNotFetchPkgData
-	}
-
-	return response, err
+	models.HashAlgoMD2,
 }
 
 func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
@@ -224,4 +97,123 @@ func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
 	}
 
 	return response, err
+}
+
+func GetPackageDataFromPyPi(packageJsonUrl string) (PypiPackageData, error) {
+	packageInfo := PypiPackageData{}
+
+	response, err := makeGetRequest(packageJsonUrl)
+	if err != nil {
+		return packageInfo, err
+	}
+	defer response.Body.Close()
+
+	jsondata, _ := ioutil.ReadAll(response.Body)
+
+	err = json.Unmarshal(jsondata, &packageInfo)
+	if err != nil {
+		return packageInfo, err
+	}
+	return packageInfo, nil
+}
+
+func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, string) {
+	var name string
+	var email string
+	if len(pkgData.Info.Maintainer) > 0 {
+		name = strings.TrimSpace(pkgData.Info.Maintainer)
+	}
+	if len(pkgData.Info.MaintainerEmail) > 0 {
+		email = strings.TrimSpace(pkgData.Info.MaintainerEmail)
+	}
+	return name, email
+}
+
+func GetHighestOrderHashData(digests DigestTypes) (models.HashAlgorithm, string) {
+	var algoType models.HashAlgorithm
+	var digestValue string
+
+	v := reflect.ValueOf(digests)
+	for _, algo := range HashAlgoPickOrder {
+
+		f := v.FieldByName(string(algo))
+		if f.IsValid() {
+			algoType = algo
+			digestValue = f.String()
+			return algoType, digestValue
+		}
+	}
+
+	return algoType, digestValue
+}
+
+func GetPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string, tag string, cpversion string) (PypiPackageDistInfo, bool) {
+	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
+	Tag := strings.Contains(strings.ToLower(distInfo.Filename), strings.ToLower(tag))
+	CPVeriosn := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower(cpversion))
+	Py2Py3 := (strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion)))
+
+	status := false
+
+	if PackageType && Tag && (CPVeriosn || Py2Py3) {
+		status = true
+	}
+
+	return distInfo, status
+}
+
+func GetPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPackageDistInfo, bool) {
+	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
+	Source := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower("source"))
+
+	status := false
+
+	if PackageType && Source {
+		status = true
+	}
+
+	return distInfo, status
+}
+
+func GetChecksumeFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) *models.CheckSum {
+	checksum := models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Content:   []byte(pkgData.Info.Name),
+	}
+
+	for _, packageDistInfo := range pkgData.Urls {
+		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
+		if status {
+			algo, value := GetHighestOrderHashData(distInfo.Digests)
+			checksum.Algorithm = algo
+			checksum.Value = value
+			return &checksum
+		}
+
+		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
+		if status {
+			algo, value := GetHighestOrderHashData(distInfo.Digests)
+			checksum.Algorithm = algo
+			checksum.Value = value
+			return &checksum
+		}
+	}
+
+	return &checksum
+}
+
+func GetDownloadLocationFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) string {
+	for _, packageDistInfo := range pkgData.Urls {
+		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
+		if status {
+			return distInfo.URL
+		}
+
+		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
+		if status {
+			return distInfo.URL
+		}
+	}
+
+	return ""
 }
