@@ -44,31 +44,20 @@ func (m *composer) getRootProjectInfo(path string) (models.Module, error) {
 
 func convertProjectInfoToModule(project ComposerProjectInfo, path string) (models.Module, error) {
 
-	var supplier models.SupplierContact
-	composerJson, _ := getComposerJSONFileData()
-	if len(composerJson.Authors) > 0 {
-		author := composerJson.Authors[0]
-		supplier = models.SupplierContact{
-			Name:  author.Name,
-			Email: author.Email,
-		}
-	}
-
-	var packageDownloadLocation string
-	packageJson, _ := getPackageJSONFileData()
-	if packageJson.Repository.URL != "" {
-		packageDownloadLocation = packageJson.Repository.URL
-	}
-
 	version := normalizePackageVersion(project.Versions[0])
 	packageUrl := genComposerUrl(project.Name, version)
 
 	if packageUrl == "" {
+		composerJson, _ := getComposerJSONFileData()
 		packageUrl = composerJson.Homepage
 	}
 
+	packageDownloadLocation := rootPackageDownloadLocation(packageUrl)
+
 	checkSumValue := readCheckSum(packageUrl)
 	name := getName(project.Name)
+	supplier := rootProjectSupplier(name)
+
 	module := models.Module{
 		Name:       name,
 		Version:    version,
@@ -91,6 +80,46 @@ func convertProjectInfoToModule(project ComposerProjectInfo, path string) (model
 	}
 
 	return module, nil
+}
+
+func rootPackageDownloadLocation(defaultValue string) string {
+	packageJson, _ := getPackageJSONFileData()
+	packageDownloadLocation := packageJson.Repository.URL
+
+	if packageDownloadLocation == "" {
+		packageDownloadLocation = defaultValue
+	}
+
+	hasProtocol := strings.Contains(packageDownloadLocation, "http")
+	isGithub := strings.Contains(packageDownloadLocation, "github.com/")
+	hasGitSuffix := strings.Contains(packageDownloadLocation, ".git")
+
+	if !hasProtocol {
+		packageDownloadLocation = "https://" + packageDownloadLocation
+	}
+	if isGithub && !hasGitSuffix {
+		packageDownloadLocation = packageDownloadLocation + ".git"
+	}
+
+	return packageDownloadLocation
+}
+
+func rootProjectSupplier(projectName string) models.SupplierContact {
+
+	composerJson, _ := getComposerJSONFileData()
+	if len(composerJson.Authors) > 0 {
+		author := composerJson.Authors[0]
+		return models.SupplierContact{
+			Name:  author.Name,
+			Email: author.Email,
+			Type:  models.Person,
+		}
+	}
+
+	return models.SupplierContact{
+		Name:  projectName,
+		Email: "",
+	}
 }
 
 func (m *composer) getTreeListFromComposerShowTree(path string) (ComposerTreeList, error) {
@@ -283,13 +312,22 @@ func getAuthorFromComposerLockFileDep(dep ComposerLockPackage) models.SupplierCo
 
 	authors := dep.Authors
 	if len(authors) == 0 {
-		return models.SupplierContact{}
+		return models.SupplierContact{
+			Name: getName(dep.Name),
+			Type: models.Organization,
+		}
 	}
 	author := authors[0]
 	pckAuthor := models.SupplierContact{
 		Name:  author.Name,
 		Email: author.Email,
+		Type:  models.Person,
 	}
+
+	if pckAuthor.Email == "" {
+		pckAuthor.Type = models.Organization
+	}
+
 	return pckAuthor
 }
 
