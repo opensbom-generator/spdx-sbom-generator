@@ -43,9 +43,11 @@ type Packages struct {
 	Location  string `json:"location,omitempty"`
 	Installer string `json:"installer,omitempty"`
 	Root      bool
+	CPVersion string
 }
 
 type Metadata struct {
+	CPVersion      string
 	Root           bool
 	Name           string
 	Version        string
@@ -66,9 +68,47 @@ type Metadata struct {
 	Modules        []string
 }
 
-func LoadModules(data string) []Packages {
+var PythonVersion = map[string]string{
+	"cp39": "Python 3.9",
+	"cp38": "Python 3.8",
+	"cp37": "Python 3.7",
+	"cp36": "Python 3.6",
+	"cp35": "Python 3.5",
+	"cp34": "Python 3.4",
+	"cp33": "Python 3.3",
+	"cp32": "Python 3.2",
+	"cp31": "Python 3.1",
+	"cp30": "Python 3.0",
+	"cp27": "Python 2.7",
+	"cp26": "Python 2.6",
+	"cp25": "Python 2.5",
+	"cp24": "Python 2.4",
+	"cp23": "Python 2.3",
+	"cp22": "Python 2.2",
+	"cp21": "Python 2.1",
+	"cp20": "Python 2.0",
+	"cp16": "Python 1.6",
+	"cp15": "Python 1.5",
+	"cp10": "Python 1.0",
+}
+
+func GetShortPythonVersion(version string) string {
+	pythonVersion := "source"
+	for k, v := range PythonVersion {
+		if strings.Contains(version, v) {
+			return k
+		}
+	}
+	return pythonVersion
+}
+
+func LoadModules(data string, version string) []Packages {
 	var _modules []Packages
 	json.Unmarshal([]byte(data), &_modules)
+	for i, mod := range _modules {
+		mod.CPVersion = version
+		_modules[i] = mod
+	}
 	return _modules
 }
 

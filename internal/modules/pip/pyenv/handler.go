@@ -33,6 +33,7 @@ type pyenv struct {
 	rootModule *models.Module
 	command    *helper.Cmd
 	basepath   string
+	version    string
 	pkgs       []worker.Packages
 	metainfo   map[string]worker.Metadata
 	allModules []models.Module
@@ -93,6 +94,7 @@ func (m *pyenv) GetVersion() (string, error) {
 			return "", err
 		}
 		version, err = m.command.Output()
+		m.version = worker.GetShortPythonVersion(version)
 		if err != nil {
 			version = "Python"
 			err = errVersionNotFound
@@ -219,7 +221,7 @@ func (m *pyenv) LoadModuleList(path string) error {
 		m.buildCmd(ModulesCmd, dir)
 		result, err := m.command.Output()
 		if err == nil && len(result) > 0 && worker.IsRequirementMeet(result) {
-			m.pkgs = worker.LoadModules(result)
+			m.pkgs = worker.LoadModules(result, m.version)
 			m.markRootModue()
 		}
 		return err
