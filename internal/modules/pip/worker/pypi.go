@@ -206,3 +206,22 @@ func fetchPypiPackageDataJSON(packageJSONURL string) (*http.Response, error) {
 
 	return response, err
 }
+
+func makeGetRequest(packageJsonUrl string) (*http.Response, error) {
+	url := "https://" + packageJsonUrl
+
+	request, _ := http.NewRequest("GET", url, nil)
+	request.Header.Set("Accept", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errorPypiCouldNotFetchPkgData
+	}
+
+	return response, err
+}

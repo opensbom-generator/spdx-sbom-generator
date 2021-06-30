@@ -129,6 +129,15 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	module.Path = metadata.ProjectURL
 	module.LocalPath = metadata.LocalPath
 
+	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJsonURL)
+	if err != nil {
+		log.Warnf("Unable to get `%s` package details from pypi.org", metadata.Name)
+	}
+
+	if len(metadata.Author) > 0 && metadata.Author == "None" {
+		metadata.Author, metadata.AuthorEmail = GetMaintenerDataFromPyPiPackageData(pypiData)
+	}
+
 	contactType := models.Person
 	if IsAuthorAnOrganization(metadata.Author, metadata.AuthorEmail) {
 		contactType = models.Organization

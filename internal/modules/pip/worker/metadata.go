@@ -5,6 +5,7 @@ package worker
 import (
 	"bufio"
 	"encoding/json"
+	"io/ioutil"
 	"os"
 	"path"
 	"spdx-sbom-generator/internal/helper"
@@ -246,4 +247,34 @@ func GetWheelDistributionLastTag(packageWheelPath string) (string, error) {
 	}
 
 	return lasttag, nil
+}
+
+func GetPackageDataFromPyPi(packageJsonUrl string) (PypiPackageData, error) {
+	packageInfo := PypiPackageData{}
+
+	response, err := makeGetRequest(packageJsonUrl)
+	if err != nil {
+		return packageInfo, err
+	}
+	defer response.Body.Close()
+
+	jsondata, _ := ioutil.ReadAll(response.Body)
+
+	err = json.Unmarshal(jsondata, &packageInfo)
+	if err != nil {
+		return packageInfo, err
+	}
+	return packageInfo, nil
+}
+
+func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, string) {
+	var name string
+	var email string
+	if len(pkgData.Info.Maintainer) > 0 {
+		name = strings.TrimSpace(pkgData.Info.Maintainer)
+	}
+	if len(pkgData.Info.MaintainerEmail) > 0 {
+		email = strings.TrimSpace(pkgData.Info.MaintainerEmail)
+	}
+	return name, email
 }
