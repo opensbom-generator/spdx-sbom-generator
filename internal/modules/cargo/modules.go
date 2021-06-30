@@ -21,6 +21,10 @@ func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) erro
 	for _, cargoPackage := range cargoPackages {
 
 		rootLevelName := cargoPackage.Name
+		if rootLevelName == "" {
+			continue
+		}
+
 		rootModuleIndex, ok := moduleIndex[rootLevelName]
 		if !ok {
 			continue
@@ -33,6 +37,10 @@ func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) erro
 
 		for _, cargoDep := range cargoDependencies {
 			subModuleName := cargoDep.Name
+			if subModuleName == "" {
+				continue
+			}
+
 			subModule, ok := moduleMap[subModuleName]
 			if !ok {
 				continue
@@ -69,6 +77,10 @@ func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]models.Module
 
 	for _, dep := range cargoPackages {
 		module := convertCargoPackageToModule(dep)
+		if module.Name == "" || module.PackageDownloadLocation == "" {
+			continue
+		}
+
 		collection = append(collection, module)
 	}
 
@@ -77,21 +89,23 @@ func convertMetadataToModulesList(cargoPackages []CargoPackage) ([]models.Module
 
 func convertCargoPackageToModule(dep CargoPackage) models.Module {
 	localPath := convertToLocalPath(dep.ManifestPath)
+	supplier := getPackageSupplier(dep.Authors, dep.Name)
+	donwloadURL := getPackageDownloadLocation(dep)
 
 	module := models.Module{
-		Version:                 dep.Version,
-		Name:                    dep.Name,
-		Root:                    false,
-		PackageURL:              formatPackageURL(dep),
-		PackageDownloadLocation: dep.Repository,
+		Version:    dep.Version,
+		Name:       dep.Name,
+		Root:       false,
+		PackageURL: formatPackageURL(dep),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA1,
 			Value:     readCheckSum(dep.ID),
 		},
-		LocalPath:       localPath,
-		PackageHomePage: dep.Homepage,
-		Supplier:        getSupplier(dep.Authors),
-		Modules:         map[string]*models.Module{},
+		LocalPath:               localPath,
+		PackageHomePage:         dep.Homepage,
+		Supplier:                supplier,
+		PackageDownloadLocation: donwloadURL,
+		Modules:                 map[string]*models.Module{},
 	}
 
 	licensePkg, err := helper.GetLicenses(localPath)
@@ -108,28 +122,64 @@ func convertCargoPackageToModule(dep CargoPackage) models.Module {
 	return module
 }
 
-func getSupplier(authors []string) models.SupplierContact {
-
-	if len(authors) == 0 {
-		return models.SupplierContact{}
+func getPackageDownloadLocation(dep CargoPackage) string {
+	if dep.Repository != "" {
+		return dep.Repository
 	}
 
-	mainAuthor := authors[0]
-	author, err := mail.ParseAddress(mainAuthor)
-	if err != nil {
+	source := strings.ReplaceAll(dep.Source, "registry+", "")
+	if source != "" {
+		return source
+	}
+
+	if dep.Homepage != "" {
+		return dep.Homepage
+	}
+
+	return ""
+}
+
+func getPackageSupplier(authors []string, defaultValue string) models.SupplierContact {
+	if len(authors) == 0 {
 		return models.SupplierContact{
-			Name: mainAuthor,
+			Name: defaultValue,
 		}
 	}
-	supplier := models.SupplierContact{
-		Name:  author.Name,
-		Email: author.Address,
+
+	var supplier models.SupplierContact
+
+	mainAuthor := authors[0]
+	author, _ := mail.ParseAddress(mainAuthor)
+
+	if author != nil {
+		supplier = models.SupplierContact{
+			Name:  author.Name,
+			Email: author.Address,
+			Type:  models.Person,
+		}
 	}
+
+	if supplier.Email == "" {
+		supplier.Type = models.Organization
+	}
+
+	if supplier.Name == "" {
+		if mainAuthor != "" {
+			supplier.Name = mainAuthor
+		} else {
+			supplier.Name = defaultValue
+		}
+	}
+
 	return supplier
 }
 
 func (m *mod) getRootModule(path string) (models.Module, error) {
-	name := m.getRootProjectName(path)
+	name, err := m.getRootProjectName(path)
+	if err != nil {
+		return models.Module{}, err
+	}
+
 	cargoMetadata, err := m.getCargoMetadata(path)
 	if err != nil {
 		return models.Module{}, err
@@ -137,11 +187,11 @@ func (m *mod) getRootModule(path string) (models.Module, error) {
 
 	packages := cargoMetadata.Packages
 	rootPackage, _ := findPackageByName(packages, name)
-	mod := convertCargoPackageToPluginModule(rootPackage)
+	mod := convertCargoPackageToRootModule(rootPackage)
 	return mod, nil
 }
 
-func convertCargoPackageToPluginModule(dep CargoPackage) models.Module {
+func convertCargoPackageToRootModule(dep CargoPackage) models.Module {
 
 	localPath := convertToLocalPath(dep.ManifestPath)
 
@@ -156,7 +206,7 @@ func convertCargoPackageToPluginModule(dep CargoPackage) models.Module {
 		},
 		LocalPath:               localPath,
 		PackageHomePage:         removeURLProtocol(dep.Homepage),
-		Supplier:                getSupplier(dep.Authors),
+		Supplier:                getPackageSupplier(dep.Authors, dep.Name),
 		Modules:                 map[string]*models.Module{},
 		PackageDownloadLocation: dep.Repository,
 	}
@@ -215,15 +265,15 @@ func (m *mod) getCargoMetadata(path string) (CargoMetadata, error) {
 	return m.cargoMetadata, nil
 }
 
-func (m *mod) getRootProjectName(path string) string {
+func (m *mod) getRootProjectName(path string) (string, error) {
 	err := m.buildCmd(RootModuleNameCmd, path)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	pckidRoot, err := m.command.Output()
 	if err != nil {
-		return ""
+		return "", erroRootPackageInformation
 	}
 	parts := strings.Split(pckidRoot, "/")
 	lastpart := parts[len(parts)-1]
@@ -232,7 +282,7 @@ func (m *mod) getRootProjectName(path string) string {
 	rootNameParts := strings.Split(lastpart, "#")
 	name := rootNameParts[0]
 
-	return name
+	return name, nil
 }
 
 func findPackageByName(packages []CargoPackage, name string) (CargoPackage, bool) {
