@@ -133,7 +133,6 @@ func getGemRootModule(path string) (*models.Module, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	var supplier models.SupplierContact
 	authors := spec.Authors
 	if len(authors) > 0 {
@@ -378,12 +377,9 @@ func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 
 	cachePath := strings.Replace(path, SPEC_DEFAULT_DIR, CACHE_DEFAULT_DIR, 1)
 
-	name, version, err := rootGem(cachePath, cleanName(module.Name))
+	name, version, _ := rootGem(cachePath, cleanName(module.Name))
 	versionedName := fmt.Sprintf("%s-%s", name, version)
-	if err == nil {
-		module.Name = versionedName
-		module.Version = gemVersion(versionedName)
-	}
+
 
 	rootSha, err := checkSum(cachePath, versionedName, true)
 	if err == nil && rootSha != "" {
@@ -423,6 +419,8 @@ func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 				module.Specifications[i].LicenseText = LicenseText
 				module.Specifications[i].GemLocationDir = LicensePath
 				module.Specifications[i].Version = gemVersion(fileName)
+			} else {
+				log.Error(err)
 			}
 
 		}
@@ -460,7 +458,7 @@ func ReduceSpec(row, column string, spec *Spec) {
 		fallthrough
 	case "spec.name":
 		_, value := strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[0], " ", ""), strings.ReplaceAll(strings.SplitN(strings.TrimLeft(row, " "), " ", 2)[1], " ", "")
-		spec.Name = unfreeze(value)
+		spec.Name = cleanName(unfreeze(value))
 	case "s.license":
 		fallthrough
 	case "spec.license":
@@ -787,13 +785,9 @@ func extractLicense(path string, filename string, isFullPath bool) (string, stri
 			}
 		}
 		data, err := ioutil.ReadFile(path)
-		if err != nil {
-			if strings.Contains(err.Error(), "is a directory") {
-				return "", "", "", errors.New("other license types will be handled by generic helper")
-			}
-			return "", "", "", err
+		if err == nil {
+			text = string(data)
 		}
-		text = string(data)
 		rows := Content(path)
 		for _, row := range rows {
 			if strings.Contains(row, COPYRIGHT_DEFAULT_LABEL) {
@@ -1168,12 +1162,14 @@ func getExistingVersion(gem string) string {
 		}
 
 	}
+	if s == "" {
+		return ""
+	}
 	return strings.Fields(s)[0]
 }
 
 // Scans and return file content
 func Content(path string) []string {
-
 	file, err := os.Open(path)
 	record := []string{}
 	if err != nil {
@@ -1186,7 +1182,7 @@ func Content(path string) []string {
 		record = append(record, line)
 	}
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
+		return record
 	}
 	return record
 }
@@ -1233,7 +1229,6 @@ func invalidRow(row string) bool {
 
 // Remove unwanted symbols & characters if exists
 func clean(val, from, to string) string {
-
 	a := strings.SplitN(val, from, 2)[1]
 	a = strings.SplitN(a, to, 2)[0]
 	return a
@@ -1245,6 +1240,7 @@ func cleanName(name string) string {
 	s := strings.ReplaceAll(name, "=", "")
 	s = strings.ReplaceAll(s, "\"", "")
 	s = strings.ReplaceAll(s, "“", "")
+	s = strings.ReplaceAll(s, "'", "")
 	return s
 }
 
@@ -1274,6 +1270,9 @@ func gemName(name string) string {
 	stp := strings.LastIndex(name, "-")
 	vRunes := []rune(name)
 	v := string(vRunes[stp+1:])
+	if len(v) < 1 {
+		return name[:stp]
+	}
 	c := v[:1]
 	if _, err := strconv.ParseInt(c, 10, 32); err != nil {
 		return name
