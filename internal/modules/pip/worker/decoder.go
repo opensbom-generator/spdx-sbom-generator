@@ -114,6 +114,12 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 		getAddionalMataDataInfo(metadata)
 		metadata.Root = pkgs[pkgIndex[strings.ToLower(metadata.Name)]].Root
 		metadata.CPVersion = pkgs[pkgIndex[strings.ToLower(metadata.Name)]].CPVersion
+		generator, tag, err := GetWheelDistributionInfo(metadata)
+		if err != nil {
+			log.Warnf("Wheel distribution info not found for `%s` package.", metadata.Name)
+		}
+		metadata.Generator = generator
+		metadata.Tag = tag
 		metaList = append(metaList, *metadata)
 		metainfo[strings.ToLower(metadata.Name)] = *metadata
 	}

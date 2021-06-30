@@ -67,6 +67,8 @@ type Metadata struct {
 	Location       string
 	LocalPath      string
 	Modules        []string
+	Generator      string
+	Tag            string
 }
 
 var PythonVersion = map[string]string{
@@ -247,6 +249,35 @@ func GetWheelDistributionLastTag(packageWheelPath string) (string, error) {
 	}
 
 	return lasttag, nil
+}
+
+func GetWheelDistributionInfo(metadata *Metadata) (string, string, error) {
+	if !helper.Exists(metadata.WheelPath) {
+		return "", "", errorWheelFileNotFound
+	}
+
+	file, err := os.Open(metadata.WheelPath)
+	if err != nil {
+		return "", "", errorUnableToOpenWheelFile
+	}
+	defer file.Close()
+
+	generator := ""
+	tag := ""
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		res := strings.Split(scanner.Text(), ":")
+		if strings.Compare(strings.ToLower(res[0]), "generator") == 0 {
+			gen := strings.Split(strings.TrimSpace(res[1]), " ")
+			generator = strings.TrimSpace(gen[0])
+		}
+		if strings.Compare(strings.ToLower(res[0]), "tag") == 0 {
+			tag = strings.TrimSpace(res[1])
+		}
+	}
+
+	return generator, tag, nil
 }
 
 func GetPackageDataFromPyPi(packageJsonUrl string) (PypiPackageData, error) {
