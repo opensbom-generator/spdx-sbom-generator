@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
 	"spdx-sbom-generator/internal/helper"
 	"spdx-sbom-generator/internal/models"
 	"strings"
@@ -48,27 +49,28 @@ type Packages struct {
 }
 
 type Metadata struct {
-	CPVersion      string
-	Root           bool
-	Name           string
-	Version        string
-	Description    string
-	ProjectURL     string
-	PackageURL     string
-	PackageJsonURL string
-	HomePage       string
-	Author         string
-	AuthorEmail    string
-	License        string
-	DistInfoPath   string
-	LicensePath    string
-	MetadataPath   string
-	WheelPath      string
-	Location       string
-	LocalPath      string
-	Modules        []string
-	Generator      string
-	Tag            string
+	CPVersion         string
+	Root              bool
+	Name              string
+	Version           string
+	Description       string
+	ProjectURL        string
+	PackageURL        string
+	PackageJsonURL    string
+	PackageReleaseURL string
+	HomePage          string
+	Author            string
+	AuthorEmail       string
+	License           string
+	DistInfoPath      string
+	LicensePath       string
+	MetadataPath      string
+	WheelPath         string
+	Location          string
+	LocalPath         string
+	Modules           []string
+	Generator         string
+	Tag               string
 }
 
 var PythonVersion = map[string]string{
@@ -115,18 +117,23 @@ func LoadModules(data string, version string) []Packages {
 	return _modules
 }
 
-func BuildProjectUrl(name string, version string) string {
-	paths := []string{ProjectUrl, name, version}
+func BuildProjectUrl(name string) string {
+	paths := []string{ProjectUrl, name}
 	return path.Join(paths...)
 }
 
-func BuildPackageUrl(name string, version string) string {
-	paths := []string{PackageUrl, name, version}
+func BuildPackageUrl(name string) string {
+	paths := []string{PackageUrl, name}
 	return path.Join(paths...)
 }
 
 func BuildPackageJsonUrl(name string, version string) string {
 	paths := []string{PackageUrl, name, version, "json"}
+	return path.Join(paths...)
+}
+
+func BuildPackageReleaseUrl(name string, version string) string {
+	paths := []string{PackageUrl, name, version}
 	return path.Join(paths...)
 }
 
@@ -308,4 +315,93 @@ func GetMaintenerDataFromPyPiPackageData(pkgData PypiPackageData) (string, strin
 		email = strings.TrimSpace(pkgData.Info.MaintainerEmail)
 	}
 	return name, email
+}
+
+func GetHighestOrderHashData(digests DigestTypes) (models.HashAlgorithm, string) {
+	var algoType models.HashAlgorithm
+	var digestValue string
+
+	v := reflect.ValueOf(digests)
+	for _, algo := range HashAlgoPickOrder {
+
+		f := v.FieldByName(string(algo))
+		if f.IsValid() {
+			algoType = algo
+			digestValue = f.String()
+			return algoType, digestValue
+		}
+	}
+
+	return algoType, digestValue
+}
+
+func GetPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string, tag string, cpversion string) (PypiPackageDistInfo, bool) {
+	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
+	Tag := strings.Contains(strings.ToLower(distInfo.Filename), strings.ToLower(tag))
+	CPVeriosn := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower(cpversion))
+	Py2Py3 := (strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion)))
+
+	status := false
+
+	if PackageType && Tag && (CPVeriosn || Py2Py3) {
+		status = true
+	}
+
+	return distInfo, status
+}
+
+func GetPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPackageDistInfo, bool) {
+	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
+	Source := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower("source"))
+
+	status := false
+
+	if PackageType && Source {
+		status = true
+	}
+
+	return distInfo, status
+}
+
+func GetChecksumeFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) *models.CheckSum {
+	checksum := models.CheckSum{
+		Algorithm: models.HashAlgoSHA1,
+		Content:   []byte(pkgData.Info.Name),
+	}
+
+	for _, packageDistInfo := range pkgData.Urls {
+		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
+		if status {
+			algo, value := GetHighestOrderHashData(distInfo.Digests)
+			checksum.Algorithm = algo
+			checksum.Value = value
+			return &checksum
+		}
+
+		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
+		if status {
+			algo, value := GetHighestOrderHashData(distInfo.Digests)
+			checksum.Algorithm = algo
+			checksum.Value = value
+			return &checksum
+		}
+	}
+
+	return &checksum
+}
+
+func GetDownloadLocationFromPyPiPackageData(pkgData PypiPackageData, metadata Metadata) string {
+	for _, packageDistInfo := range pkgData.Urls {
+		distInfo, status := GetPackageBDistWheelInfo(packageDistInfo, metadata.Generator, metadata.Tag, metadata.CPVersion)
+		if status {
+			return distInfo.URL
+		}
+
+		distInfo, status = GetPackageSDistInfo(packageDistInfo, "sdist")
+		if status {
+			return distInfo.URL
+		}
+	}
+
+	return ""
 }

@@ -71,8 +71,9 @@ func ParseMetadata(metadata *Metadata, packagedetails string) {
 }
 
 func getAddionalMataDataInfo(metadata *Metadata) {
-	metadata.ProjectURL = BuildProjectUrl(metadata.Name, metadata.Version)
-	metadata.PackageURL = BuildPackageUrl(metadata.Name, metadata.Version)
+	metadata.ProjectURL = BuildProjectUrl(metadata.Name)
+	metadata.PackageURL = BuildPackageUrl(metadata.Name)
+	metadata.PackageReleaseURL = BuildPackageReleaseUrl(metadata.Name, metadata.Version)
 	metadata.PackageJsonURL = BuildPackageJsonUrl(metadata.Name, metadata.Version)
 
 	metadata.DistInfoPath = BuildDistInfoPath(metadata.Location, metadata.Name, metadata.Version)
@@ -135,7 +136,7 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	module.Name = metadata.Name
 	module.Path = metadata.ProjectURL
 	module.LocalPath = metadata.LocalPath
-	module.PackageURL = metadata.PackageURL
+	module.PackageURL = metadata.PackageReleaseURL
 	module.PackageHomePage = metadata.HomePage
 	module.PackageComment = metadata.Description
 
@@ -146,6 +147,9 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJsonURL)
 	if err != nil {
 		log.Warnf("Unable to get `%s` package details from pypi.org", metadata.Name)
+		if (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
+			module.PackageURL = metadata.HomePage
+		}
 	}
 
 	if len(metadata.Author) > 0 && metadata.Author == "None" {
@@ -166,12 +170,17 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		}
 	}
 
-	checksum, downloadurl := GetPackageChecksumAndDownloadURL(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
+	checksum := GetChecksumeFromPyPiPackageData(pypiData, metadata)
 	module.CheckSum = checksum
-	if (metadata.Root) && (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
-		downloadurl = metadata.HomePage
+	downloadUrl := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
+	module.PackageDownloadLocation = downloadUrl
+	if len(downloadUrl) == 0 {
+		if metadata.Root {
+			module.PackageDownloadLocation = metadata.HomePage
+		} else {
+			module.PackageDownloadLocation = metadata.HomePage
+		}
 	}
-	module.PackageDownloadLocation = downloadurl
 
 	licensePkg, err := helper.GetLicenses(metadata.DistInfoPath)
 	if err == nil {
