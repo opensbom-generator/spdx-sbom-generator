@@ -26,7 +26,7 @@ var errorUnableToOpenWheelFile = fmt.Errorf("Unable to open wheel file")
 var errorUnableToFetchPackageMetadata = fmt.Errorf("Unable to fetch package details")
 
 func IsRequirementMeet(data string) bool {
-	_modules := LoadModules(data)
+	_modules := LoadModules(data, "")
 	if len(_modules) > 3 {
 		return true
 	}

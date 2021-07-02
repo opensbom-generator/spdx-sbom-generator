@@ -33,7 +33,7 @@ func SetMetadataValues(matadata *Metadata, datamap map[string]string) {
 	matadata.Name = datamap[KeyName]
 	matadata.Version = datamap[KeyVersion]
 	matadata.Description = datamap[KeySummary]
-	matadata.HomePage = httpReplacer.Replace(datamap[KeyHomePage])
+	matadata.HomePage = datamap[KeyHomePage]
 	matadata.Author = datamap[KeyAuthor]
 	matadata.AuthorEmail = datamap[KeyAuthorEmail]
 	matadata.License = datamap[KeyLicense]
@@ -71,10 +71,9 @@ func ParseMetadata(metadata *Metadata, packagedetails string) {
 }
 
 func getAddionalMataDataInfo(metadata *Metadata) {
-	metadata.ProjectURL = BuildProjectUrl(metadata.Name, metadata.Version)
-	if len(metadata.HomePage) > 0 && metadata.HomePage != "None" {
-		metadata.PackageURL = metadata.HomePage
-	}
+	metadata.ProjectURL = BuildProjectUrl(metadata.Name)
+	metadata.PackageURL = BuildPackageUrl(metadata.Name)
+	metadata.PackageReleaseURL = BuildPackageReleaseUrl(metadata.Name, metadata.Version)
 	metadata.PackageJsonURL = BuildPackageJsonUrl(metadata.Name, metadata.Version)
 
 	metadata.DistInfoPath = BuildDistInfoPath(metadata.Location, metadata.Name, metadata.Version)
@@ -115,6 +114,13 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 		ParseMetadata(metadata, metadatastr)
 		getAddionalMataDataInfo(metadata)
 		metadata.Root = pkgs[pkgIndex[strings.ToLower(metadata.Name)]].Root
+		metadata.CPVersion = pkgs[pkgIndex[strings.ToLower(metadata.Name)]].CPVersion
+		generator, tag, err := GetWheelDistributionInfo(metadata)
+		if err != nil {
+			log.Warnf("Wheel distribution info not found for `%s` package.", metadata.Name)
+		}
+		metadata.Generator = generator
+		metadata.Tag = tag
 		metaList = append(metaList, *metadata)
 		metainfo[strings.ToLower(metadata.Name)] = *metadata
 	}
@@ -124,34 +130,61 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 
 func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 	var module models.Module
+
+	// Prepare basic module info
+	module.Root = metadata.Root
 	module.Version = metadata.Version
 	module.Name = metadata.Name
 	module.Path = metadata.ProjectURL
 	module.LocalPath = metadata.LocalPath
+	module.PackageURL = metadata.PackageReleaseURL
+	module.PackageHomePage = metadata.HomePage
+	module.PackageComment = metadata.Description
+
+	if (metadata.Root) && (len(metadata.HomePage) > 0) && metadata.HomePage != "None" {
+		module.PackageURL = metadata.HomePage
+	}
+
+	pypiData, err := GetPackageDataFromPyPi(metadata.PackageJsonURL)
+	if err != nil {
+		log.Warnf("Unable to get `%s` package details from pypi.org", metadata.Name)
+		if (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
+			module.PackageURL = metadata.HomePage
+		}
+	}
+
+	// Prepare supplier contact
+	if len(metadata.Author) > 0 && metadata.Author == "None" {
+		metadata.Author, metadata.AuthorEmail = GetMaintenerDataFromPyPiPackageData(pypiData)
+	}
 
 	contactType := models.Person
 	if IsAuthorAnOrganization(metadata.Author, metadata.AuthorEmail) {
 		contactType = models.Organization
 	}
 
-	// Prepare SupplierContact
-	if len(metadata.AuthorEmail) > 0 {
-		module.Supplier = models.SupplierContact{
-			Type:  contactType,
-			Name:  metadata.Author,
-			Email: metadata.AuthorEmail,
+	module.Supplier = models.SupplierContact{
+		Type:  contactType,
+		Name:  metadata.Author,
+		Email: metadata.AuthorEmail,
+	}
+
+	// Prepare checksum
+	checksum := GetChecksumeFromPyPiPackageData(pypiData, metadata)
+	module.CheckSum = checksum
+
+	// Prepare download location
+	downloadUrl := GetDownloadLocationFromPyPiPackageData(pypiData, metadata)
+	module.PackageDownloadLocation = downloadUrl
+	if len(downloadUrl) == 0 {
+		if metadata.Root {
+			module.PackageDownloadLocation = metadata.HomePage
+		} else {
+			module.PackageDownloadLocation = metadata.HomePage
 		}
 	}
 
-	module.PackageURL = metadata.PackageURL
-
-	checksum, downloadurl := GetPackageChecksumAndDownloadURL(metadata.Name, metadata.PackageJsonURL, metadata.WheelPath)
-	module.CheckSum = checksum
-	if (metadata.Root) && (len(metadata.HomePage) > 0) && (metadata.HomePage != "None") {
-		downloadurl = metadata.HomePage
-	}
-	module.PackageDownloadLocation = downloadurl
-
+	// Prepare licenses
 	licensePkg, err := helper.GetLicenses(metadata.DistInfoPath)
 	if err == nil {
 		module.LicenseDeclared = helper.BuildLicenseDeclared(licensePkg.ID)
@@ -160,13 +193,12 @@ func (d *MetadataDecoder) BuildModule(metadata Metadata) models.Module {
 		module.CommentsLicense = licensePkg.Comments
 		if !helper.LicenseSPDXExists(licensePkg.ID) {
 			licensePkg.ID = fmt.Sprintf("LicenseRef-%s", licensePkg.ID)
+			licensePkg.ExtractedText = fmt.Sprintf("<text>%s</text>", licensePkg.ExtractedText)
+			module.OtherLicense = append(module.OtherLicense, licensePkg)
 		}
 	}
-	module.PackageHomePage = metadata.HomePage
-	module.OtherLicense = []*models.License{} // How to get this
-	module.PackageComment = metadata.Description
 
-	module.Root = metadata.Root
+	// Prepare dependency module
 	module.Modules = map[string]*models.Module{}
 
 	return module

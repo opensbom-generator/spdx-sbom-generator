@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
 )
 
@@ -43,47 +42,95 @@ type Packages struct {
 	Location  string `json:"location,omitempty"`
 	Installer string `json:"installer,omitempty"`
 	Root      bool
+	CPVersion string
 }
 
 type Metadata struct {
-	Root           bool
-	Name           string
-	Version        string
-	Description    string
-	ProjectURL     string
-	PackageURL     string
-	PackageJsonURL string
-	HomePage       string
-	Author         string
-	AuthorEmail    string
-	License        string
-	DistInfoPath   string
-	LicensePath    string
-	MetadataPath   string
-	WheelPath      string
-	Location       string
-	LocalPath      string
-	Modules        []string
+	CPVersion         string
+	Root              bool
+	Name              string
+	Version           string
+	Description       string
+	ProjectURL        string
+	PackageURL        string
+	PackageJsonURL    string
+	PackageReleaseURL string
+	HomePage          string
+	Author            string
+	AuthorEmail       string
+	License           string
+	DistInfoPath      string
+	LicensePath       string
+	MetadataPath      string
+	WheelPath         string
+	Location          string
+	LocalPath         string
+	Modules           []string
+	Generator         string
+	Tag               string
 }
 
-func LoadModules(data string) []Packages {
+var PythonVersion = map[string]string{
+	"cp39": "Python 3.9",
+	"cp38": "Python 3.8",
+	"cp37": "Python 3.7",
+	"cp36": "Python 3.6",
+	"cp35": "Python 3.5",
+	"cp34": "Python 3.4",
+	"cp33": "Python 3.3",
+	"cp32": "Python 3.2",
+	"cp31": "Python 3.1",
+	"cp30": "Python 3.0",
+	"cp27": "Python 2.7",
+	"cp26": "Python 2.6",
+	"cp25": "Python 2.5",
+	"cp24": "Python 2.4",
+	"cp23": "Python 2.3",
+	"cp22": "Python 2.2",
+	"cp21": "Python 2.1",
+	"cp20": "Python 2.0",
+	"cp16": "Python 1.6",
+	"cp15": "Python 1.5",
+	"cp10": "Python 1.0",
+}
+
+func GetShortPythonVersion(version string) string {
+	pythonVersion := "source"
+	for k, v := range PythonVersion {
+		if strings.Contains(version, v) {
+			return k
+		}
+	}
+	return pythonVersion
+}
+
+func LoadModules(data string, version string) []Packages {
 	var _modules []Packages
 	json.Unmarshal([]byte(data), &_modules)
+	for i, mod := range _modules {
+		mod.CPVersion = version
+		_modules[i] = mod
+	}
 	return _modules
 }
 
-func BuildProjectUrl(name string, version string) string {
-	paths := []string{ProjectUrl, name, version}
+func BuildProjectUrl(name string) string {
+	paths := []string{ProjectUrl, name}
 	return path.Join(paths...)
 }
 
-func BuildPackageUrl(name string, version string) string {
-	paths := []string{PackageUrl, name, version}
+func BuildPackageUrl(name string) string {
+	paths := []string{PackageUrl, name}
 	return path.Join(paths...)
 }
 
 func BuildPackageJsonUrl(name string, version string) string {
 	paths := []string{PackageUrl, name, version, "json"}
+	return path.Join(paths...)
+}
+
+func BuildPackageReleaseUrl(name string, version string) string {
+	paths := []string{PackageUrl, name, version}
 	return path.Join(paths...)
 }
 
@@ -170,40 +217,31 @@ func IsAuthorAnOrganization(author string, authoremail string) bool {
 	return result
 }
 
-func GetPackageChecksumAndDownloadURL(packagename string, packageJsonURL string, packageWheelPath string) (*models.CheckSum, string) {
-	checkfortag := true
+func GetWheelDistributionInfo(metadata *Metadata) (string, string, error) {
+	if !helper.Exists(metadata.WheelPath) {
+		return "", "", errorWheelFileNotFound
+	}
 
-	wheeltag, err := GetWheelDistributionLastTag(packageWheelPath)
+	file, err := os.Open(metadata.WheelPath)
 	if err != nil {
-		checkfortag = false
-	}
-	if checkfortag && len(wheeltag) == 0 {
-		checkfortag = false
-	}
-
-	checksum, downloadurl := getPypiPackageChecksumAndDownloadURL(packagename, packageJsonURL, checkfortag, wheeltag)
-	return &checksum, downloadurl
-}
-
-func GetWheelDistributionLastTag(packageWheelPath string) (string, error) {
-	if !helper.Exists(packageWheelPath) {
-		return "", errorWheelFileNotFound
-	}
-
-	file, err := os.Open(packageWheelPath)
-	if err != nil {
-		return "", errorUnableToOpenWheelFile
+		return "", "", errorUnableToOpenWheelFile
 	}
 	defer file.Close()
 
-	lasttag := ""
+	generator := ""
+	tag := ""
+
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		res := strings.Split(scanner.Text(), ":")
+		if strings.Compare(strings.ToLower(res[0]), "generator") == 0 {
+			gen := strings.Split(strings.TrimSpace(res[1]), " ")
+			generator = strings.TrimSpace(gen[0])
+		}
 		if strings.Compare(strings.ToLower(res[0]), "tag") == 0 {
-			lasttag = strings.TrimSpace(res[1])
+			tag = strings.TrimSpace(res[1])
 		}
 	}
 
-	return lasttag, nil
+	return generator, tag, nil
 }
