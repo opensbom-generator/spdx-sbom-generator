@@ -110,8 +110,12 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
+	if pkResult["repository"] != nil {
+		mod.PackageDownloadLocation = pkResult["repository"].(map[string]interface{})["url"].(string)
+	}
 	if pkResult["homepage"] != nil {
 		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
+		mod.PackageDownloadLocation = mod.PackageURL
 	}
 	mod.Modules = map[string]*models.Module{}
 	mod.Copyright = getCopyright(path)
@@ -171,6 +175,9 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		Value:     h,
 	}
 	de.Supplier.Name = de.Name
+	if de.PackageDownloadLocation == "" {
+		de.PackageDownloadLocation = de.Name
+	}
 	modules = append(modules, *de)
 	for _, d := range deps {
 		var mod models.Module
@@ -201,14 +208,15 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 				}
 			}
 		}
+		mod.PackageDownloadLocation = mod.Name
 		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
 		if strings.Index(r, "#") > 0 {
 			r = r[:strings.Index(r, "#")]
+			mod.PackageDownloadLocation = r
 		}
 		mod.Supplier.Name = mod.Name
 
 		mod.PackageURL = getPackageHomepage(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, m.metadata.Manifest[0]))
-		mod.PackageDownloadLocation = r
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
