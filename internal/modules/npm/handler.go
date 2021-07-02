@@ -108,8 +108,14 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
 	}
-	if pkResult["repository"] != nil {
-		mod.PackageDownloadLocation = pkResult["repository"].(map[string]interface{})["url"].(string)
+	repository := pkResult["repository"]
+	if repository != nil {
+		if rep, ok := repository.(string); ok{
+			mod.PackageDownloadLocation = rep
+		}
+		if _, ok := repository.(map[string]interface{}); ok && repository.(map[string]interface{})["url"] != nil {
+			mod.PackageDownloadLocation = repository.(map[string]interface{})["url"].(string)
+		}
 	}
 	if pkResult["homepage"] != nil {
 		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
