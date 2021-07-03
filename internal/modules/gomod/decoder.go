@@ -14,8 +14,8 @@ import (
 
 	"github.com/go-git/go-git/v5"
 
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 const vendorFolder = "vendor"

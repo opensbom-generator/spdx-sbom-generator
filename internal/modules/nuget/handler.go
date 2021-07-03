@@ -11,10 +11,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 type nuget struct {

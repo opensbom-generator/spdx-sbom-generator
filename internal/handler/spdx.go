@@ -9,10 +9,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"spdx-sbom-generator/internal/format"
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
-	"spdx-sbom-generator/internal/modules"
+	"github.com/spdx/spdx-sbom-generator/internal/format"
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/modules"
 )
 
 var errNoModuleManagerFound = errors.New("No module manager found")

@@ -4,8 +4,9 @@ package cargo
 
 import (
 	"bytes"
-	"spdx-sbom-generator/internal/helper"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
 )
 
 type command string

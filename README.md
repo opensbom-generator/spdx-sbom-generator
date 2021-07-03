@@ -363,8 +363,8 @@ To register for a new plugin, perform the following steps:
    import (
    	"path/filepath"
 
-   	"spdx-sbom-generator/internal/helper"
-   	"spdx-sbom-generator/internal/models"
+   	"github.com/spdx/spdx-sbom-generator/internal/helper"
+   	"github.com/spdx/spdx-sbom-generator/internal/models"
    )
 
    // rest of the file below

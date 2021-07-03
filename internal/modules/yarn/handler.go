@@ -13,9 +13,9 @@ import (
 	"regexp"
 	"strings"
 
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
-	"spdx-sbom-generator/internal/reader"
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/reader"
 )
 
 type yarn struct {

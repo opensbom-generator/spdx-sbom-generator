@@ -8,8 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"spdx-sbom-generator/internal/models"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 var errorPackageDigestNotFound = errors.New("Digest not found")

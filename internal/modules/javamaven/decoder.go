@@ -12,11 +12,12 @@ import (
 	"os"
 	"os/exec"
 	"path"
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
 
 	"github.com/vifraa/gopom"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 // RepositoryUrl is the repository url

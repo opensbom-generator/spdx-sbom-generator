@@ -7,8 +7,9 @@ import (
 	"encoding/json"
 	"os"
 	"path"
-	"spdx-sbom-generator/internal/helper"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
 )
 
 const ProjectUrl = "pypi.org/project"

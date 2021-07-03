@@ -10,13 +10,13 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"spdx-sbom-generator/internal/licenses"
-	"spdx-sbom-generator/internal/models"
-
 	"strings"
 
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/spdx/spdx-sbom-generator/internal/licenses"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 const copyrightLookup = "copyright"
@@ -193,11 +193,9 @@ func BuildManifestContent(path string) []byte {
 	return nil
 }
 
-
 func RemoveURLProtocol(url string) string {
 	trimmedURL := strings.TrimSpace(url)
 	trimmedURL = strings.TrimPrefix(trimmedURL, "https://")
 	trimmedURL = strings.TrimPrefix(trimmedURL, "http://")
 	return trimmedURL
 }
-

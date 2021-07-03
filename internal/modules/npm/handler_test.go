@@ -5,11 +5,13 @@ package npm
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"os/exec"
-	"spdx-sbom-generator/internal/models"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 func TestNPM(t *testing.T) {
@@ -105,7 +107,7 @@ func TestListAllModules(t *testing.T) {
 	count := 0
 	for _, mod := range mods {
 		if mod.Name == "validator" {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
 			assert.Equal(t, "10.11.0", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/validator/-/validator-10.11.0.tgz", mod.PackageDownloadLocation)
@@ -129,7 +131,7 @@ func TestListAllModules(t *testing.T) {
 			continue
 		}
 		if mod.Name == "body-parser" {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 
 			assert.Equal(t, "1.19.0", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/body-parser/-/body-parser-1.19.0.tgz", mod.PackageDownloadLocation)
@@ -141,7 +143,7 @@ func TestListAllModules(t *testing.T) {
 			continue
 		}
 		if mod.Name == "bcryptjs" {
-			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)) )
+			h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 			assert.Equal(t, "2.4.3", mod.Version)
 			assert.Equal(t, "https://registry.npmjs.org/bcryptjs/-/bcryptjs-2.4.3.tgz", mod.PackageDownloadLocation)
 			assert.Equal(t, models.HashAlgorithm("SHA256"), mod.CheckSum.Algorithm)
@@ -155,7 +157,6 @@ func TestListAllModules(t *testing.T) {
 
 	assert.Equal(t, 4, count)
 }
-
 
 func getPath() string {
 	cmd := exec.Command("pwd")

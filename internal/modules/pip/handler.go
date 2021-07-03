@@ -3,10 +3,10 @@
 package pip
 
 import (
-	"spdx-sbom-generator/internal/models"
-	"spdx-sbom-generator/internal/modules/pip/pipenv"
-	"spdx-sbom-generator/internal/modules/pip/poetry"
-	"spdx-sbom-generator/internal/modules/pip/pyenv"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/pip/pipenv"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/pip/poetry"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/pip/pyenv"
 )
 
 type pip struct {

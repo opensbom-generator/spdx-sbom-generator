@@ -9,8 +9,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"spdx-sbom-generator/internal/helper"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
 )
 
 // Virtual env constants

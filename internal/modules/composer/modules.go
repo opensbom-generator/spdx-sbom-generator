@@ -8,9 +8,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 func (m *composer) getRootProjectInfo(path string) (models.Module, error) {

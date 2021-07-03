@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 type gem struct {

@@ -3,8 +3,9 @@
 package composer
 
 import (
-	"spdx-sbom-generator/internal/helper"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
 )
 
 type command string

@@ -7,16 +7,16 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"spdx-sbom-generator/internal/models"
-	"spdx-sbom-generator/internal/modules/cargo"
-	"spdx-sbom-generator/internal/modules/composer"
-	"spdx-sbom-generator/internal/modules/gem"
-	"spdx-sbom-generator/internal/modules/gomod"
-	"spdx-sbom-generator/internal/modules/javamaven"
-	"spdx-sbom-generator/internal/modules/npm"
-	"spdx-sbom-generator/internal/modules/nuget"
-	"spdx-sbom-generator/internal/modules/pip"
-	"spdx-sbom-generator/internal/modules/yarn"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/cargo"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/composer"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/gem"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/gomod"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/javamaven"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/npm"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/nuget"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/pip"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/yarn"
 )
 
 var (

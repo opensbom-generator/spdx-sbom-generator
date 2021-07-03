@@ -5,9 +5,10 @@ package cargo
 import (
 	"encoding/json"
 	"net/mail"
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) error {

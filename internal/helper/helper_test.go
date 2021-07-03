@@ -3,12 +3,14 @@
 package helper
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os/exec"
 	"path/filepath"
-	"spdx-sbom-generator/internal/reader"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/spdx/spdx-sbom-generator/internal/reader"
 )
 
 func TestGetCopyright(t *testing.T) {

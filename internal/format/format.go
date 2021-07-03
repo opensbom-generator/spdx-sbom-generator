@@ -11,7 +11,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/google/uuid"
 
-	"spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 const (

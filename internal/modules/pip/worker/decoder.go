@@ -5,11 +5,12 @@ package worker
 import (
 	"fmt"
 	"regexp"
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
 )
 
 const pkgMetedataSeparator string = "---"

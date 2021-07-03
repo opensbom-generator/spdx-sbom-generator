@@ -6,10 +6,11 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
-	"spdx-sbom-generator/internal/helper"
-	"spdx-sbom-generator/internal/models"
-	"spdx-sbom-generator/internal/modules/pip/worker"
 	"strings"
+
+	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/internal/modules/pip/worker"
 )
 
 const cmdName = "python"
