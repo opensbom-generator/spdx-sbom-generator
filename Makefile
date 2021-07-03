@@ -73,5 +73,5 @@ test: prepare-test
 
 .PHONY: prepare-test
 prepare-test:
-	@cd internal/modules/npm/test && npm install
-	@cd internal/modules/yarn/test && yarn install
+	@cd pkg/modules/npm/test && npm install
+	@cd pkg/modules/yarn/test && yarn install

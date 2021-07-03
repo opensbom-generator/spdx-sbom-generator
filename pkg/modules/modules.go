@@ -7,16 +7,16 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/spdx/spdx-sbom-generator/internal/models"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/cargo"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/composer"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/gem"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/gomod"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/javamaven"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/npm"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/nuget"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/pip"
-	"github.com/spdx/spdx-sbom-generator/internal/modules/yarn"
+	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/cargo"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/composer"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/gem"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/gomod"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/javamaven"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/npm"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/nuget"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/yarn"
 )
 
 var (

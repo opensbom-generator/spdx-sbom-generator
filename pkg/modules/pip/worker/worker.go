@@ -11,7 +11,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/internal/helper"
+	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 // Virtual env constants

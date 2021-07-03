@@ -10,7 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/internal/models"
+	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 var errorPackageDigestNotFound = errors.New("Digest not found")
