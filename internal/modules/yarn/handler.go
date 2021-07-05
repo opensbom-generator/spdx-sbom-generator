@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
@@ -25,6 +26,7 @@ var (
 	errDependenciesNotFound = errors.New("unable to generate SPDX file, no modules founded. Please install them before running spdx-sbom-generator, e.g.: `yarn install`")
 	yarnRegistry            = "https://registry.yarnpkg.com"
 	lockFile                = "yarn.lock"
+	rg = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
 )
 
 // New creates a new yarn instance
@@ -123,6 +125,9 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
 		mod.PackageDownloadLocation = mod.PackageURL
 	}
+	if !rg.MatchString(mod.PackageDownloadLocation) {
+		mod.PackageDownloadLocation = "NONE"
+	}
 	mod.Modules = map[string]*models.Module{}
 	mod.Copyright = getCopyright(path)
 	modLic, err := helper.GetLicenses(path)
@@ -214,11 +219,14 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 				}
 			}
 		}
-		mod.PackageDownloadLocation = mod.Name
 		r := strings.TrimSuffix(strings.TrimPrefix(d.Resolved, "\""), "\"")
 		if strings.Index(r, "#") > 0 {
 			r = r[:strings.Index(r, "#")]
 			mod.PackageDownloadLocation = r
+		}
+		if mod.PackageDownloadLocation == "" {
+			r := "https://www.yarnpkg.com/package/%s"
+			mod.PackageDownloadLocation = fmt.Sprintf(r, mod.Name)
 		}
 		mod.Supplier.Name = mod.Name
 

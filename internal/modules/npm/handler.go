@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"spdx-sbom-generator/internal/helper"
@@ -22,6 +23,7 @@ var (
 	shrink      = "npm-shrinkwrap.json"
 	npmRegistry = "https://registry.npmjs.org"
 	lockFile    = "package-lock.json"
+	rg = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
 )
 
 // New creates a new npm manager instance
@@ -120,6 +122,10 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	if pkResult["homepage"] != nil {
 		mod.PackageURL = helper.RemoveURLProtocol(pkResult["homepage"].(string))
 	}
+	if !rg.MatchString(mod.PackageDownloadLocation) {
+		mod.PackageDownloadLocation = "NONE"
+	}
+
 	mod.Modules = map[string]*models.Module{}
 
 	mod.Copyright = getCopyright(path)
@@ -209,12 +215,15 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 			mod.Version = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(nkey, "^"), "~"), ">"), "="))
 			mod.Version = strings.Split(mod.Version, " ")[0]
 			mod.Name = depName
-			mod.PackageDownloadLocation = mod.Name
 
 			r := ""
 			if d["resolved"] != nil {
 				r = d["resolved"].(string)
 				mod.PackageDownloadLocation = r
+			}
+			if mod.PackageDownloadLocation == "" {
+				r := "https://www.npmjs.com/package/%s/v/%s"
+				mod.PackageDownloadLocation = fmt.Sprintf(r, mod.Name, mod.Version)
 			}
 			mod.Supplier.Name = mod.Name
 
