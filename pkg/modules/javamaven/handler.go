@@ -123,7 +123,7 @@ func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
 		return nil, err
 	}
 
-	tdList, err := getTransitiveDependencyList()
+	tdList, err := getTransitiveDependencyList(path)
 	if err != nil {
 		fmt.Println("error in getting mvn transitive dependency tree and parsing it")
 		return nil, err
