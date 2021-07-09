@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
-	"spdx-sbom-generator/internal/handler"
+	"github.com/spdx/spdx-sbom-generator/pkg/handler"
 )
 
 const jsonLogFormat = "json"

@@ -348,10 +348,10 @@ To register for a new plugin, perform the following steps:
    git clone git@github.com:LF-Engineering/spdx-sbom-generator.git
    ```
 
-2. Create a new directory into `./internal/modules/` with package manager name, for example:  `npm`, you should end with a directory:
+2. Create a new directory into `./pkg/modules/` with package manager name, for example:  `npm`, you should end with a directory:
 
    ```
-   /internal/modules/npm
+   /pkg/modules/npm
 
    ```
 
@@ -363,8 +363,8 @@ To register for a new plugin, perform the following steps:
    import (
    	"path/filepath"
 
-   	"spdx-sbom-generator/internal/helper"
-   	"spdx-sbom-generator/internal/models"
+   	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+   	"github.com/spdx/spdx-sbom-generator/pkg/models"
    )
 
    // rest of the file below
@@ -465,7 +465,7 @@ To register for a new plugin, perform the following steps:
 
 
 
-7. In `modules.go` at `./internal/modules/` directory, register the new plugin. Add the plugin to register to the existing definition.
+7. In `modules.go` at `./pkg/modules/` directory, register the new plugin. Add the plugin to register to the existing definition.
 
    ```
    func init() {
