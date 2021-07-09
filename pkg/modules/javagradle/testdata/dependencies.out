@@ -1,0 +1,36 @@
+------------------------------------------------------------
+Root project
+------------------------------------------------------------
+
+annotationProcessor - Annotation processors and their dependencies for source set 'main'.
+No dependencies
+
+apiElements - API elements for main. (n)
+No dependencies
+
+archives - Configuration for archive artifacts.
+No dependencies
+
+checkstyle - The Checkstyle libraries to be used for this project.
+\--- com.puppycrawl.tools:checkstyle:8.18
+     +--- info.picocli:picocli:3.9.5
+     +--- antlr:antlr:2.7.7
+     +--- org.antlr:antlr4-runtime:4.7.2
+     +--- commons-beanutils:commons-beanutils:1.9.3
+     |    \--- commons-collections:commons-collections:3.2.2
+     +--- com.google.guava:guava:27.0.1-jre
+     |    +--- com.google.guava:failureaccess:1.0.1
+     \--- net.sf.saxon:Saxon-HE:9.9.1-1
+
+compile - Dependencies for source set 'main' (deprecated, use 'implementation ' instead).
+\--- com.google.cloud.tools:appengine-plugins-core:0.9.1
+     +--- com.google.guava:guava:28.2-jre
+     |    +--- com.google.guava:failureaccess:1.0.1
+     +--- org.yaml:snakeyaml:1.21
+     +--- com.google.code.gson:gson:2.8.6
+     +--- org.glassfish:javax.json:1.0.4
+     \--- org.apache.commons:commons-compress:1.20
+
+(*) - dependencies omitted (listed previously)
+
+A web-based, searchable dependency report is available by adding the --scan option.
