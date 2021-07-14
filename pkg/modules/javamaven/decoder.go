@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/vifraa/gopom"
@@ -423,26 +424,28 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	return modules, nil
 }
 
-func getTransitiveDependencyList() (map[string][]string, error) {
-	path := "/tmp/JavaMavenTDTreeOutput.txt"
+func getTransitiveDependencyList(workingDir string) (map[string][]string, error) {
+	path := filepath.Join(os.TempDir(), "JavaMavenTDTreeOutput.txt")
 	os.Remove(path)
 
-	command := exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile=/tmp/JavaMavenTDTreeOutput.txt")
-	_, err := command.Output()
+	command := exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path)
+	command.Dir = workingDir
+	out, err := command.CombinedOutput()
 	if err != nil {
+		log.Print(string(out))
 		return nil, err
 	}
 
-	tdList, err := readAndgetTransitiveDependencyList()
+	tdList, err := readAndgetTransitiveDependencyList(path)
 	if err != nil {
 		return nil, err
 	}
 	return tdList, nil
 }
 
-func readAndgetTransitiveDependencyList() (map[string][]string, error) {
+func readAndgetTransitiveDependencyList(path string) (map[string][]string, error) {
 
-	file, err := os.Open("/tmp/JavaMavenTDTreeOutput.txt")
+	file, err := os.Open(path)
 
 	if err != nil {
 		log.Println(err)
