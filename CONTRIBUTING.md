@@ -8,30 +8,59 @@ SPDX-License-Identifier: CC-BY-4.0
 Each new ***documentation related file*** must conatin this SPDX short-form identifier as mentioned at the top of the page. For details, see [License Information](license-information) section of this document.
 
 1. [Create a Fork of spdx-sbom-generator](https://github.com/spdx/spdx-sbom-generator) to your personal GitHub account by clicking the fork button on the top right corner of the spdx-sbom-genrator project repo page in GitHub.
-2. On your development computer, navigate to the ***spdx-sbom-generator*** folder that was created when you forked the project.
-3. create a branch (off of main) for your work. If you’re addressing an issue, we suggest you to include the issue type as the branch name, for example:
+2. Clone the forked repo to your local machine. For details, see [Creating a Fork](https://gist.github.com/Chaser324/ce0505fbed06b947d962#creating-a-fork).
+3. On your development computer, navigate to the ***spdx-sbom-generator*** folder that was created when you cloned the project.
+
+4. Rename the default remote pointing to the upstream repository from origin to upstream:
+    ```
+    git remote rename origin upstream
+    ```
+    Ensure to let Git know about the fork you just created, naming it origin:
+
+    ```
+    git remote add origin https://github.com/<your github id>/zephyr
+    ```
+    and verify the remote repos:
+
+    ```
+    git remote -v
+    ```
+    The output should look similar to:
+    
+```
+    origin   https://github.com/<your github id>/zephyr (fetch)
+    origin   https://github.com/<your github id>/zephyr (push)
+    upstream https://github.com/zephyrproject-rtos/zephyr (fetch)
+    upstream https://github.com/zephyrproject-rtos/zephyr (push)
+```
+5. create a branch (off of main) for your work. If you’re addressing an issue, we suggest you to include the issue type as the branch name, for example:
     ```
     git checkout main
     git checkout -b fix_typo
     ```
 4. Make changes to the project.
-5. Commit your changes to your local repo as mentioned in the [important](#important) section below:
+5. When things look good, start the pull request process by adding your changed files:
 
----
-**Important:**
-* While commiting changes, contrinutors must include a "Signed-off-by" line in the commit message, with the contributors' name and email address, for example:
     ```
-    Sign-off-by: Humpty Dumpty <humpty.dumpty@example.com>
+    git add [file(s) that changed, add -p if you want to be more specific]
     ```
-* If you have configured your username and email address in the terminal, juist type ```git commit -s```.
+    You can see files that are not yet staged using:
 
-    The ```-s``` option automatically adds your ```Signed-off-by:``` to your commit message. Your commit will be rejected without this line.
+    ```
+    git status
+    ```
+6. Commit your changes to your local repo:
+
+ ```
+ git commit -s
+ ```
+ The ```-s``` option automatically adds your ```Signed-off-by:``` to your commit message. Your commit will be rejected without this line.
     
-    Adding ```Sign-off-by``` while commiting changes indicates your agreement with the [Developer Certificate of Origin (DCO)]((https://developercertificate.org/)), a copy of which is included below.
----
-6. Push your topic branch with your changes to your forked personal GitHub account:
+ Adding ```Sign-off-by``` while commiting changes indicates your agreement with the [Developer Certificate of Origin (DCO)](https://developercertificate.org/), a copy of which is included below.
+
+7. Push your topic branch with your changes to your forked personal GitHub account:
     ```
-    git push --set-upstream origin <branch name>
+    git push push origin <branch name>
     ```
 7. In your web browser, go to your forked repo and click on the ```Compare & pull request``` button for the branch you just worked on that you want to open a pull request with.
 8. Review the pull request changes, and verify that you are opening a pull request for the appropriate branch. The title and message from your commit message should appear as well.
