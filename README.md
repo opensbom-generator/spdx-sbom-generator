@@ -524,7 +524,7 @@ Perform the following steps to work with SPDX SBOM Generator:
 
 Licensing
 ---------
-docker/cli is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/blob/master/LICENSE) for the full license text.
+This project’s source code is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/tree/main/LICENSES) for the full license text.
 
 ## Additional Information
 
