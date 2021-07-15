@@ -1,4 +1,7 @@
 # Contributing to the Project
+Everyone is encouraged to participate in the SPDX Software Bill of Materials (SBOM) Generator project. Anyone can influence the project by simply being involved in the discussions about new features, the roadmap, architecture, and even problems they are facing.
+
+This is the process we suggest for contributions. This process is designed to reduce the burden on project reviews, impact on other contributors, and to keep the amount of rework from the contributor to a minimum.
 
 SPDX-License-Identifier: CC-BY-4.0 
 
