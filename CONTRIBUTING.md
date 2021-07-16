@@ -15,7 +15,7 @@ Each new ***documentation related file*** must conatin this SPDX short-form iden
     ```
     git remote rename origin upstream
     ```
-    Ensure to let Git know about the fork you just created, naming it origin:
+    Ensure that you let Git know about the fork you just created, naming it origin:
 
     ```
     git remote add origin https://github.com/<your github id>/zephyr
@@ -121,7 +121,3 @@ By making a contribution to this project, I certify that:
     maintained indefinitely and may be redistributed consistent with
     this project or the open source license(s) involved.
 ```
-
-## Maintainers
-
-See the [CODEOWNERS](CODEOWNERS) text file for the list of maintainers.
