@@ -5,7 +5,7 @@ This is the process we suggest for contributions. This process is designed to re
 
 SPDX-License-Identifier: CC-BY-4.0 
 
-Each new ***documentation related file*** must conatin this SPDX short-form identifier as mentioned at the top of the page. For details, see [License Information](license-information) section of this document.
+Each new ***documentation related file*** must conatin this SPDX short-form identifier as mentioned above. For details, see [License Information](license-information) section of this document.
 
 1. [Create a Fork of spdx-sbom-generator](https://github.com/spdx/spdx-sbom-generator) to your personal GitHub account by clicking the fork button on the top right corner of the spdx-sbom-genrator project repo page in GitHub.
 2. Clone the forked repo to your local machine. For details, see [Creating a Fork](https://gist.github.com/Chaser324/ce0505fbed06b947d962#creating-a-fork).
@@ -18,7 +18,7 @@ Each new ***documentation related file*** must conatin this SPDX short-form iden
     Ensure that you let Git know about the fork you just created, naming it origin:
 
     ```
-    git remote add origin https://github.com/<your github id>/zephyr
+    git remote add origin https://github.com/<your github id>/spdx-sbom-generator
     ```
     and verify the remote repos:
 
@@ -28,10 +28,10 @@ Each new ***documentation related file*** must conatin this SPDX short-form iden
     The output should look similar to:
     
 ```
-    origin   https://github.com/<your github id>/zephyr (fetch)
-    origin   https://github.com/<your github id>/zephyr (push)
-    upstream https://github.com/zephyrproject-rtos/zephyr (fetch)
-    upstream https://github.com/zephyrproject-rtos/zephyr (push)
+    origin   https://github.com/<your github id>/spdx-sbom-generator (fetch)
+    origin   https://github.com/<your github id>/spdx-sbom-generator (push)
+    upstream https://github.com/spdx/spdx-sbom-generator (fetch)
+    upstream https://github.com/spdx/spdx-sbom-generator (push)
 ```
 5. create a branch (off of main) for your work. If you’re addressing an issue, we suggest you to include the issue type as the branch name, for example:
     ```
@@ -60,7 +60,7 @@ Each new ***documentation related file*** must conatin this SPDX short-form iden
 
 7. Push your topic branch with your changes to your forked personal GitHub account:
     ```
-    git push push origin <branch name>
+    git push origin <branch name>
     ```
 7. In your web browser, go to your forked repo and click on the ```Compare & pull request``` button for the branch you just worked on that you want to open a pull request with.
 8. Review the pull request changes, and verify that you are opening a pull request for the appropriate branch. The title and message from your commit message should appear as well.
