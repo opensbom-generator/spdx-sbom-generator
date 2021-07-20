@@ -4,6 +4,7 @@ package modules
 
 import (
 	"errors"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/javagradle"
 
 	log "github.com/sirupsen/logrus"
 
@@ -34,6 +35,7 @@ func init() {
 		gomod.New(),
 		gem.New(),
 		npm.New(),
+		javagradle.New(),
 		javamaven.New(),
 		nuget.New(),
 		yarn.New(),
