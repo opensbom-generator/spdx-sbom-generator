@@ -75,3 +75,4 @@ test: prepare-test
 prepare-test:
 	@cd pkg/modules/npm/test && npm install
 	@cd pkg/modules/yarn/test && yarn install
+	@cd pkg/modules/swift/test && swift build
