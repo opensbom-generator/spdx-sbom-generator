@@ -96,7 +96,7 @@ Created: 2021-05-23 11:25:29.1672276 -0400 -04 m=+0.538283001
 
 ##### Package representing the Go distribution
 
-PackageNam: go
+PackageName: go
 SPDXID: SPDXRef-Package-go
 PackageVersion: v0.46.3
 PackageSupplier: NOASSERTION
@@ -114,7 +114,7 @@ Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-Package-go
 
 ##### Package representing the Bigquery Distribution
 
-PackageNam: bigquery
+PackageName: bigquery
 SPDXID: SPDXRef-Package-bigquery
 PackageVersion: v1.0.1
 PackageSupplier: NOASSERTION
