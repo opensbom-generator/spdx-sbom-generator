@@ -4,6 +4,7 @@ package modules
 
 import (
 	"errors"
+
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/javagradle"
 
 	log "github.com/sirupsen/logrus"
@@ -17,6 +18,7 @@ import (
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/npm"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/nuget"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/swift"
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/yarn"
 )
 
@@ -40,6 +42,7 @@ func init() {
 		nuget.New(),
 		yarn.New(),
 		pip.New(),
+		swift.New(),
 	)
 }
 

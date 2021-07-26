@@ -18,6 +18,7 @@
  * PIP (Python)
  * Pipenv (Python)
  * Gems (Ruby) 
+ * Swift Package Manager (Swift)
 
 ## Installation
 
