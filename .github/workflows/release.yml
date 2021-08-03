@@ -20,8 +20,8 @@ jobs:
 
     ## Publishes our image to Docker Hub 😎
     - name: Set RELEASE_VERSION env
-      run: echo RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}    
-    - name: Publish to Registry   
+      run: echo RELEASE_VERSION=$(echo ${GITHUB_REF} | rev | cut -d'/' -f 1 | rev ) >> ${GITHUB_ENV}
+    - name: Publish to Registry
       uses: elgohr/Publish-Docker-Github-Action@master
       with:
         name: spdx/spdx-sbom-generator
@@ -49,7 +49,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
-          goversion: "https://dl.google.com/go/go1.15.14.linux-amd64.tar.gz"
+          goversion: "https://dl.google.com/go/go1.16.6.linux-amd64.tar.gz"
           project_path: "./cmd/generator"
           binary_name: "spdx-sbom-generator"
           ldflags: "-X 'main.version=${{ env.RELEASE_VERSION }}'"
