@@ -267,13 +267,13 @@ func parseSpec(spec Spec) models.Module {
 		supplier.Name = authors[0]
 	}
 	return models.Module{
-		Name:            gemName(spec.Name),
-		Version:         spec.Version,
-		Root:            false,
-		PackageHomePage: cleanURI(spec.HomePage),
+		Name:                    gemName(spec.Name),
+		Version:                 spec.Version,
+		Root:                    false,
+		PackageHomePage:         cleanURI(spec.HomePage),
 		PackageDownloadLocation: cleanURI(spec.HomePage),
-		Supplier:        supplier,
-		PackageURL:      cleanURI(spec.HomePage),
+		Supplier:                supplier,
+		PackageURL:              cleanURI(spec.HomePage),
 		CheckSum: &models.CheckSum{
 			Algorithm: models.HashAlgoSHA256,
 			Value:     spec.Checksum,
@@ -380,7 +380,6 @@ func BuildSpecDependencies(path string, isFullPath bool, module *Spec) {
 	name, version, _ := rootGem(cachePath, cleanName(module.Name))
 	versionedName := fmt.Sprintf("%s-%s", name, version)
 
-
 	rootSha, err := checkSum(cachePath, versionedName, true)
 	if err == nil && rootSha != "" {
 		module.Checksum = rootSha
@@ -482,7 +481,7 @@ func ReduceSpec(row, column string, spec *Spec) {
 	case "s.authors":
 		fallthrough
 	case "spec.authors":
-		 spec.Authors = getAuthors(row)
+		spec.Authors = getAuthors(row)
 	case "s.summary":
 		fallthrough
 	case "spec.summary":
@@ -546,6 +545,13 @@ func ReduceSpec(row, column string, spec *Spec) {
 
 	}
 
+}
+
+func validateProjectType(path string) bool {
+	if _, err := detectManifest(path, DETECTION_MODE_SPEC); err != nil {
+		return false
+	}
+	return true
 }
 
 // Checks for duplicate entries
@@ -901,14 +907,16 @@ func detectManifest(path, mode string) (string, error) {
 		}
 
 		if manifest != "" {
+			err = nil
 			break
 		}
 
 	}
 	if manifest == "" {
+		err = errors.New("gemspec file not found in projects root directory")
 		return manifest, err
 	}
-	return manifest, nil
+	return manifest, err
 }
 
 // Detect whether current OS is added in the Gemfile.lock PLATFORMS section
@@ -1321,12 +1329,12 @@ func gemDir() string {
 
 // extracts authors from row
 func getAuthors(row string) []string {
-		value :=  strings.SplitN(strings.TrimLeft(unfreeze(row), " "), " ", 2)[1]
-		s := []string{`[`,`]`,`"`,`=`}
-		for _,v := range s {
-			value=strings.ReplaceAll(value,v,"")
-		}
-	return strings.Split(value,",")
+	value := strings.SplitN(strings.TrimLeft(unfreeze(row), " "), " ", 2)[1]
+	s := []string{`[`, `]`, `"`, `=`}
+	for _, v := range s {
+		value = strings.ReplaceAll(value, v, "")
+	}
+	return strings.Split(value, ",")
 }
 
 // computes the SHA 256 checkSum of a gem

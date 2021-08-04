@@ -193,11 +193,9 @@ func BuildManifestContent(path string) []byte {
 	return nil
 }
 
-
 func RemoveURLProtocol(url string) string {
 	trimmedURL := strings.TrimSpace(url)
 	trimmedURL = strings.TrimPrefix(trimmedURL, "https://")
 	trimmedURL = strings.TrimPrefix(trimmedURL, "http://")
 	return trimmedURL
 }
-

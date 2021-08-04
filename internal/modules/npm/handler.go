@@ -277,7 +277,7 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 	for k, v := range modDeps {
 		name := strings.TrimPrefix(k, "@")
 		version := ""
-		if t == "dependencies"{
+		if t == "dependencies" {
 			version = strings.TrimPrefix(v.(map[string]interface{})["version"].(string), "^")
 		}
 		if t == "requires" {

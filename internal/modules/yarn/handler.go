@@ -164,10 +164,10 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 	if err != nil {
 		return modules, err
 	}
-	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))) )
+	h := fmt.Sprintf("%x", sha256.Sum256([]byte(fmt.Sprintf("%s-%s", de.Name, de.Version))))
 	de.CheckSum = &models.CheckSum{
 		Algorithm: "SHA256",
-		Value: h,
+		Value:     h,
 	}
 	modules = append(modules, *de)
 	for _, d := range deps {
@@ -181,13 +181,13 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		}
 		if len(d.Dependencies) != 0 {
 			mod.Modules = map[string]*models.Module{}
-			for _,depD := range d.Dependencies {
+			for _, depD := range d.Dependencies {
 				ar := strings.Split(strings.TrimSpace(depD), " ")
 				name := strings.TrimPrefix(strings.TrimSuffix(strings.TrimPrefix(ar[0], "\""), "\""), "@")
 				if name == "optionalDependencies:" {
 					continue
 				}
-				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\"" ), "^"), "\"")
+				version := strings.TrimSuffix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimSpace(ar[1]), "\""), "^"), "\"")
 				mod.Modules[name] = &models.Module{
 					Name:     name,
 					Version:  version,
@@ -207,7 +207,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 		h := fmt.Sprintf("%x", sha256.Sum256([]byte(mod.Name)))
 		mod.CheckSum = &models.CheckSum{
 			Algorithm: "SHA256",
-			Value: h,
+			Value:     h,
 		}
 		licensePath := filepath.Join(path, m.metadata.ModulePath[0], d.PkPath, "LICENSE")
 		if helper.Exists(licensePath) {
@@ -216,7 +216,7 @@ func (m *yarn) buildDependencies(path string, deps []dependency) ([]models.Modul
 			mod.Copyright = helper.GetCopyright(s)
 		}
 
-		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath ))
+		modLic, err := helper.GetLicenses(filepath.Join(path, m.metadata.ModulePath[0], d.PkPath))
 		if err != nil {
 			continue
 		}
