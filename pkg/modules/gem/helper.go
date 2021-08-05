@@ -800,7 +800,12 @@ func extractLicense(path string, filename string, isFullPath bool) (string, stri
 	return copyright, text, licensePath, nil
 
 }
-
+func validateProjectType(path string) bool {
+    if _, err := detectManifest(path, DETECTION_MODE_SPEC); err != nil {
+        return false
+    }
+    return true
+}
 // Constructs dependency tree recursively
 func buildTree(linesToRead []Line) {
 
@@ -879,36 +884,38 @@ func childDepInfo(value string) (string, string, string) {
 // Scans the provided path for ecosystem manifest file
 func detectManifest(path, mode string) (string, error) {
 
-	var manifest string
-	var err error
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	for _, f := range files {
+    var manifest string
+    var err error
+    files, err := ioutil.ReadDir(path)
+    if err != nil {
+        log.Fatal(err)
+    }
+    for _, f := range files {
 
-		switch mode {
-		case DETECTION_MODE_LOCK:
-			if filepath.Ext(f.Name()) == LOCK_EXTENSION || filepath.Ext(f.Name()) == LEGACY_LOCK_EXTENSION {
-				manifest = f.Name()
-				err = errors.New("No file with extension '.lock' was detected in " + path)
-			}
-		case DETECTION_MODE_SPEC:
-			if filepath.Ext(f.Name()) == SPEC_EXTENSION {
-				manifest = f.Name()
-				err = errors.New("No file with extension '.gemspec' was detected in " + path)
-			}
-		}
+        switch mode {
+        case DETECTION_MODE_LOCK:
+            if filepath.Ext(f.Name()) == LOCK_EXTENSION || filepath.Ext(f.Name()) == LEGACY_LOCK_EXTENSION {
+                manifest = f.Name()
+                err = errors.New("No file with extension '.lock' was detected in " + path)
+            }
+        case DETECTION_MODE_SPEC:
+            if filepath.Ext(f.Name()) == SPEC_EXTENSION {
+                manifest = f.Name()
+                err = errors.New("No file with extension '.gemspec' was detected in " + path)
+            }
+        }
 
-		if manifest != "" {
-			break
-		}
+        if manifest != "" {
+            err = nil
+            break
+        }
 
-	}
-	if manifest == "" {
-		return manifest, err
-	}
-	return manifest, nil
+    }
+    if manifest == "" {
+        err = errors.New("gemspec file not found in projects root directory")
+        return manifest, err
+    }
+    return manifest, err
 }
 
 // Detect whether current OS is added in the Gemfile.lock PLATFORMS section

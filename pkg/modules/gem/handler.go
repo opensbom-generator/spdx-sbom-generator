@@ -19,11 +19,12 @@ type gem struct {
 	command    *helper.Cmd
 }
 
-var errDependenciesNotFound = errors.New(
-	`* Please install dependencies by running the following command :
-	1) bundle config set --local path 'vendor/bundle' && bundle install && bundle exec rake install
-	2) run the spdx-sbom-generator tool command
-`)
+var errDependenciesNotFound, errInvalidProjectType = errors.New(
+    `* Please install dependencies by running the following command :
+    1) bundle config set --local path 'vendor/bundle' && bundle install && bundle exec rake install
+    2) run the spdx-sbom-generator tool command
+`), errors.New(
+    `* Tool only supports ruby gems projects with valid .gemspec manifest in project root directory`)
 
 // New ...
 func New() *gem {
@@ -55,18 +56,21 @@ func (g *gem) IsValid(path string) bool {
 
 // HasModulesInstalled ...
 func (g *gem) HasModulesInstalled(path string) error {
-	hasRake := hasRakefile(path)
-	_ = ensurePlatform(path)
-	hasModule := false
-	for i := range g.metadata.ModulePath {
-		if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
-			hasModule = true
-		}
-	}
-	if hasRake && hasModule {
-		return nil
-	}
-	return errDependenciesNotFound
+
+    if !validateProjectType(path) {
+        return errInvalidProjectType
+    }
+
+    hasRake, _, hasModule := hasRakefile(path), ensurePlatform(path), false
+    for i := range g.metadata.ModulePath {
+        if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
+            hasModule = true
+        }
+    }
+    if hasRake && hasModule {
+        return nil
+    }
+    return errDependenciesNotFound
 }
 
 // GetVersion ...
