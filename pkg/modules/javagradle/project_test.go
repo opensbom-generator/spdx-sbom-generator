@@ -3,6 +3,7 @@
 package javagradle
 
 import (
+	fuzztest "git.fuzzbuzz.io/fuzz/testing"
 	"testing"
 )
 
@@ -57,4 +58,12 @@ func TestParseProjectInfo_Failures(t *testing.T) {
 			t.Fatal("Want failure, got success")
 		}
 	}
+}
+
+// TestFuzzParseProjectInfo fuzz test for the parseProjectInfo function
+func TestFuzzParseProjectInfo(t *testing.T) {
+	// Connect to fuzzbuzz
+	f := fuzztest.NewChecker(t)
+	// run the fuzz test using 100 iterations
+	fuzztest.Randomize(f, FuzzParseProject, 100)
 }
