@@ -4,7 +4,7 @@
 
 [Software Package Data Exchange](https://spdx.org/tools) (SPDX) is an open standard for communicating software bill of materials (SBOM) information that supports accurate identification of software components, explicit mapping of relationships between components, and the association of security and licensing information with each component.
 
-`spdx-sbom-generator`tool to help those in the community that want to generate SPDX Software Bill of Materials (SBOMs) with current package managers.   It has a command line Interface (CLI) that lets you generate SBOM information, including components, licenses, copyrights, and security references of your software using SPDX v2.2 specification and aligning with the current known minimum elements from NTIA. It automatically determines which package managers or build systems are actually being used by the software.  
+`spdx-sbom-generator`tool to help those in the community that want to generate SPDX Software Bill of Materials (SBOMs) with current package managers.   It has a command line Interface (CLI) that lets you generate SBOM information, including components, licenses, copyrights, and security references of your software using SPDX v2.2 specification and aligning with the current known minimum elements from NTIA. It automatically determines which package managers or build systems are actually being used by the software.
 
 `spdx-sbom-generator`is supporting the following package managers:
 
@@ -17,7 +17,7 @@
  * Yarn (Node.js)
  * PIP (Python)
  * Pipenv (Python)
- * Gems (Ruby) 
+ * Gems (Ruby)
  * Swift Package Manager (Swift)
 
 ## Installation
@@ -137,7 +137,7 @@ Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 You can run this program using a Docker image that contains `spdx-sbom-generator`.
 To do this, first [install Docker](https://docs.docker.com/get-docker/).
 
-You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull spdx/spdx-sbom-generator` 
+You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull spdx/spdx-sbom-generator`
 
 [spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator): this is an Alpine image with the spdx-sbom-generator binary installed. You can re-run the pull command to update the image.
 
@@ -149,6 +149,10 @@ $ docker run -it --rm \
     -v "$(pwd)/out:/out" \
     spdx/spdx-sbom-generator -p /repository/ -o /out/
 ```
+
+## Architecture
+
+  ![General Architecture](docs/spdx.png)
 
 ## Data Contract
 
@@ -375,23 +379,23 @@ To register for a new plugin, perform the following steps:
 
    ```
    /pkg/modules/npm
-   
+
    ```
 
 3. Create a Handler file, for example:  `handler.go`, and follow Data Contract section above. Define package name, and import section as explained in the following code snippet:
 
    ```
    package npm
-   
+
    import (
    	"path/filepath"
-   
+
    	"github.com/spdx/spdx-sbom-generator/pkg/helper"
    	"github.com/spdx/spdx-sbom-generator/pkg/models"
    )
-   
+
    // rest of the file below
-   
+
    ```
 
 
@@ -402,7 +406,7 @@ To register for a new plugin, perform the following steps:
    type npm struct {
    	metadata models.PluginMetadata
    }
-   
+
    ```
 
 
@@ -421,7 +425,7 @@ To register for a new plugin, perform the following steps:
    		},
    	}
    }
-   
+
    ```
 
 
@@ -433,7 +437,7 @@ To register for a new plugin, perform the following steps:
    func (m *npm) GetMetadata() models.PluginMetadata {
      return m.metadata
    }
-   
+
    // IsValid ...
    func (m *npm) IsValid(path string) bool {
      for i := range m.metadata.Manifest {
@@ -443,7 +447,7 @@ To register for a new plugin, perform the following steps:
      }
      return false
    }
-   
+
    // HasModulesInstalled ...
    func (m *npm) HasModulesInstalled(path string) error {
      for i := range m.metadata.ModulePath {
@@ -453,37 +457,37 @@ To register for a new plugin, perform the following steps:
      }
      return errDependenciesNotFound
    }
-   
+
    // GetVersion ...
    func (m *npm) GetVersion() (string, error) {
      output, err := exec.Command("npm", "--version").Output()
      if err != nil {
        return "", err
      }
-   
+
      return string(output), nil
    }
-   
+
    // SetRootModule ...
    func (m *npm) SetRootModule(path string) error {
      return nil
    }
-   
+
    // GetRootModule ...
    func (m *npm) GetRootModule(path string) (*models.Module, error) {
      return nil, nil
    }
-   
+
    // ListUsedModules...
    func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
      return nil, nil
    }
-   
+
    // ListModulesWithDeps ...
    func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
      return nil, nil
    }
-   
+
    ```
 
 
@@ -497,7 +501,7 @@ To register for a new plugin, perform the following steps:
                npm.New(),
        )
    }
-   
+
    ```
 
 
