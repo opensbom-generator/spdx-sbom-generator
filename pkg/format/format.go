@@ -127,7 +127,6 @@ func (f *Format) annotateDocumentWithPackages(modules []models.Module, document 
 			if err != nil {
 				return fmt.Errorf("failed to convert submodule %w", err)
 			}
-			document.Packages = append(document.Packages, subPkg)
 			document.Relationships = append(document.Relationships, models.Relationship{
 				SPDXElementID:      pkg.SPDXID,
 				RelatedSPDXElement: subPkg.SPDXID,

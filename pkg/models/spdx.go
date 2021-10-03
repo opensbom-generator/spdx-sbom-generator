@@ -33,7 +33,7 @@ type Document struct {
 	DocumentNamespace       string                   `json:"namespace,omitempty"`
 	CreationInfo            CreationInfo             `json:"creationInfo,omitempty"`
 	Packages                []Package                `json:"packages,omitempty"`
-	Relationships           []Relationship           `json:"relatioships,omitempty"`
+	Relationships           []Relationship           `json:"relationships,omitempty"`
 	ExtractedLicensingInfos []ExtractedLicensingInfo `json:"hasExtractedLicensingInfos,omitempty"`
 }
 
