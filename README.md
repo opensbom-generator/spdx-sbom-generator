@@ -70,7 +70,7 @@ The following list supports various formats in which you can generate the SPDX S
 
 - `spdx` (Default format)
 
-- `JSON` (In progress)
+- `JSON`
 
 - `RDF`  (In progress)
 

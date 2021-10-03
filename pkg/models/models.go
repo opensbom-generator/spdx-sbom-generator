@@ -149,3 +149,11 @@ type License struct {
 	Comments      string
 	File          string
 }
+
+// OutputFormat defines an int enum of supported output formats
+type OutputFormat int
+
+const (
+	OutputFormatSpdx OutputFormat = iota
+	OutputFormatJson
+)
