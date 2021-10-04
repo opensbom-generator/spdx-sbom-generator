@@ -59,7 +59,6 @@ func (f *Format) Render() error {
 		return err
 	}
 
-	//packages, otherLicenses, err := f.buildPackages(modules)
 	err = f.annotateDocumentWithPackages(modules, document)
 	if err != nil {
 		return err
