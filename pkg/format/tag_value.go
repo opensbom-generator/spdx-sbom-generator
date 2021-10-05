@@ -30,8 +30,8 @@ PackageVersion: {{ . }}
 PackageSupplier: {{ .PackageSupplier }}
 PackageDownloadLocation: {{ .PackageDownloadLocation }}
 FilesAnalyzed: {{ .FilesAnalyzed }}
-{{ if isAsserted .PackageChecksum -}}
-PackageChecksum: {{ .PackageChecksum }}
+{{- range .PackageChecksums }}
+PackageChecksum: {{ .Algorithm }}: {{ .Value }}
 {{- end }}
 PackageHomePage: {{ .PackageHomePage }}
 PackageLicenseConcluded: {{ .PackageLicenseConcluded }}

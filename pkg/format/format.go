@@ -154,7 +154,10 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 		PackageSupplier:         setPkgValue(module.Supplier.Get()),
 		PackageDownloadLocation: setPkgValue(module.PackageDownloadLocation),
 		FilesAnalyzed:           false,
-		PackageChecksum:         module.CheckSum.String(),
+		PackageChecksums: []models.PackageChecksum{{
+			Algorithm: module.CheckSum.Algorithm,
+			Value:     module.CheckSum.String(),
+		}},
 		PackageHomePage:         buildHomepageURL(module.PackageURL),
 		PackageLicenseConcluded: noAssertion, // setPkgValue(module.LicenseConcluded),
 		PackageLicenseDeclared:  noAssertion, // setPkgValue(module.LicenseDeclared),
