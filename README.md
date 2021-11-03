@@ -35,6 +35,8 @@ The following binaries are available to download for various operating system:
 * [Windows (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-amd64.zip)
 * [Windows (x86)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-386.zip)
 
+On Windows, you can also download and install the appropriate binary with [Scoop](https://scoop.sh/): `scoop install spdx-sbom-generator`.
+
 ***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release.
 
 ## Available command Options
