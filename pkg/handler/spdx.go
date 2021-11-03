@@ -26,7 +26,7 @@ type SPDXSettings struct {
 	Depth     string
 	OutputDir string
 	Schema    string
-	Format    string
+	Format    models.OutputFormat
 }
 
 type spdxHandler struct {
@@ -35,6 +35,18 @@ type spdxHandler struct {
 	format         format.Format
 	outputFiles    map[string]string
 	errors         map[string]error
+}
+
+// getFiletypeForOutputFormat gets the type suffix for the type of output chosen
+func getFiletypeForOutputFormat(outputFormat models.OutputFormat) string {
+	switch outputFormat {
+	case models.OutputFormatSpdx:
+		return "spdx"
+	case models.OutputFormatJson:
+		return "json"
+	default:
+		return "spdx"
+	}
 }
 
 // NewSPDX ...
@@ -66,7 +78,7 @@ func (sh *spdxHandler) Run() error {
 
 	for _, mm := range sh.modulesManager {
 		plugin := mm.Plugin.GetMetadata()
-		filename := fmt.Sprintf("bom-%s.spdx", plugin.Slug)
+		filename := fmt.Sprintf("bom-%s.%s", plugin.Slug, getFiletypeForOutputFormat(sh.config.Format))
 		outputFile := filepath.Join(sh.config.OutputDir, filename)
 
 		log.Infof("Running generator for Module Manager: `%s` with output `%s`", plugin.Slug, outputFile)
@@ -76,8 +88,9 @@ func (sh *spdxHandler) Run() error {
 		}
 
 		format, err := format.New(format.Config{
-			Filename:    outputFile,
-			ToolVersion: sh.config.Version,
+			Filename:     outputFile,
+			ToolVersion:  sh.config.Version,
+			OutputFormat: sh.config.Format,
 			GetSource: func() []models.Module {
 				return mm.GetSource()
 			},

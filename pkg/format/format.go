@@ -28,9 +28,10 @@ type Format struct {
 
 // Config ...
 type Config struct {
-	ToolVersion string
-	Filename    string
-	GetSource   func() []models.Module
+	ToolVersion  string
+	Filename     string
+	OutputFormat models.OutputFormat
+	GetSource    func() []models.Module
 }
 
 func init() {
@@ -45,129 +46,103 @@ func New(cfg Config) (Format, error) {
 	}, nil
 }
 
-// Build ...
-// todo: refactor this Render into interface that different priting format can leverage
-// move into go templates
+// SPDXRenderer is an interface that is to be implemented for every possible output format
+type SPDXRenderer interface {
+	RenderDocument(document models.Document) ([]byte, error)
+}
+
+// Render prepares and generates the final SPDX document in the specified format
 func (f *Format) Render() error {
 	modules := sortModules(f.Config.GetSource())
-	document, err := buildDocument(f.Config.ToolVersion, modules[0])
+	document, err := buildBaseDocument(f.Config.ToolVersion, modules[0])
 	if err != nil {
 		return err
 	}
 
-	packages, otherLicenses, err := f.buildPackages(modules)
+	err = f.annotateDocumentWithPackages(modules, document)
 	if err != nil {
 		return err
 	}
 
-	file, err2 := os.Create(f.Config.Filename)
-	if err2 != nil {
-		return err2
-	}
-	// todo organize file generation code below
-	//Print DOCUMENT
-	file.WriteString(fmt.Sprintf("SPDXVersion: %s\n", document.SPDXVersion))
-	file.WriteString(fmt.Sprintf("DataLicense: %s\n", document.DataLicense))
-	file.WriteString(fmt.Sprintf("SPDXID: %s\n", document.SPDXID))
-	file.WriteString(fmt.Sprintf("DocumentName: %s\n", document.DocumentName))
-	file.WriteString(fmt.Sprintf("DocumentNamespace: %s\n", document.DocumentNamespace))
-	file.WriteString(fmt.Sprintf("Creator: %s\n", document.Creator))
-	file.WriteString(fmt.Sprintf("Created: %v\n\n", document.Created))
-	//Print Package
-	for _, pkg := range packages {
-		file.WriteString(fmt.Sprintf("##### Package representing the %s\n\n", pkg.PackageName))
-		generatePackage(file, pkg)
-		if pkg.RootPackage {
-			file.WriteString(fmt.Sprintf("Relationship: %s DESCRIBES %s \n\n", document.SPDXID, pkg.SPDXID))
-		}
-		//Print DEPS ON
-		if len(pkg.DependsOn) > 0 {
-			for _, subPkg := range pkg.DependsOn {
-				file.WriteString(fmt.Sprintf("Relationship: %s DEPENDS_ON %s \n", pkg.SPDXID, subPkg.SPDXID))
-			}
-			file.WriteString("\n")
-		}
-
+	file, err := os.Create(f.Config.Filename)
+	if err != nil {
+		return err
 	}
 
-	//Print Other Licenses
-	if len(otherLicenses) > 0 {
-		file.WriteString("##### Non-standard license\n\n")
-		for lic := range otherLicenses {
-			file.WriteString(fmt.Sprintf("LicenseID: LicenseRef-%s\n", lic))
-			file.WriteString(fmt.Sprintf("ExtractedText: %s\n", otherLicenses[lic].ExtractedText))
-			file.WriteString(fmt.Sprintf("LicenseName: %s\n", otherLicenses[lic].Name))
-			file.WriteString(fmt.Sprintf("LicenseComment: %s\n\n", otherLicenses[lic].Comments))
-		}
+	var spdxRenderer SPDXRenderer
+
+	switch f.Config.OutputFormat {
+	case models.OutputFormatSpdx:
+		spdxRenderer = TagValueSPDXRenderer{}
+	case models.OutputFormatJson:
+		spdxRenderer = JsonSPDXRenderer{}
+	}
+
+	outputBytes, err := spdxRenderer.RenderDocument(*document)
+	if err != nil {
+		return err
 	}
 
 	// Write to file
+	file.Write(outputBytes)
 	file.Sync()
 
 	return nil
 }
 
-func generatePackage(file *os.File, pkg models.Package) {
-	file.WriteString(fmt.Sprintf("PackageName: %s\n", pkg.PackageName))
-	file.WriteString(fmt.Sprintf("SPDXID: %s\n", pkg.SPDXID))
-	if pkg.PackageVersion != "" {
-		file.WriteString(fmt.Sprintf("PackageVersion: %s\n", pkg.PackageVersion))
-	}
-
-	file.WriteString(fmt.Sprintf("PackageSupplier: %s\n", pkg.PackageSupplier))
-	file.WriteString(fmt.Sprintf("PackageDownloadLocation: %s\n", pkg.PackageDownloadLocation))
-	file.WriteString(fmt.Sprintf("FilesAnalyzed: %v\n", pkg.FilesAnalyzed))
-	if !strings.Contains(pkg.PackageChecksum, noAssertion) {
-		file.WriteString(fmt.Sprintf("PackageChecksum: %v\n", pkg.PackageChecksum))
-	}
-	file.WriteString(fmt.Sprintf("PackageHomePage: %v\n", pkg.PackageHomePage))
-	file.WriteString(fmt.Sprintf("PackageLicenseConcluded: %v\n", pkg.PackageLicenseConcluded))
-	file.WriteString(fmt.Sprintf("PackageLicenseDeclared: %v\n", pkg.PackageLicenseDeclared))
-	file.WriteString(fmt.Sprintf("PackageCopyrightText: %v\n", pkg.PackageCopyrightText))
-	file.WriteString(fmt.Sprintf("PackageLicenseComments: %v\n", pkg.PackageLicenseComments))
-	file.WriteString(fmt.Sprintf("PackageComment: %v\n\n", pkg.PackageComment))
-}
-
-func buildDocument(toolVersion string, module models.Module) (*models.Document, error) {
+func buildBaseDocument(toolVersion string, module models.Module) (*models.Document, error) {
 	return &models.Document{
 		SPDXVersion:       "SPDX-2.2",
 		DataLicense:       "CC0-1.0",
 		SPDXID:            "SPDXRef-DOCUMENT",
 		DocumentName:      buildName(module.Name, module.Version),
 		DocumentNamespace: buildNamespace(module.Name, module.Version),
-		Creator:           fmt.Sprintf("Tool: spdx-sbom-generator-%s", toolVersion),
-		Created:           time.Now().UTC().Format(time.RFC3339),
+		CreationInfo: models.CreationInfo{
+			Creators: []string{fmt.Sprintf("Tool: spdx-sbom-generator-%s", toolVersion)},
+			Created:  time.Now().UTC().Format(time.RFC3339),
+		},
+		Packages:                []models.Package{},
+		Relationships:           []models.Relationship{},
+		ExtractedLicensingInfos: []models.ExtractedLicensingInfo{},
 	}, nil
 }
 
 // WIP
-func (f *Format) buildPackages(modules []models.Module) ([]models.Package, map[string]*models.License, error) {
-	packages := make([]models.Package, len(modules))
-	otherLicenses := map[string]*models.License{}
-	for i, module := range modules {
+func (f *Format) annotateDocumentWithPackages(modules []models.Module, document *models.Document) error {
+	for _, module := range modules {
 		pkg, err := f.convertToPackage(module)
-		if err != nil {
-			return nil, nil, fmt.Errorf("failed to convert module %w", err)
+		if pkg.RootPackage {
+			document.Relationships = append(document.Relationships, models.Relationship{
+				SPDXElementID:      document.SPDXID,
+				RelatedSPDXElement: pkg.SPDXID,
+				RelationshipType:   "DESCRIBES",
+			})
 		}
-
-		subPackages := make([]models.Package, len(module.Modules))
-		idx := 0
+		if err != nil {
+			return fmt.Errorf("failed to convert module %w", err)
+		}
 		for _, subMod := range module.Modules {
 			subPkg, err := f.convertToPackage(*subMod)
 			if err != nil {
-				return nil, nil, err
+				return fmt.Errorf("failed to convert submodule %w", err)
 			}
-			subPackages[idx] = subPkg
-			idx++
+			document.Relationships = append(document.Relationships, models.Relationship{
+				SPDXElementID:      pkg.SPDXID,
+				RelatedSPDXElement: subPkg.SPDXID,
+				RelationshipType:   "DEPENDS_ON",
+			})
 		}
-		pkg.DependsOn = subPackages
-		for l := range module.OtherLicense {
-			otherLicenses[module.OtherLicense[l].ID] = module.OtherLicense[l]
+		for licence := range module.OtherLicense {
+			document.ExtractedLicensingInfos = append(document.ExtractedLicensingInfos, models.ExtractedLicensingInfo{
+				LicenseID:      module.OtherLicense[licence].ID,
+				ExtractedText:  module.OtherLicense[licence].ExtractedText,
+				LicenseName:    module.OtherLicense[licence].Name,
+				LicenseComment: module.OtherLicense[licence].Comments,
+			})
 		}
-		packages[i] = pkg
+		document.Packages = append(document.Packages, pkg)
 	}
-
-	return packages, otherLicenses, nil
+	return nil
 }
 
 // WIP
@@ -179,7 +154,10 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 		PackageSupplier:         setPkgValue(module.Supplier.Get()),
 		PackageDownloadLocation: setPkgValue(module.PackageDownloadLocation),
 		FilesAnalyzed:           false,
-		PackageChecksum:         module.CheckSum.String(),
+		PackageChecksums: []models.PackageChecksum{{
+			Algorithm: module.CheckSum.Algorithm,
+			Value:     module.CheckSum.String(),
+		}},
 		PackageHomePage:         buildHomepageURL(module.PackageURL),
 		PackageLicenseConcluded: noAssertion, // setPkgValue(module.LicenseConcluded),
 		PackageLicenseDeclared:  noAssertion, // setPkgValue(module.LicenseDeclared),

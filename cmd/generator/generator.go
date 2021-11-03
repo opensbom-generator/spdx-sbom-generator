@@ -5,11 +5,13 @@ package main
 import (
 	"errors"
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/handler"
+	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 const jsonLogFormat = "json"
@@ -49,6 +51,17 @@ func init() {
 	cobra.OnInitialize(setupLogger)
 }
 
+func parseOutputFormat(formatOption string) models.OutputFormat {
+	switch processedFormatOption := strings.ToLower(formatOption); processedFormatOption {
+	case "spdx":
+		return models.OutputFormatSpdx
+	case "json":
+		return models.OutputFormatJson
+	default:
+		return models.OutputFormatSpdx
+	}
+}
+
 func setupLogger() {
 	log.SetFormatter(&log.TextFormatter{
 		ForceColors:   true,
@@ -84,7 +97,7 @@ func generate(cmd *cobra.Command, args []string) {
 	path := checkOpt("path")
 	outputDir := checkOpt("output-dir")
 	schema := checkOpt("schema")
-	format := checkOpt("format")
+	format := parseOutputFormat(checkOpt("format"))
 	license, err := cmd.Flags().GetBool("include-license-text")
 	if err != nil {
 		log.Fatalf("Failed to read command option: %v", err)

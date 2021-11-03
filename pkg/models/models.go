@@ -108,8 +108,7 @@ func (c *CheckSum) String() string {
 	if c.Value == "" {
 		c.Value = c.calculateCheckSum(c.Content)
 	}
-
-	return fmt.Sprintf("%v: %s", c.Algorithm, c.Value)
+	return c.Value
 }
 
 func (c *CheckSum) calculateCheckSum(content []byte) string {
@@ -149,3 +148,11 @@ type License struct {
 	Comments      string
 	File          string
 }
+
+// OutputFormat defines an int enum of supported output formats
+type OutputFormat int
+
+const (
+	OutputFormatSpdx OutputFormat = iota
+	OutputFormatJson
+)
