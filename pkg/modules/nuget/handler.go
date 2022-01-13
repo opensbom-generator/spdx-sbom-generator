@@ -98,7 +98,8 @@ func (m *nuget) HasModulesInstalled(path string) error {
 	projectPath := m.GetProjectManifestPath(path)
 	log.Infof("trying to restore the packages: %s", projectPath)
 
-	restoreCommand := command(fmt.Sprintf("%s %s", RestorePackageCmd, projectPath))
+	// Add double-quotes around projectPath to handle spaces in paths
+	restoreCommand := command(fmt.Sprintf("%s \"%s\"", RestorePackageCmd, projectPath))
 	if err := m.buildCmd(restoreCommand, "."); err != nil {
 		return err
 	}
