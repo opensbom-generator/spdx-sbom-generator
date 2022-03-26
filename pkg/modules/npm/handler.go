@@ -23,7 +23,7 @@ var (
 	shrink      = "npm-shrinkwrap.json"
 	npmRegistry = "https://registry.npmjs.org"
 	lockFile    = "package-lock.json"
-	rg = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
+	rg          = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
 )
 
 // New creates a new npm manager instance
@@ -112,7 +112,7 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	}
 	repository := pkResult["repository"]
 	if repository != nil {
-		if rep, ok := repository.(string); ok{
+		if rep, ok := repository.(string); ok {
 			mod.PackageDownloadLocation = rep
 		}
 		if _, ok := repository.(map[string]interface{}); ok && repository.(map[string]interface{})["url"] != nil {
@@ -176,16 +176,16 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err != nil {
 		return []models.Module{}, err
 	}
-
+	lockFileVersion := pkResults["lockfileVersion"].(float64)
 	deps, ok := pkResults["packages"].(map[string]interface{})
 	if !ok {
 		deps = pkResults["dependencies"].(map[string]interface{})
 	}
 
-	return m.buildDependencies(path, deps)
+	return m.buildDependencies(path, deps, lockFileVersion)
 }
 
-func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]models.Module, error) {
+func (m *npm) buildDependencies(path string, deps map[string]interface{}, lockFileVersion float64) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	de, err := m.GetRootModule(path)
 	if err != nil {
@@ -206,7 +206,7 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 	}
 	modules = append(modules, *de)
 
-	allDeps := appendNestedDependencies(deps)
+	allDeps := appendNestedDependencies(deps, lockFileVersion)
 	for key, dd := range allDeps {
 		depName := strings.TrimPrefix(key, "@")
 		for nkey := range dd {
@@ -216,10 +216,11 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 			mod.Version = strings.Split(mod.Version, " ")[0]
 			mod.Name = depName
 
-			r := ""
 			if d["resolved"] != nil {
-				r = d["resolved"].(string)
-				mod.PackageDownloadLocation = r
+				r, ok := d["resolved"].(string)
+				if ok {
+					mod.PackageDownloadLocation = r
+				}
 			}
 			if mod.PackageDownloadLocation == "" {
 				r := "https://www.npmjs.com/package/%s/v/%s"
@@ -340,7 +341,7 @@ func getPackageHomepage(path string) string {
 	return ""
 }
 
-func appendNestedDependencies(deps map[string]interface{}) map[string]map[string]interface{} {
+func appendNestedDependencies(deps map[string]interface{}, lockFileVersion float64) map[string]map[string]interface{} {
 	allDeps := make(map[string]map[string]interface{})
 	for k, v := range deps {
 		mainDeps := make(map[string]interface{})
@@ -356,20 +357,24 @@ func appendNestedDependencies(deps map[string]interface{}) map[string]map[string
 		}
 
 		if d, ok := v.(map[string]interface{})["dependencies"]; ok {
-			appendDependencies(d, allDeps)
+			appendDependencies(d, allDeps, lockFileVersion)
 		}
 
 	}
 	return allDeps
 }
 
-func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}) {
+func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}, lockFileVersion float64) {
 	for dk, dv := range d.(map[string]interface{}) {
 		m := allDeps[dk]
 		if m == nil {
 			m = make(map[string]interface{})
 		}
-		m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+		if lockFileVersion == 1 {
+			m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+		} else {
+			m[dv.(string)] = dv
+		}
 		allDeps[dk] = m
 	}
 }
