@@ -176,7 +176,7 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err != nil {
 		return []models.Module{}, err
 	}
-	lockFileVersion := pkResults["lockfileVersion"].(float64)
+	lockFileVersion := pkResults["lockfileVersion"].(int32)
 	deps, ok := pkResults["packages"].(map[string]interface{})
 	if !ok {
 		deps = pkResults["dependencies"].(map[string]interface{})
@@ -185,7 +185,7 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	return m.buildDependencies(path, deps, lockFileVersion)
 }
 
-func (m *npm) buildDependencies(path string, deps map[string]interface{}, lockFileVersion float64) ([]models.Module, error) {
+func (m *npm) buildDependencies(path string, deps map[string]interface{}, lockFileVersion int32) ([]models.Module, error) {
 	modules := make([]models.Module, 0)
 	de, err := m.GetRootModule(path)
 	if err != nil {
@@ -341,7 +341,7 @@ func getPackageHomepage(path string) string {
 	return ""
 }
 
-func appendNestedDependencies(deps map[string]interface{}, lockFileVersion float64) map[string]map[string]interface{} {
+func appendNestedDependencies(deps map[string]interface{}, lockFileVersion int32) map[string]map[string]interface{} {
 	allDeps := make(map[string]map[string]interface{})
 	for k, v := range deps {
 		mainDeps := make(map[string]interface{})
@@ -364,7 +364,7 @@ func appendNestedDependencies(deps map[string]interface{}, lockFileVersion float
 	return allDeps
 }
 
-func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}, lockFileVersion float64) {
+func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}, lockFileVersion int32) {
 	for dk, dv := range d.(map[string]interface{}) {
 		m := allDeps[dk]
 		if m == nil {
