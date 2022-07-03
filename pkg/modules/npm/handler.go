@@ -176,7 +176,7 @@ func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
 	if err != nil {
 		return []models.Module{}, err
 	}
-	lockFileVersion := pkResults["lockfileVersion"].(int32)
+	lockFileVersion := int32(pkResults["lockfileVersion"].(float64))
 	deps, ok := pkResults["packages"].(map[string]interface{})
 	if !ok {
 		deps = pkResults["dependencies"].(map[string]interface{})
