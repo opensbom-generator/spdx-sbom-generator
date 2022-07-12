@@ -42,7 +42,7 @@ type spdxHandler struct {
 func getFiletypeForOutputFormat(outputFormat models.OutputFormat) string {
 	switch outputFormat {
 	case models.OutputFormatSpdx:
-		return "spdx"
+		return "spdx" // nolint
 	case models.OutputFormatJson:
 		return "json"
 	default:

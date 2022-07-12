@@ -28,10 +28,7 @@ var errorUnableToFetchPackageMetadata = fmt.Errorf("Unable to fetch package deta
 
 func IsRequirementMeet(data string) bool {
 	_modules := LoadModules(data, "")
-	if len(_modules) > 3 {
-		return true
-	}
-	return false
+	return len(_modules) > 3
 }
 
 func GetVenFromEnvs() (bool, string, string) {

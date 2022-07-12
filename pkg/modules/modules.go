@@ -95,8 +95,8 @@ func (m *Manager) Run() error {
 
 	log.Infof("Current Language Version %s", version)
 	log.Infof("Global Setting File %s", globalSettingFile)
-	if err := m.Plugin.HasModulesInstalled(modulePath); err != nil {
-		return err
+	if moduleErr := m.Plugin.HasModulesInstalled(modulePath); moduleErr != nil {
+		return moduleErr
 	}
 
 	modules, err := m.Plugin.ListModulesWithDeps(modulePath, globalSettingFile)
