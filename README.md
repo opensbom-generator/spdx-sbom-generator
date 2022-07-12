@@ -64,6 +64,7 @@ Flags:
   -p, --path string            the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.') (default ".")
   -s, --schema string          <version> Target schema version (default: '2.2') (default "2.2")
   -f, --format string          output file format (default: 'spdx')
+  -g, --global-settings string    Alternate path for the global settings file for Java Maven
 ```
 
 ### Output Options
