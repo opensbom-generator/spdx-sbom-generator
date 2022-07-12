@@ -3,10 +3,11 @@
 package javagradle
 
 import (
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+
+	"github.com/spdx/spdx-sbom-generator/pkg/helper"
 )
 
 // use newGradleExec to instantiate
