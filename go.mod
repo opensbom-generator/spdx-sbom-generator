@@ -1,4 +1,4 @@
-module spdx-sbom-generator
+module github.com/spdx/spdx-sbom-generator
 
 go 1.15
 
@@ -10,4 +10,5 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.6.1
 	github.com/vifraa/gopom v0.1.0
+	golang.org/x/mod v0.4.2
 )

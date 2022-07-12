@@ -4,10 +4,10 @@
 
 [Software Package Data Exchange](https://spdx.org/tools) (SPDX) is an open standard for communicating software bill of materials (SBOM) information that supports accurate identification of software components, explicit mapping of relationships between components, and the association of security and licensing information with each component.
 
-`spdx-sbom-generator`tool to help those in the community that want to generate SPDX Software Bill of Materials (SBOMs) with current package managers.   It has a command line Interface (CLI) that lets you generate SBOM information, including components, licenses, copyrights, and security references of your software using SPDX v2.2 specification and aligning with the current known minimum elements from NTIA. It automatically determines which package managers or build systems are actually being used by the software.  
+`spdx-sbom-generator`tool to help those in the community that want to generate SPDX Software Bill of Materials (SBOMs) with current package managers.   It has a command line Interface (CLI) that lets you generate SBOM information, including components, licenses, copyrights, and security references of your software using SPDX v2.2 specification and aligning with the current known minimum elements from NTIA. It automatically determines which package managers or build systems are actually being used by the software.
 
 `spdx-sbom-generator`is supporting the following package managers:
- 
+
  * GoMod (go)
  * Cargo (Rust)
  * Composer (PHP)
@@ -17,19 +17,38 @@
  * Yarn (Node.js)
  * PIP (Python)
  * Pipenv (Python)
- * Gems (Ruby) 
+ * Gems (Ruby)
+ * Swift Package Manager (Swift)
 
-## Installation:
+## Installation
 
-* [macOS](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-darwin-amd64.tar.gz)
-* [Linux (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-linux-amd64.tar.gz)
-* [Windows (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-windows-amd64.zip)
-* [Windows (x86)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.7/spdx-sbom-generator-v0.0.7-windows-386.zip)
+You can download the following binaries and copy paste the application or binary in your cloned project on your local to generate the SPDX SBOM file. You need to execute  the following in the command line tool:
+
+```
+./spdx-sbom-generator
+```
+
+The following binaries are available to download for various operating system:
+
+* [MacOS](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-darwin-amd64.tar.gz)
+* [Linux (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-linux-amd64.tar.gz)
+* [Windows (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-amd64.zip)
+* [Windows (x86)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-386.zip)
+
+On Windows, you can also download and install the appropriate binary with [Scoop](https://scoop.sh/): `scoop install spdx-sbom-generator`.
 
 ***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release.
 
 ## Available command Options
-Run help:
+
+Use the below command to view different options or flags related to SPDX SBOM generator:
+
+```
+./spdx-sbom-generator -h
+```
+
+The following different commands are listed when you use the help in the SPDX SBOM generator:
+
 ```BASH
 ./spdx-sbom-generator -h
 
@@ -50,15 +69,18 @@ Flags:
 
 ### Output Options
 
+The following list supports various formats in which you can generate the SPDX SBOM file:
+
 - `spdx` (Default format)
 
-- `JSON` (In progress)
+- `JSON`
 
 - `RDF`  (In progress)
 
 
 
-Command output sample option:
+Use the below command to generate the SPDX SBOM file in SPDX format:
+
 ```BASH
 ./spdx-sbom-generator -o /out/spdx/
 ```
@@ -78,7 +100,7 @@ Created: 2021-05-23 11:25:29.1672276 -0400 -04 m=+0.538283001
 
 ##### Package representing the Go distribution
 
-PackageNam: go
+PackageName: go
 SPDXID: SPDXRef-Package-go
 PackageVersion: v0.46.3
 PackageSupplier: NOASSERTION
@@ -96,7 +118,7 @@ Relationship: SPDXRef-DOCUMENT DESCRIBES SPDXRef-Package-go
 
 ##### Package representing the Bigquery Distribution
 
-PackageNam: bigquery
+PackageName: bigquery
 SPDXID: SPDXRef-Package-bigquery
 PackageVersion: v1.0.1
 PackageSupplier: NOASSERTION
@@ -115,18 +137,28 @@ Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 
 ## Docker Images
 
-Currently few Docker images are supported:
+You can run this program using a Docker image that contains `spdx-sbom-generator`.
+To do this, first [install Docker](https://docs.docker.com/get-docker/).
 
-[spdx/spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator) - Alpine image and spdx-sbom-generator binary installed
+You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull spdx/spdx-sbom-generator`
+
+[spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator): this is an Alpine image with the spdx-sbom-generator binary installed. You can re-run the pull command to update the image.
+
+Finally, run the program, using this form
 
 ```shell
 $ docker run -it --rm \
     -v "/path/to/repository:/repository" \
     -v "$(pwd)/out:/out" \
-    spdx/spdx-sbom-generator -p /repository -o /out/spdx/
+    spdx/spdx-sbom-generator -p /repository/ -o /out/
 ```
 
+## Architecture
+
+  ![General Architecture](docs/spdx.png)
+
 ## Data Contract
+
 The interface requires the following functions:
 
 ```GO
@@ -178,8 +210,8 @@ type PluginMetadata struct {
 ### How to Generate Module Values
 
 * `CheckSum`: We have built an internal method that calculates CheckSum for a given content (in bytes) using algorithm that is defined on `models.CheckSum`.
-You now have an option to provide `Content` field for `models.CheckSum{}` and CheckSum will calculate automatically, but if you want to calculate CheckSum  on your own
-you still can provide `Value` field for `models.CheckSum{}`.
+  You now have an option to provide `Content` field for `models.CheckSum{}` and CheckSum will calculate automatically, but if you want to calculate CheckSum  on your own
+  you still can provide `Value` field for `models.CheckSum{}`.
 
 Also, you can generate a manifest from a given directory tree using utility/helper method `BuildManifestContent`, and that is what is used for gomod plugin as `Content` value.
 
@@ -187,17 +219,18 @@ Also, you can generate a manifest from a given directory tree using utility/help
 
 The following list provides the interface definitions:
 
-* `GetVersion`: returns version of current project platform (development language) version i.e: go version
+* `GetVersion`: Returns version of current project platform (development language) version i.e: go version
 
-    **Input**: None
+  **Input**: None
 
-    **Output**: version in string format and error (null in case of successful process)
+  **Output**: Version in string format and error (null in case of successful process)
 
-* `GetMetadata`: returns metadata of identify ecosystem pluging
+* `GetMetadata`: Returns metadata of identify ecosystem pluging
 
-    **Input**: None
+  **Input**: None
 
-    **Output**: plugin metadata
+  **Output**: Plugin metadata
+
 ```GO
 PluginMetadata{
     Name:       "Go Modules",
@@ -206,48 +239,48 @@ PluginMetadata{
     ModulePath: []string{"vendor"},
 }
 ```
-* `SetRootModule`: sets root package information base on path given
 
-    **Input**: The working directory to read the package from
+* `SetRootModule`: Sets root package information base on path given
 
-    **Output**: returns error
+  **Input**: The working directory to read the package from
 
-* `GetRootModule`: returns root package information base on path given
+  **Output**: Returns error
 
-    **Input**: The working directory to read the package from
+* `GetRootModule`: Returns root package information base on path given
 
-    **Output**: returns the Package Information of the root  Module
+  **Input**: The working directory to read the package from
 
-* `ListUsedModules`: fetches and lists all packages required by the project in the given project directory, this is a plain list of all used modules (no nested or tree view)
+  **Output**: Returns the Package Information of the root  Module
 
-    **Input**: The working directory to read the package from
+* `ListUsedModules`: Fetches and lists all packages required by the project in the given project directory, this is a plain list of all used modules (no nested or tree view)
 
-    **Output**: returns the Package Information of the root  Module, and its dependencies in flatten format
+  **Input**: The working directory to read the package from
 
-* `ListModulesWithDeps`: fetches and lists all packages (root and direct dependencies) required by the project in the given project directory (side-by-side), this is a one level only list of all used modules, and each with its direct dependency only (similar output to `ListUsedModules` but with direct dependency only)
+  **Output**: Returns the Package Information of the root  Module, and its dependencies in flatten format
 
-    **Input**: The working directory to read the package from
+* `ListModulesWithDeps`: Fetches and lists all packages (root and direct dependencies) required by the project in the given project directory (side-by-side), this is a one level only list of all used modules, and each with its direct dependency only (similar output to `ListUsedModules` but with direct dependency only)
 
-    **Output**: returns the Package Information of the root  Module, and its direct dependencies
+  **Input**: The working directory to read the package from
 
-* `IsValid`: check if the project dependency file provided in the contract exists
+  **Output**: Returns the Package Information of the root  Module, and its direct dependencies
 
-    **Input**: The working directory to read the package from
+* `IsValid`: Check if the project dependency file provided in the contract exists
 
-    **Output**: True or False
+  **Input**: The working directory to read the package from
 
-* `HasModulesInstalled`: check whether the current project(based on given path) has the dependent packages installed
+  **Output**: True or False
 
-    **Input**: The working directory to read the package from
+* `HasModulesInstalled`: Check whether the current project(based on given path) has the dependent packages installed
 
-    **Output**: True or False
+  **Input**: The working directory to read the package from
+
+  **Output**: True or False
 
 #### Module Structure JSON Example
 
 The sample module structure JSON Code snippet is provided in the following code snippet:
 
 ```JSON
-
 {
        "Version": "v0.0.1-2019.2.3",
        "Name": "honnef.co/go/tools",
@@ -307,17 +340,18 @@ For a more complete JSON example look at [modules.json](./examples/modules.json)
 
 The following list provide the utility methods:
 
-* `BuildManifestContent` walks through a given directory tree, and generates a content based on file paths
+* `BuildManifestContent` : Walks through a given directory tree, and generates a content based on file paths
 
-    **Input**: Directory to walk through
+  **Input**: Directory to walk through
 
-    **Output**: directory tree in bytes
+  **Output**: Directory tree in bytes
 
-* `GetLicenses`: returns the detected license object
+* `GetLicenses`: Returns the detected license object
 
-    **Input**: The working directory of the package licenses
+  **Input**: The working directory of the package licenses
 
-    **Output**: The package license object
+  **Output**: The package license object
+
 ```GO
 type License struct {
 	ID            string
@@ -330,9 +364,9 @@ type License struct {
 
 * `LicenseSPDXExists`: Check if the package license is a valid SPDX reference
 
-    **Input**: The package license
+  **Input**: The package license
 
-    **Output**: True or False
+  **Output**: True or False
 
 ### How to Register a New Plugin
 
@@ -344,10 +378,10 @@ To register for a new plugin, perform the following steps:
    git clone git@github.com:LF-Engineering/spdx-sbom-generator.git
    ```
 
-2. Create a new directory into `./internal/modules/` with package manager name, for example:  `npm`, you should end with a directory:
+2. Create a new directory into `./pkg/modules/` with package manager name, for example:  `npm`, you should end with a directory:
 
    ```
-   /internal/modules/npm
+   /pkg/modules/npm
 
    ```
 
@@ -359,8 +393,8 @@ To register for a new plugin, perform the following steps:
    import (
    	"path/filepath"
 
-   	"spdx-sbom-generator/internal/helper"
-   	"spdx-sbom-generator/internal/models"
+   	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+   	"github.com/spdx/spdx-sbom-generator/pkg/models"
    )
 
    // rest of the file below
@@ -461,7 +495,7 @@ To register for a new plugin, perform the following steps:
 
 
 
-7. In `modules.go` at `./internal/modules/` directory, register the new plugin. Add the plugin to register to the existing definition.
+7. In `modules.go` at `./pkg/modules/` directory, register the new plugin. Add the plugin to register to the existing definition.
 
    ```
    func init() {
@@ -476,6 +510,7 @@ To register for a new plugin, perform the following steps:
 
 
 ## How to Work With SPDX SBOM Generator
+
 A **Makefile** for the `spdx-sbom-generator` is described below with ability to run, test, lint, and build the project binary for different platforms (Linux, Mac, and Windows).
 
 Perform the following steps to work with SPDX SBOM Generator:
@@ -520,7 +555,8 @@ Perform the following steps to work with SPDX SBOM Generator:
 
 Licensing
 ---------
-docker/cli is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/blob/master/LICENSE) for the full license text.
+
+This project’s source code is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/tree/main/LICENSES) for the full license text.
 
 ## Additional Information
 
