@@ -46,6 +46,7 @@ func init() {
 	rootCmd.Flags().StringP("schema", "s", "2.2", "<version> Target schema version (default: '2.2')")
 	rootCmd.Flags().StringP("output-dir", "o", ".", "<output> directory to Write SPDX to file (default: current directory)")
 	rootCmd.Flags().StringP("format", "f", "spdx", "output file format (default: spdx)")
+	rootCmd.Flags().StringP("global-settings", "g", "", "Alternate path for the global settings file for Java Maven (default 'mvn settings.xml')")
 
 	//rootCmd.MarkFlagRequired("path")
 	cobra.OnInitialize(setupLogger)
@@ -102,14 +103,16 @@ func generate(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Failed to read command option: %v", err)
 	}
+	globalSettingFile := checkOpt("global-settings")
 
 	handler, err := handler.NewSPDX(handler.SPDXSettings{
-		Version:   version,
-		Path:      path,
-		License:   license,
-		OutputDir: outputDir,
-		Schema:    schema,
-		Format:    format,
+		Version:           version,
+		Path:              path,
+		License:           license,
+		OutputDir:         outputDir,
+		Schema:            schema,
+		Format:            format,
+		GlobalSettingFile: globalSettingFile,
 	})
 	if err != nil {
 		log.Fatalf("Failed to initialize command: %v", err)

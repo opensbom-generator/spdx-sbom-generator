@@ -424,20 +424,29 @@ func convertPOMReaderToModules(fpath string, lookForDepenent bool) ([]models.Mod
 	return modules, nil
 }
 
-func getTransitiveDependencyList(workingDir string) (map[string][]string, error) {
+func getTransitiveDependencyList(workingDir string, globalSettingFile string) (map[string][]string, error) {
 	path := filepath.Join(os.TempDir(), "JavaMavenTDTreeOutput.txt")
 	os.Remove(path)
 
-	command := exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path)
+	var command *exec.Cmd
+	if len(globalSettingFile) > 0 {
+		globalSettingOption := "-gs=" + globalSettingFile
+		command = exec.Command("mvn", "dependency:tree", globalSettingOption, "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path)
+	} else {
+		command = exec.Command("mvn", "dependency:tree", "-DoutputType=dot", "-DappendOutput=true", "-DoutputFile="+path)
+	}
 	command.Dir = workingDir
 	out, err := command.CombinedOutput()
 	if err != nil {
+		log.Println(" dependency tree execution failure:", err)
 		log.Print(string(out))
 		return nil, err
 	}
+	log.Println(" dependency tree executed successfully:")
 
 	tdList, err := readAndgetTransitiveDependencyList(path)
 	if err != nil {
+		log.Println(" readAndgetTransitiveDependencyList() failure:", err)
 		return nil, err
 	}
 	return tdList, nil

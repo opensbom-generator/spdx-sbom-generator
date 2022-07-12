@@ -26,7 +26,7 @@ var (
 	errDependenciesNotFound = errors.New("unable to generate SPDX file, no modules founded. Please install them before running spdx-sbom-generator, e.g.: `yarn install`")
 	yarnRegistry            = "https://registry.yarnpkg.com"
 	lockFile                = "yarn.lock"
-	rg = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
+	rg                      = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
 )
 
 // New creates a new yarn instance
@@ -114,7 +114,7 @@ func (m *yarn) GetRootModule(path string) (*models.Module, error) {
 	}
 	repository := pkResult["repository"]
 	if repository != nil {
-		if rep, ok := repository.(string); ok{
+		if rep, ok := repository.(string); ok {
 			mod.PackageDownloadLocation = rep
 		}
 		if _, ok := repository.(map[string]interface{}); ok && repository.(map[string]interface{})["url"] != nil {
@@ -164,7 +164,7 @@ func (m *yarn) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps return all info of installed modules
-func (m *yarn) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *yarn) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	deps, err := readLockFile(filepath.Join(path, lockFile))
 	allDeps := appendNestedDependencies(deps)
 	if err != nil {

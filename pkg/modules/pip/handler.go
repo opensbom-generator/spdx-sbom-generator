@@ -71,6 +71,6 @@ func (m *pip) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // List Modules With Deps ...
-func (m *pip) ListModulesWithDeps(path string) ([]models.Module, error) {
-	return m.plugin.ListModulesWithDeps(path)
+func (m *pip) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
+	return m.plugin.ListModulesWithDeps(path, globalSettingFile)
 }
