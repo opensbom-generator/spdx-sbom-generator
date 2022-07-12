@@ -23,7 +23,7 @@ var (
 	shrink      = "npm-shrinkwrap.json"
 	npmRegistry = "https://registry.npmjs.org"
 	lockFile    = "package-lock.json"
-	rg = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
+	rg          = regexp.MustCompile(`^(((git|hg|svn|bzr)\+)?(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/|ssh:\/\/|git:\/\/|svn:\/\/|sftp:\/\/|ftp:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+){0,100}\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*))|(git\+git@[a-zA-Z0-9\.]+:[a-zA-Z0-9/\\.@]+)|(bzr\+lp:[a-zA-Z0-9\.]+)$`)
 )
 
 // New creates a new npm manager instance
@@ -112,7 +112,7 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 	}
 	repository := pkResult["repository"]
 	if repository != nil {
-		if rep, ok := repository.(string); ok{
+		if rep, ok := repository.(string); ok {
 			mod.PackageDownloadLocation = rep
 		}
 		if _, ok := repository.(map[string]interface{}); ok && repository.(map[string]interface{})["url"] != nil {
@@ -165,7 +165,7 @@ func (m *npm) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps return all info of installed modules
-func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	pk := lockFile
 	if helper.Exists(filepath.Join(path, shrink)) {
 		pk = shrink

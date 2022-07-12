@@ -168,7 +168,7 @@ type IPlugin interface {
   GetMetadata() PluginMetadata
   GetRootModule(path string) (*Module, error)
   ListUsedModules(path string) ([]Module, error)
-  ListModulesWithDeps(path string) ([]Module, error)
+  ListModulesWithDeps(path string, globalSettingFile string) ([]Module, error)
   IsValid(path string) bool
 
 ```
@@ -487,7 +487,7 @@ To register for a new plugin, perform the following steps:
    }
 
    // ListModulesWithDeps ...
-   func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+   func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
      return nil, nil
    }
 

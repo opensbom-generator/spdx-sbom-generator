@@ -119,7 +119,7 @@ func (m *pkg) ListUsedModules(path string) ([]models.Module, error) {
 // this is a one level only list of all used modules,
 // and each with its direct dependency only
 // (similar output to ListUsedModules but with direct dependency only)
-func (m *pkg) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *pkg) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	var collection []models.Module
 
 	mod, err := m.GetRootModule(path)

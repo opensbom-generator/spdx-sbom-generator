@@ -68,7 +68,7 @@ func (m *gradle) ListUsedModules(path string) ([]models.Module, error) {
 	return nil, fmt.Errorf("ListUsedModules not implemented for java-gradle")
 }
 
-func (m *gradle) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	pi, err := getProjectInfo(path)
 	if err != nil {
 		return nil, err

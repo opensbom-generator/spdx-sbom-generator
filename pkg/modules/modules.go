@@ -55,7 +55,8 @@ type Manager struct {
 
 // Config ...
 type Config struct {
-	Path string
+	Path              string
+	GlobalSettingFile string
 }
 
 // New ...
@@ -86,17 +87,19 @@ func New(cfg Config) ([]*Manager, error) {
 // Run ...
 func (m *Manager) Run() error {
 	modulePath := m.Config.Path
+	globalSettingFile := m.Config.GlobalSettingFile
 	version, err := m.Plugin.GetVersion()
 	if err != nil {
 		return err
 	}
 
 	log.Infof("Current Language Version %s", version)
+	log.Infof("Global Setting File %s", globalSettingFile)
 	if err := m.Plugin.HasModulesInstalled(modulePath); err != nil {
 		return err
 	}
 
-	modules, err := m.Plugin.ListModulesWithDeps(modulePath)
+	modules, err := m.Plugin.ListModulesWithDeps(modulePath, globalSettingFile)
 	if err != nil {
 		log.Error(err)
 		return errFailedToReadModules
