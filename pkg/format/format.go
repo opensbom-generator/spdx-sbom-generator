@@ -28,10 +28,11 @@ type Format struct {
 
 // Config ...
 type Config struct {
-	ToolVersion  string
-	Filename     string
-	OutputFormat models.OutputFormat
-	GetSource    func() []models.Module
+	ToolVersion       string
+	Filename          string
+	OutputFormat      models.OutputFormat
+	GetSource         func() []models.Module
+	GlobalSettingFile string
 }
 
 func init() {

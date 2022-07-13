@@ -20,13 +20,14 @@ var errOutputDirDoesNotExist = errors.New("Output Directory does not exist")
 
 // SPDXSettings ...
 type SPDXSettings struct {
-	Version   string
-	Path      string
-	License   bool
-	Depth     string
-	OutputDir string
-	Schema    string
-	Format    models.OutputFormat
+	Version           string
+	Path              string
+	License           bool
+	Depth             string
+	OutputDir         string
+	Schema            string
+	Format            models.OutputFormat
+	GlobalSettingFile string
 }
 
 type spdxHandler struct {
@@ -41,7 +42,7 @@ type spdxHandler struct {
 func getFiletypeForOutputFormat(outputFormat models.OutputFormat) string {
 	switch outputFormat {
 	case models.OutputFormatSpdx:
-		return "spdx"
+		return "spdx" // nolint
 	case models.OutputFormatJson:
 		return "json"
 	default:
@@ -56,7 +57,8 @@ func NewSPDX(settings SPDXSettings) (Handler, error) {
 	}
 
 	mm, err := modules.New(modules.Config{
-		Path: settings.Path,
+		Path:              settings.Path,
+		GlobalSettingFile: settings.GlobalSettingFile,
 	})
 	if err != nil {
 		return nil, err
@@ -80,6 +82,7 @@ func (sh *spdxHandler) Run() error {
 		plugin := mm.Plugin.GetMetadata()
 		filename := fmt.Sprintf("bom-%s.%s", plugin.Slug, getFiletypeForOutputFormat(sh.config.Format))
 		outputFile := filepath.Join(sh.config.OutputDir, filename)
+		globalSettingFile := sh.config.GlobalSettingFile
 
 		log.Infof("Running generator for Module Manager: `%s` with output `%s`", plugin.Slug, outputFile)
 		if err := mm.Run(); err != nil {
@@ -94,6 +97,7 @@ func (sh *spdxHandler) Run() error {
 			GetSource: func() []models.Module {
 				return mm.GetSource()
 			},
+			GlobalSettingFile: globalSettingFile,
 		})
 		if err != nil {
 			sh.errors[plugin.Slug] = err

@@ -149,14 +149,14 @@ func GetHighestOrderHashData(digests DigestTypes) (models.HashAlgorithm, string)
 }
 
 func GetPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string, tag string, cpversion string) (PypiPackageDistInfo, bool) {
-	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
+	PackageType := strings.EqualFold(distInfo.PackageType, generator)
 	Tag := strings.Contains(strings.ToLower(distInfo.Filename), strings.ToLower(tag))
-	CPVeriosn := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower(cpversion))
-	Py2Py3 := (strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion)))
+	CPVersion := strings.EqualFold(distInfo.PythonVersion, cpversion)
+	Py2Py3 := strings.Contains(strings.ToLower("py2.py3"), strings.ToLower(distInfo.PythonVersion))
 
 	status := false
 
-	if PackageType && Tag && (CPVeriosn || Py2Py3) {
+	if PackageType && Tag && (CPVersion || Py2Py3) {
 		status = true
 	}
 
@@ -164,8 +164,8 @@ func GetPackageBDistWheelInfo(distInfo PypiPackageDistInfo, generator string, ta
 }
 
 func GetPackageSDistInfo(distInfo PypiPackageDistInfo, generator string) (PypiPackageDistInfo, bool) {
-	PackageType := (strings.ToLower(distInfo.PackageType) == strings.ToLower(generator))
-	Source := (strings.ToLower(distInfo.PythonVersion) == strings.ToLower("source"))
+	PackageType := strings.EqualFold(distInfo.PackageType, generator)
+	Source := strings.EqualFold(distInfo.PythonVersion, "source")
 
 	status := false
 

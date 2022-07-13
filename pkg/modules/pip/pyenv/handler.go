@@ -136,7 +136,7 @@ func (m *pyenv) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // List Modules With Deps ...
-func (m *pyenv) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *pyenv) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err

@@ -19,7 +19,7 @@ type IPlugin interface {
 	GetMetadata() PluginMetadata
 	GetRootModule(path string) (*Module, error)
 	ListUsedModules(path string) ([]Module, error)
-	ListModulesWithDeps(path string) ([]Module, error)
+	ListModulesWithDeps(path string, globalSettingFile string) ([]Module, error)
 	IsValid(path string) bool
 	HasModulesInstalled(path string) error
 }

@@ -64,6 +64,7 @@ Flags:
   -p, --path string            the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.') (default ".")
   -s, --schema string          <version> Target schema version (default: '2.2') (default "2.2")
   -f, --format string          output file format (default: 'spdx')
+  -g, --global-settings string    Alternate path for the global settings file for Java Maven
 ```
 
 ### Output Options
@@ -167,7 +168,7 @@ type IPlugin interface {
   GetMetadata() PluginMetadata
   GetRootModule(path string) (*Module, error)
   ListUsedModules(path string) ([]Module, error)
-  ListModulesWithDeps(path string) ([]Module, error)
+  ListModulesWithDeps(path string, globalSettingFile string) ([]Module, error)
   IsValid(path string) bool
 
 ```
@@ -486,7 +487,7 @@ To register for a new plugin, perform the following steps:
    }
 
    // ListModulesWithDeps ...
-   func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+   func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
      return nil, nil
    }
 

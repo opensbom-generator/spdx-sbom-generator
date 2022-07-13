@@ -4,11 +4,12 @@ package javagradle
 
 import (
 	"fmt"
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
 	"log"
 	"os/exec"
 	"path/filepath"
+
+	"github.com/spdx/spdx-sbom-generator/pkg/helper"
+	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
 type gradle struct {
@@ -68,7 +69,7 @@ func (m *gradle) ListUsedModules(path string) ([]models.Module, error) {
 	return nil, fmt.Errorf("ListUsedModules not implemented for java-gradle")
 }
 
-func (m *gradle) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *gradle) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	pi, err := getProjectInfo(path)
 	if err != nil {
 		return nil, err

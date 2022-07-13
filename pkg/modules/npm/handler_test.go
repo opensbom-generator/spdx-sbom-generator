@@ -100,7 +100,8 @@ func TestListModules(t *testing.T) {
 func TestListAllModules(t *testing.T) {
 	n := New()
 	path := fmt.Sprintf("%s/test", getPath())
-	mods, err := n.ListModulesWithDeps(path)
+	var globalSettingFile string
+	mods, err := n.ListModulesWithDeps(path, globalSettingFile)
 
 	assert.NoError(t, err)
 
