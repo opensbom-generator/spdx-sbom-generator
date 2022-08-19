@@ -20,6 +20,8 @@
  * Gems (Ruby)
  * Swift Package Manager (Swift)
 
+To contribute to the project, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) document.
+
 ## Installation
 
 You can download the following binaries and copy paste the application or binary in your cloned project on your local to generate the SPDX SBOM file. You need to execute  the following in the command line tool:
