@@ -26,8 +26,6 @@ jobs:
         run: make check-headers
       - name: Build
         run: make build
-      - name: Test
-        run: make test
   generate:
     name: Generate sbom file
     runs-on: ubuntu-latest
