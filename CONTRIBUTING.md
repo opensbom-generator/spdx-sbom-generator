@@ -3,6 +3,8 @@ Everyone is encouraged to participate in the SPDX Software Bill of Materials (SB
 
 Community meetings are held every Wednesday, 11:00am-12:00pm Pacific (2:00pm-3:00pm EDT, 6:00pm-7:00pm UTC), online. Join the meeting [here](https://meet.jit.si/SBOM-tools)
 
+Meeting minutes are recorded [here](https://hackmd.io/EQ0DwvvgRnOl2uzPiTYQcw).
+
 This is the process we suggest for contributions. This process is designed to reduce the burden on project reviews, impact on other contributors, and to keep the amount of rework from the contributor to a minimum.
 
 SPDX-License-Identifier: CC-BY-4.0 
