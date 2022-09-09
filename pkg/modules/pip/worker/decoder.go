@@ -13,7 +13,7 @@ import (
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
-const pkgMetedataSeparator string = "---"
+const pkgMetedataSeparator string = "\n---\n"
 
 var httpReplacer = strings.NewReplacer("https://", "", "http://", "")
 
