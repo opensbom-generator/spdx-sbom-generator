@@ -13,7 +13,7 @@ import (
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
 )
 
-const pkgMetedataSeparator string = "\n---\n"
+const pkgMetadataSeparator string = "\n---\n"
 
 var httpReplacer = strings.NewReplacer("https://", "", "http://", "")
 
@@ -104,7 +104,7 @@ func (d *MetadataDecoder) BuildMetadata(pkgs []Packages) (map[string]Metadata, [
 
 	// Metadata of all packages are separated by "---". Split all such occurances and trim to remove leading \n
 
-	a := regexp.MustCompile(pkgMetedataSeparator)
+	a := regexp.MustCompile(pkgMetadataSeparator)
 	eachpkgsmetadatastr := a.Split(allpkgsmetadatastr, -1)
 	for i := range eachpkgsmetadatastr {
 		eachpkgsmetadatastr[i] = strings.TrimSpace(eachpkgsmetadatastr[i])
