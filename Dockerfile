@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
-FROM golang:1.16-alpine AS build
+FROM golang:1.17-alpine AS build
 ARG VERSION=latest
 ARG GIT_HASH
 
