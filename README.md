@@ -569,6 +569,12 @@ Perform the following steps to work with SPDX SBOM Generator:
    make build-win
    ```
 
+6. Build the Docker image.
+
+   ```
+   make build-docker
+   ```
+
 
 
 Licensing
