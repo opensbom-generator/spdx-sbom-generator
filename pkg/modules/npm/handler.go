@@ -211,16 +211,19 @@ func (m *npm) buildDependencies(path string, deps map[string]interface{}) ([]mod
 		depName := strings.TrimPrefix(key, "@")
 		for nkey := range dd {
 			var mod models.Module
-			d := dd[nkey].(map[string]interface{})
 			mod.Version = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(strings.TrimPrefix(nkey, "^"), "~"), ">"), "="))
 			mod.Version = strings.Split(mod.Version, " ")[0]
 			mod.Name = depName
 
 			r := ""
-			if d["resolved"] != nil {
-				r = d["resolved"].(string)
-				mod.PackageDownloadLocation = r
+			if _, ok := dd[nkey].(map[string]interface{}); ok {
+				d := dd[nkey].(map[string]interface{})
+				if d["resolved"] != nil {
+					r = d["resolved"].(string)
+					mod.PackageDownloadLocation = r
+				}
 			}
+
 			if mod.PackageDownloadLocation == "" {
 				r := "https://www.npmjs.com/package/%s/v/%s"
 				mod.PackageDownloadLocation = fmt.Sprintf(r, mod.Name, mod.Version)
@@ -369,7 +372,12 @@ func appendDependencies(d interface{}, allDeps map[string]map[string]interface{}
 		if m == nil {
 			m = make(map[string]interface{})
 		}
-		m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+
+		if _, ok := dv.(string); ok {
+			m[dv.(string)] = dv.(string)
+		} else {
+			m[dv.(map[string]interface{})["version"].(string)] = dv.(map[string]interface{})
+		}
 		allDeps[dk] = m
 	}
 }
