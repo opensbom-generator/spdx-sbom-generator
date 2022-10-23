@@ -172,7 +172,7 @@ func (m *nuget) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *nuget) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	var modules []models.Module
 	projectPath := m.GetProjectManifestPath(path)
 	projectPaths, err := getProjectPaths(projectPath)
@@ -214,7 +214,8 @@ func (m *nuget) ListModulesWithDeps(path string) ([]models.Module, error) {
 
 // ListUsedModules ...
 func (m *nuget) ListUsedModules(path string) ([]models.Module, error) {
-	return m.ListModulesWithDeps(path)
+	var globalSettingFile string
+	return m.ListModulesWithDeps(path, globalSettingFile)
 }
 
 func (m *nuget) buildCmd(cmd command, path string) error {

@@ -20,11 +20,11 @@ type gem struct {
 }
 
 var errDependenciesNotFound, errInvalidProjectType = errors.New(
-    `* Please install dependencies by running the following command :
+	`* Please install dependencies by running the following command :
     1) bundle config set --local path 'vendor/bundle' && bundle install && bundle exec rake install
     2) run the spdx-sbom-generator tool command
 `), errors.New(
-    `* Tool only supports ruby gems projects with valid .gemspec manifest in project root directory`)
+	`* Tool only supports ruby gems projects with valid .gemspec manifest in project root directory`)
 
 // New ...
 func New() *gem {
@@ -57,20 +57,20 @@ func (g *gem) IsValid(path string) bool {
 // HasModulesInstalled ...
 func (g *gem) HasModulesInstalled(path string) error {
 
-    if !validateProjectType(path) {
-        return errInvalidProjectType
-    }
+	if !validateProjectType(path) {
+		return errInvalidProjectType
+	}
 
-    hasRake, _, hasModule := hasRakefile(path), ensurePlatform(path), false
-    for i := range g.metadata.ModulePath {
-        if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
-            hasModule = true
-        }
-    }
-    if hasRake && hasModule {
-        return nil
-    }
-    return errDependenciesNotFound
+	hasRake, _, hasModule := hasRakefile(path), ensurePlatform(path), false
+	for i := range g.metadata.ModulePath {
+		if helper.Exists(filepath.Join(path, g.metadata.ModulePath[i])) {
+			hasModule = true
+		}
+	}
+	if hasRake && hasModule {
+		return nil
+	}
+	return errDependenciesNotFound
 }
 
 // GetVersion ...
@@ -121,11 +121,12 @@ func (g *gem) GetModule(path string) ([]models.Module, error) {
 
 // ListUsedModules ...
 func (g *gem) ListUsedModules(path string) ([]models.Module, error) {
-	return g.ListModulesWithDeps(path)
+	var globalSettingFile string
+	return g.ListModulesWithDeps(path, globalSettingFile)
 }
 
 // ListModulesWithDeps ...
-func (g *gem) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (g *gem) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	if err := g.HasModulesInstalled(path); err != nil {
 		return []models.Module{}, err
 	}

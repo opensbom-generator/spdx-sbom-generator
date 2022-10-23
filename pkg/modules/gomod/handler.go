@@ -103,7 +103,7 @@ func (m *mod) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *mod) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *mod) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err

@@ -71,7 +71,7 @@ func (m *composer) GetRootModule(path string) (*models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *composer) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *composer) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	return m.ListUsedModules(path)
 }
 

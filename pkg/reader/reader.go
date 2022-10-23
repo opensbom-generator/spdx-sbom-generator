@@ -17,7 +17,6 @@ func New(filename string) *Reader {
 	return &Reader{fileName: filename}
 }
 
-
 // StringFromFile ...
 func (s *Reader) StringFromFile() string {
 	fByte, err := s.readFile()
@@ -30,7 +29,7 @@ func (s *Reader) StringFromFile() string {
 }
 
 // ReadJson ...
-func (s *Reader) ReadJson() (map[string]interface{},error) {
+func (s *Reader) ReadJson() (map[string]interface{}, error) {
 	fByte, err := s.readFile()
 	if err != nil {
 		return nil, err
@@ -43,7 +42,6 @@ func (s *Reader) ReadJson() (map[string]interface{},error) {
 
 	return jResult, nil
 }
-
 
 func (s *Reader) readFile() ([]byte, error) {
 	return ioutil.ReadFile(s.fileName)

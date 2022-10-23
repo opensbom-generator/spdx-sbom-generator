@@ -1,0 +1,46 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: Build Pull Request
+
+on: [ pull_request ]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: [ "^1.17", "^1.18" ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+      - name: Setup Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Setup
+        run: make setup
+      #- name: Lint
+      #  run: make lint
+      - name: Lint
+        run: make check-headers
+      - name: Build
+        run: make build
+  generate:
+    name: Generate sbom file
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+      - name: gh-action-spdx-sbom-generator
+        uses: niravpatel27/gh-action-spdx-sbom-generator@v1.0.0
+        with:
+          version: '0.0.3'
+      - name: Check if sbom file generated
+        run: |
+          if [ ! -f "bom-go-mod.spdx" ]; then
+            echo "::error::bom-go-mod.spdx is missing. Must generate using the spdx-sbom-generator cli."
+            exit 1
+          else
+             echo "Success!"
+          fi

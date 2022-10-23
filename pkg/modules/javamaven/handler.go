@@ -117,13 +117,13 @@ func (m *javamaven) ListUsedModules(path string) ([]models.Module, error) {
 }
 
 // ListModulesWithDeps ...
-func (m *javamaven) ListModulesWithDeps(path string) ([]models.Module, error) {
+func (m *javamaven) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
 	modules, err := m.ListUsedModules(path)
 	if err != nil {
 		return nil, err
 	}
 
-	tdList, err := getTransitiveDependencyList(path)
+	tdList, err := getTransitiveDependencyList(path, globalSettingFile)
 	if err != nil {
 		fmt.Println("error in getting mvn transitive dependency tree and parsing it")
 		return nil, err

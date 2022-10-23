@@ -1,6 +1,22 @@
 # SPDX Software Bill of Materials (SBOM) Generator
 
-## Overview
+## Table of Contents
+- [Overview](#overview)
+- [Installation](#installation)
+- [Available Command Options](#command-options)
+  - [Output Options](#output-options)
+    - [Output Sample](#output-sample)
+- [Docker Images](#docker-images)
+- [Architecture](#architecture)
+- [Data Contract](#data-contract)
+  - [How To Generate Module Values](#generate-module-values)
+  - [Interface Definitions](#interface-definitions)
+    - [Module Structure JSON Example](#module-json-example)
+  - [Utility Methods](#utility-methods)
+  - [How To Register a New Plugin](#new-plugin)
+- [How To Work with SPDX SBOM Generator](#how-to)
+
+## Overview<a name="overview"></a>
 
 [Software Package Data Exchange](https://spdx.org/tools) (SPDX) is an open standard for communicating software bill of materials (SBOM) information that supports accurate identification of software components, explicit mapping of relationships between components, and the association of security and licensing information with each component.
 
@@ -20,7 +36,9 @@
  * Gems (Ruby)
  * Swift Package Manager (Swift)
 
-## Installation
+To contribute to the project, please refer to the [CONTRIBUTING.md](CONTRIBUTING.md) document.
+
+## Installation<a name="installation"></a>
 
 You can download the following binaries and copy paste the application or binary in your cloned project on your local to generate the SPDX SBOM file. You need to execute  the following in the command line tool:
 
@@ -39,7 +57,7 @@ On Windows, you can also download and install the appropriate binary with [Scoop
 
 ***Note***: The `spdx-sbom-generator` CLI is under development. You may expect some breakages and stability issues with the current release. A stable version is under development and will be available to the open source community in the  upcoming beta release.
 
-## Available command Options
+## Available Command Options<a name="command-options"></a>
 
 Use the below command to view different options or flags related to SPDX SBOM generator:
 
@@ -64,9 +82,10 @@ Flags:
   -p, --path string            the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.') (default ".")
   -s, --schema string          <version> Target schema version (default: '2.2') (default "2.2")
   -f, --format string          output file format (default: 'spdx')
+  -g, --global-settings string    Alternate path for the global settings file for Java Maven
 ```
 
-### Output Options
+### Output Options<a name="output-options"></a>
 
 The following list supports various formats in which you can generate the SPDX SBOM file:
 
@@ -84,7 +103,7 @@ Use the below command to generate the SPDX SBOM file in SPDX format:
 ./spdx-sbom-generator -o /out/spdx/
 ```
 
-#### Output Sample
+#### Output Sample<a name="output-sample"></a>
 
 The following snippet is a sample SPDX SBOM file:
 
@@ -134,7 +153,7 @@ PackageComment: NOASSERTION
 Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 ```
 
-## Docker Images
+## Docker Images<a name="docker-images"></a>
 
 You can run this program using a Docker image that contains `spdx-sbom-generator`.
 To do this, first [install Docker](https://docs.docker.com/get-docker/).
@@ -152,11 +171,11 @@ $ docker run -it --rm \
     spdx/spdx-sbom-generator -p /repository/ -o /out/
 ```
 
-## Architecture
+## Architecture<a name="architecture"></a>
 
   ![General Architecture](docs/spdx.png)
 
-## Data Contract
+## Data Contract<a name="data-contract"></a>
 
 The interface requires the following functions:
 
@@ -167,7 +186,7 @@ type IPlugin interface {
   GetMetadata() PluginMetadata
   GetRootModule(path string) (*Module, error)
   ListUsedModules(path string) ([]Module, error)
-  ListModulesWithDeps(path string) ([]Module, error)
+  ListModulesWithDeps(path string, globalSettingFile string) ([]Module, error)
   IsValid(path string) bool
 
 ```
@@ -206,7 +225,7 @@ type PluginMetadata struct {
 }
 ```
 
-### How to Generate Module Values
+### How to Generate Module Values<a name="generate-module-values"></a>
 
 * `CheckSum`: We have built an internal method that calculates CheckSum for a given content (in bytes) using algorithm that is defined on `models.CheckSum`.
   You now have an option to provide `Content` field for `models.CheckSum{}` and CheckSum will calculate automatically, but if you want to calculate CheckSum  on your own
@@ -214,7 +233,7 @@ type PluginMetadata struct {
 
 Also, you can generate a manifest from a given directory tree using utility/helper method `BuildManifestContent`, and that is what is used for gomod plugin as `Content` value.
 
-### Interface Definitions
+### Interface Definitions<a name="interface-definitions"></a>
 
 The following list provides the interface definitions:
 
@@ -275,7 +294,7 @@ PluginMetadata{
 
   **Output**: True or False
 
-#### Module Structure JSON Example
+#### Module Structure JSON Example<a name="module-json-example"></a>
 
 The sample module structure JSON Code snippet is provided in the following code snippet:
 
@@ -335,7 +354,7 @@ The sample module structure JSON Code snippet is provided in the following code 
 
 For a more complete JSON example look at [modules.json](./examples/modules.json).
 
-### Utility Methods
+### Utility Methods<a name="utility-methods"></a>
 
 The following list provide the utility methods:
 
@@ -367,7 +386,7 @@ type License struct {
 
   **Output**: True or False
 
-### How to Register a New Plugin
+### How to Register a New Plugin<a name="new-plugin"></a>
 
 To register for a new plugin, perform the following steps:
 
@@ -486,7 +505,7 @@ To register for a new plugin, perform the following steps:
    }
 
    // ListModulesWithDeps ...
-   func (m *npm) ListModulesWithDeps(path string) ([]models.Module, error) {
+   func (m *npm) ListModulesWithDeps(path string, globalSettingFile string) ([]models.Module, error) {
      return nil, nil
    }
 
@@ -508,7 +527,7 @@ To register for a new plugin, perform the following steps:
 
 
 
-## How to Work With SPDX SBOM Generator
+## How to Work With SPDX SBOM Generator<a name="how-to"></a>
 
 A **Makefile** for the `spdx-sbom-generator` is described below with ability to run, test, lint, and build the project binary for different platforms (Linux, Mac, and Windows).
 
