@@ -55,3 +55,20 @@ jobs:
           project_path: "./cmd/generator"
           binary_name: "spdx-sbom-generator"
           ldflags: "-X 'main.version=${{ env.RELEASE_VERSION }}'"
+      # create and publish sbom
+      - name: gh-action-spdx-sbom-generator
+        uses: niravpatel27/gh-action-spdx-sbom-generator@v1.0.0
+        with:
+          version: '0.0.15'
+      - name: Check if sbom file generated
+        run: |
+          if [ ! -f "bom-go-mod.spdx" ]; then
+            echo "::error::bom-go-mod.spdx is missing."
+            exit 1
+          else
+             echo "bom-go-mod.spdx created!"
+          fi
+      - uses: anchore/sbom-action/publish-sbom@v0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          sbom-artifact-match: ".*\\.spdx$"
