@@ -1,6 +1,7 @@
 # SPDX Software Bill of Materials (SBOM) Generator
 
 ## Table of Contents
+- [Contributing](CONTRIBUTING.md)
 - [Overview](#overview)
 - [Installation](#installation)
 - [Available Command Options](#command-options)
