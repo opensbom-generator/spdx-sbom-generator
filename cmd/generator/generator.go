@@ -44,7 +44,7 @@ func init() {
 	rootCmd.Flags().StringP("path", "p", ".", "the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.')")
 	rootCmd.Flags().BoolP("include-license-text", "i", false, " Include full license text (default: false)")
 	rootCmd.Flags().StringP("schema", "s", "2.2", "<version> Target schema version (default: '2.2')")
-	rootCmd.Flags().StringP("output-dir", "o", ".", "<output> directory to Write SPDX to file (default: current directory)")
+	rootCmd.Flags().StringP("output-dir", "o", "", "<output> directory to Write SPDX to file (default: stdout)")
 	rootCmd.Flags().StringP("format", "f", "spdx", "output file format (default: spdx)")
 	rootCmd.Flags().StringP("global-settings", "g", "", "Alternate path for the global settings file for Java Maven (default 'mvn settings.xml')")
 

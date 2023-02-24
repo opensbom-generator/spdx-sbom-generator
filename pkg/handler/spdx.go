@@ -52,7 +52,7 @@ func getFiletypeForOutputFormat(outputFormat models.OutputFormat) string {
 
 // NewSPDX ...
 func NewSPDX(settings SPDXSettings) (Handler, error) {
-	if !helper.Exists(settings.OutputDir) {
+	if settings.OutputDir != "" && !helper.Exists(settings.OutputDir) {
 		return nil, errOutputDirDoesNotExist
 	}
 
@@ -83,6 +83,11 @@ func (sh *spdxHandler) Run() error {
 		filename := fmt.Sprintf("bom-%s.%s", plugin.Slug, getFiletypeForOutputFormat(sh.config.Format))
 		outputFile := filepath.Join(sh.config.OutputDir, filename)
 		globalSettingFile := sh.config.GlobalSettingFile
+
+		// case when no outputDir was supplied, and output needs to be written to stdout.
+		if sh.config.OutputDir == "" {
+			outputFile = "/dev/stdout"
+		}
 
 		log.Infof("Running generator for Module Manager: `%s` with output `%s`", plugin.Slug, outputFile)
 		if err := mm.Run(); err != nil {
