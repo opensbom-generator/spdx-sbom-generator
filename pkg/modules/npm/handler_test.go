@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
 )
 
 func TestNPM(t *testing.T) {

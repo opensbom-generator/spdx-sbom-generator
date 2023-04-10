@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/mod/semver"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
 )
 
 func (description SwiftPackageDescription) Module() *models.Module {

@@ -15,8 +15,8 @@ import (
 	"github.com/go-enry/go-license-detector/v4/licensedb"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/licenses"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/licenses"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
 )
 
 const copyrightLookup = "copyright"

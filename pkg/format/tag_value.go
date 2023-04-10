@@ -7,7 +7,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
 )
 
 // TagValueSPDXRenderer implements an SPDXRenderer that outputs JSON formatted SPDX documents

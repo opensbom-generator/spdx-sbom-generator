@@ -7,8 +7,8 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
 )
 
 func addDepthModules(modules []models.Module, cargoPackages []CargoPackage) error {

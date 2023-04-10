@@ -49,10 +49,10 @@ You can download the following binaries and copy paste the application or binary
 
 The following binaries are available to download for various operating system:
 
-* [MacOS](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-darwin-amd64.tar.gz)
-* [Linux (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-linux-amd64.tar.gz)
-* [Windows (x64)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-amd64.zip)
-* [Windows (x86)](https://github.com/spdx/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-386.zip)
+* [MacOS](https://github.com/opensbom-generator/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-darwin-amd64.tar.gz)
+* [Linux (x64)](https://github.com/opensbom-generator/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-linux-amd64.tar.gz)
+* [Windows (x64)](https://github.com/opensbom-generator/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-amd64.zip)
+* [Windows (x86)](https://github.com/opensbom-generator/spdx-sbom-generator/releases/download/v0.0.10/spdx-sbom-generator-v0.0.10-windows-386.zip)
 
 On Windows, you can also download and install the appropriate binary with [Scoop](https://scoop.sh/): `scoop install spdx-sbom-generator`.
 
@@ -159,9 +159,9 @@ Relationship: SPDXRef-Package-go CONTAINS SPDXRef-Package-bigquery
 You can run this program using a Docker image that contains `spdx-sbom-generator`.
 To do this, first [install Docker](https://docs.docker.com/get-docker/).
 
-You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull spdx/spdx-sbom-generator`
+You’ll then need to pull (download) a Docker image that contains the program. An easy way is to run `docker pull opensbom-generator/spdx-sbom-generator`
 
-[spdx-sbom-generator](https://hub.docker.com/r/spdx/spdx-sbom-generator): this is an Alpine image with the spdx-sbom-generator binary installed. You can re-run the pull command to update the image.
+[spdx-sbom-generator](https://hub.docker.com/r/opensbom-generator/spdx-sbom-generator): this is an Alpine image with the spdx-sbom-generator binary installed. You can re-run the pull command to update the image.
 
 Finally, run the program, using this form
 
@@ -169,7 +169,7 @@ Finally, run the program, using this form
 $ docker run -it --rm \
     -v "/path/to/repository:/repository" \
     -v "$(pwd)/out:/out" \
-    spdx/spdx-sbom-generator -p /repository/ -o /out/
+    opensbom-generator/spdx-sbom-generator -p /repository/ -o /out/
 ```
 
 ## Architecture<a name="architecture"></a>
@@ -412,8 +412,8 @@ To register for a new plugin, perform the following steps:
    import (
    	"path/filepath"
 
-   	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-   	"github.com/spdx/spdx-sbom-generator/pkg/models"
+   	"github.com/opensbom-generator/spdx-sbom-generator/pkg/helper"
+   	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
    )
 
    // rest of the file below
@@ -575,7 +575,7 @@ Perform the following steps to work with SPDX SBOM Generator:
 Licensing
 ---------
 
-This project’s source code is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/spdx/spdx-sbom-generator/tree/main/LICENSES) for the full license text.
+This project’s source code is licensed under the Apache License, Version 2.0. See [LICENSE](https://github.com/opensbom-generator/spdx-sbom-generator/tree/main/LICENSES) for the full license text.
 
 ## Additional Information
 
