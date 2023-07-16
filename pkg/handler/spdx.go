@@ -80,7 +80,7 @@ func (sh *spdxHandler) Run() error {
 
 	for _, mm := range sh.modulesManager {
 		plugin := mm.Plugin.GetMetadata()
-		filename := fmt.Sprintf("bom-%s.%s", plugin.Slug, getFiletypeForOutputFormat(sh.config.Format))
+		filename := fmt.Sprintf("bom-%s.%s", plugin.Slug, sh.config.Format.String())
 		outputFile := filepath.Join(sh.config.OutputDir, filename)
 		globalSettingFile := sh.config.GlobalSettingFile
 

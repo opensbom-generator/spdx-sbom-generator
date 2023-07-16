@@ -152,6 +152,17 @@ type License struct {
 // OutputFormat defines an int enum of supported output formats
 type OutputFormat int
 
+func (o OutputFormat) String() string {
+	switch o {
+	case 0:
+		return "spdx"
+	case 1:
+		return "json"
+	default:
+		return ""
+	}
+}
+
 const (
 	OutputFormatSpdx OutputFormat = iota
 	OutputFormatJson
