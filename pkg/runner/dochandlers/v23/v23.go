@@ -125,10 +125,13 @@ func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon
 
 func tov23Package(p meta.Package) *v23.Package {
 	return &v23.Package{
-		PackageName:             p.Name,
-		PackageSPDXIdentifier:   common.SetPkgSPDXIdentifier(p.Name, p.Version, p.Root),
-		PackageVersion:          common.BuildVersion(p),
-		PackageSupplier:         common.SetPkgValue(p.Supplier.Get()),
+		PackageName:           p.Name,
+		PackageSPDXIdentifier: common.SetPkgSPDXIdentifier(p.Name, p.Version, p.Root),
+		PackageVersion:        common.BuildVersion(p),
+		PackageSupplier: &v2Common.Supplier{
+			Supplier:     p.Supplier.Name,
+			SupplierType: string(p.Supplier.Type),
+		},
 		PackageDownloadLocation: p.PackageDownloadLocation,
 		FilesAnalyzed:           false,
 		PackageChecksums: []v2Common.Checksum{{
