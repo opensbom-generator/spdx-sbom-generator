@@ -8,6 +8,8 @@ import (
 
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
+	"github.com/spdx/spdx-sbom-generator/pkg/runner/dochandlers/common"
+	spdxCommon "github.com/spdx/tools-golang/spdx/common"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/runner/options"
 )
@@ -19,9 +21,8 @@ type Generator struct {
 }
 
 type DocumentFormatHandler interface {
-	CreateDocument(*options.Options) (interface{}, error)
-	AddDocumentPackages(*options.Options, interface{}, []meta.Package) error
-	WriteDocument(*options.Options, interface{}, io.Writer) error
+	CreateDocument(opts *options.Options, rootPackages []meta.Package) (spdxCommon.AnyDocument, error)
+	AddDocumentPackages(opts *options.Options, doc spdxCommon.AnyDocument, metaPackages []meta.Package) error
 }
 
 type GeneratorImplementation interface {
@@ -43,7 +44,7 @@ func NewWithOptions(opts options.Options) *Generator {
 }
 
 // CreateSBOM is the main generator loop. It takes care of calling the
-// underlying objects to get the languaga parsers, create the document
+// underlying objects to get the language parsers, create the document
 // and enrich it with the data read by the parsers.
 //
 // The main implementation is in the GeneratorImplementation. It implements
@@ -69,17 +70,13 @@ func (g *Generator) CreateSBOM(path string, output io.Writer) error {
 		return fmt.Errorf("getting applicable parsers: %w", err)
 	}
 
-	// Get a new empty document from the document handler:
-	document, err := g.docHandler.CreateDocument(&g.Options)
-	if err != nil {
-		return fmt.Errorf("creating new document: %w", err)
-	}
-
 	// Cycle all the applicable parsers and collect the dependency data
-	metaPackages := []meta.Package{}
+	var metaPackages = make([]meta.Package, 0)
+	var rootPackages = make([]meta.Package, 0)
+
 	for _, p := range parsers {
 		// Each parser is passed to the runner implementation who takes
-		// care of running it and retguring the results:
+		// care of running it and returning the results:
 		parserPackages, err := g.implementation.RunParser(&g.Options, p)
 		if err != nil {
 			return fmt.Errorf("running parser: %w", err)
@@ -88,16 +85,44 @@ func (g *Generator) CreateSBOM(path string, output io.Writer) error {
 		metaPackages = append(metaPackages, parserPackages...)
 	}
 
-	// Pass the packages to the dochandler to create the packages. The document
-	// handler knows how to turn the metapackages to natice (ie SPDX 2.2/2.3) packages
+	for _, m := range metaPackages {
+		if m.Root {
+			rootPackages = append(rootPackages, m)
+		}
+	}
+
+	metaPackages = sortModules(metaPackages)
+
+	// Get a new empty document from the document handler:
+	document, err := g.docHandler.CreateDocument(&g.Options, rootPackages)
+	if err != nil {
+		return fmt.Errorf("creating new document: %w", err)
+	}
+
+	// Pass the packages to the doc handler to create the packages. The document
+	// handler knows how to turn the meta packages to native packages (ie SPDX 2.2/2.3)
 	if err := g.docHandler.AddDocumentPackages(&g.Options, document, metaPackages); err != nil {
 		return fmt.Errorf("adding dependency packages: %w", err)
 	}
 
 	// Ask the doc handler to write the rendered document to the io writer.
-	if err := g.docHandler.WriteDocument(&g.Options, document, output); err != nil {
+	if err := common.WriteDocument(&g.Options, document, output); err != nil {
 		return fmt.Errorf("writing serialized document: %w", err)
 	}
 
 	return nil
+}
+
+func sortModules(metaPackages []meta.Package) []meta.Package {
+	var rootPackages []meta.Package
+
+	for i, m := range metaPackages {
+		if m.Root {
+			rootPackages = append(rootPackages, m)
+			metaPackages = append(metaPackages[:i], metaPackages[i+1:]...)
+			break
+		}
+	}
+
+	return append(rootPackages, metaPackages...)
 }
