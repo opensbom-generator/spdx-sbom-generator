@@ -35,7 +35,7 @@ func (h *Handler) CreateDocument(opts *options.Options, rootPackages []meta.Pack
 		DocumentComment:            "",
 		CreationInfo: &v22.CreationInfo{
 			Creators: []v2Common.Creator{{
-				Creator:     fmt.Sprintf("spdx-sbom-generator-%s", opts),
+				Creator:     fmt.Sprintf("spdx-sbom-generator-%s", opts.Version),
 				CreatorType: "Tool",
 			}},
 			Created: time.Now().UTC().Format(time.RFC3339),
@@ -119,7 +119,6 @@ func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon
 			})
 		}
 
-		v22Doc.Packages = append(v22Doc.Packages)
 	}
 
 	return nil
