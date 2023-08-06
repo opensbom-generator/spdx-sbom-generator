@@ -82,10 +82,10 @@ func SetPkgSPDXIdentifier(s, v string, root bool) common.ElementID {
 func BuildNamespace(name, version string) string {
 	uuidStr := uuid.New().String()
 	if version == "" {
-		return fmt.Sprintf("%s://spdx.org/spdxpackages/%s-%s", HttpsPrefix, name, uuidStr)
+		return fmt.Sprintf("%s://spdx.org/spdxdocs/%s-%s", HttpsPrefix, name, uuidStr)
 	}
 
-	return fmt.Sprintf("%s://spdx.org/spdxpackages/%s-%s-%s", HttpsPrefix, name, version, uuidStr)
+	return fmt.Sprintf("%s://spdx.org/spdxdocs/%s-%s-%s", HttpsPrefix, name, version, uuidStr)
 }
 
 func BuildName(name, version string) string {
