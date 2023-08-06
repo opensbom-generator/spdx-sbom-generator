@@ -3,9 +3,7 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -42,7 +40,7 @@ func init() {
 	rootCmd.Flags().StringP("path", "p", ".", "the path to package file or the path to a directory which will be recursively analyzed for the package files (default '.')")
 	rootCmd.Flags().BoolP("include-license-text", "i", false, " Include full license text (default: false)")
 	rootCmd.Flags().StringP("schema", "s", "2.3", "<version> Target schema version (default: '2.3')")
-	rootCmd.Flags().StringP("output-dir", "o", ".", "<output> directory to Write SPDX to file (default: current directory)")
+	rootCmd.Flags().StringP("output-dir", "o", "", "<output> directory to write SPDX doc (default: if not specified, doc is written to stdout)")
 	rootCmd.Flags().StringP("format", "f", "spdx", "output file format (default: spdx)")
 	rootCmd.Flags().StringP("global-settings", "g", "", "Alternate path for the global settings file for Java Maven (default 'mvn settings.xml')")
 
@@ -103,15 +101,6 @@ func generate(cmd *cobra.Command, args []string) {
 	}
 	globalSettingFile := checkOpt("global-settings")
 
-	// TODO: find a way to get this slug here
-	filename := fmt.Sprintf("bom-%s.%s", "slug", format.String())
-	outputFile := filepath.Join(outputDir, filename)
-
-	file, err := os.Create(outputFile)
-	if err != nil {
-		log.Fatalf("error opening file for writing %s", outputFile)
-	}
-
 	opts := options.Options{
 		SchemaVersion:     schema,
 		Indent:            4,
@@ -126,7 +115,7 @@ func generate(cmd *cobra.Command, args []string) {
 		Plugins:           options.DefaultPlugins,
 	}
 
-	err = runner.NewWithOptions(opts).CreateSBOM(path, file)
+	err = runner.NewWithOptions(opts).CreateSBOM()
 
 	if err != nil {
 		log.Fatalf("error creating SBOM, err: %s", err.Error())

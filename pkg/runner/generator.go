@@ -4,7 +4,6 @@ package runner
 
 import (
 	"fmt"
-	"io"
 
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
@@ -54,7 +53,7 @@ func NewWithOptions(opts options.Options) *Generator {
 // After running the language parsers on the source, the runner will use the
 // selected document handler to create the SBOM and write it to the
 // output writer.
-func (g *Generator) CreateSBOM(path string, output io.Writer) error {
+func (g *Generator) CreateSBOM() error {
 	// Reassign the document format handler again in case options
 	// changed since the last run:
 	newDocHandler, err := g.implementation.GetDocumentFormatHandler(&g.Options)
@@ -106,7 +105,7 @@ func (g *Generator) CreateSBOM(path string, output io.Writer) error {
 	}
 
 	// Ask the doc handler to write the rendered document to the io writer.
-	if err := common.WriteDocument(&g.Options, document, output); err != nil {
+	if err := common.WriteDocument(&g.Options, document); err != nil {
 		return fmt.Errorf("writing serialized document: %w", err)
 	}
 

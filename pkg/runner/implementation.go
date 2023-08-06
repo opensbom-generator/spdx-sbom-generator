@@ -49,6 +49,9 @@ func (di *defaultGeneratorImplementation) RunParser(opts *options.Options, plugi
 		return nil, err
 	}
 
+	// setting slug which is used later when generating SBOM
+	opts.SetSlug(plugin.GetMetadata().Slug)
+
 	log.Infof("Current Language Version %s", version)
 	log.Infof("Global Setting File %s", opts.GlobalSettingFile)
 	if moduleErr := plugin.HasModulesInstalled(modulePath); moduleErr != nil {

@@ -49,6 +49,11 @@ type Options struct {
 	Plugins           []plugin.Plugin
 }
 
+// SetSlug sets the slug in options.
+func (o *Options) SetSlug(slug string) {
+	o.Slug = slug
+}
+
 type OutputFormat int
 
 func (o OutputFormat) String() string {
