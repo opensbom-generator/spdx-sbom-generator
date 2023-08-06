@@ -20,9 +20,11 @@ const (
 
 type Handler struct{}
 
+// CreateDocument creates a base document and adds the root level package(s) to the base document.
+// This handler implementation is for the 2.2 version
+// https://spdx.github.io/spdx-spec/v2.2.2/document-creation-information/
 func (h *Handler) CreateDocument(opts *options.Options, rootPackages []meta.Package) (spdxCommon.AnyDocument, error) {
 	// fetch the top level package
-	// TODO: what to do in case of multiple top level packages
 	topLevelPkg := tov22Package(rootPackages[0])
 
 	doc := &v22.Document{
@@ -71,7 +73,8 @@ func (h *Handler) CreateDocument(opts *options.Options, rootPackages []meta.Pack
 	return doc, nil
 }
 
-func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon.AnyDocument, metaPackages []meta.Package) error {
+// AddDocumentPackages links the parsed packages to the passed document.
+func (h *Handler) AddDocumentPackages(_ *options.Options, document spdxCommon.AnyDocument, metaPackages []meta.Package) error {
 	// TODO: https://github.com/spdx/tools-golang/blob/main/convert/chain.go#L38 use for conversion?
 	// type cast to v2.2 document
 	v22Doc, ok := document.(*v22.Document)
@@ -88,7 +91,6 @@ func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon
 		v22Pkg := tov22Package(pkg)
 		v22Doc.Packages = append(v22Doc.Packages, v22Pkg)
 
-		// TODO: what happens to further nesting, if any?
 		// traverse through sub packages of a meta package
 		for _, subMod := range pkg.Packages {
 			subV22Pkg := tov22Package(*subMod)
@@ -124,12 +126,17 @@ func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon
 	return nil
 }
 
+// tov22Package converts the package returned from the parsers to the spdx format
+// https://spdx.github.io/spdx-spec/v2.2.2/package-information/
 func tov22Package(p meta.Package) *v22.Package {
 	return &v22.Package{
-		PackageName:             p.Name,
-		PackageSPDXIdentifier:   common.SetPkgSPDXIdentifier(p.Name, p.Version, p.Root),
-		PackageVersion:          common.BuildVersion(p),
-		PackageSupplier:         common.SetPkgValue(p.Supplier.Get()),
+		PackageName:           p.Name,
+		PackageSPDXIdentifier: common.SetPkgSPDXIdentifier(p.Name, p.Version, p.Root),
+		PackageVersion:        common.BuildVersion(p),
+		PackageSupplier: &v2Common.Supplier{
+			Supplier:     p.Supplier.Name,
+			SupplierType: string(p.Supplier.Type),
+		},
 		PackageDownloadLocation: p.PackageDownloadLocation,
 		FilesAnalyzed:           false,
 		PackageChecksums: []v2Common.Checksum{{

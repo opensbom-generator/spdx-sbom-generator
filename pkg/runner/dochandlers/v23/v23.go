@@ -20,9 +20,11 @@ const (
 
 type Handler struct{}
 
+// CreateDocument creates a base document and adds the root level package(s) to the base document.
+// This handler implementation is for the 2.2 version
+// https://spdx.github.io/spdx-spec/v2.3/document-creation-information/
 func (h *Handler) CreateDocument(opts *options.Options, rootPackages []meta.Package) (spdxCommon.AnyDocument, error) {
 	// fetch the top level package
-	// TODO: what to do in case of multiple top level packages
 	topLevelPkg := tov23Package(rootPackages[0])
 
 	doc := &v23.Document{
@@ -71,7 +73,8 @@ func (h *Handler) CreateDocument(opts *options.Options, rootPackages []meta.Pack
 	return doc, nil
 }
 
-func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon.AnyDocument, metaPackages []meta.Package) error {
+// AddDocumentPackages links the parsed packages to the passed document.
+func (h *Handler) AddDocumentPackages(_ *options.Options, document spdxCommon.AnyDocument, metaPackages []meta.Package) error {
 	// TODO: https://github.com/spdx/tools-golang/blob/main/convert/chain.go#L38 use for conversion?
 	// type cast to v2.3 document
 	v23Doc, ok := document.(*v23.Document)
@@ -87,7 +90,6 @@ func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon
 	for _, pkg := range metaPackages {
 		v23Pkg := tov23Package(pkg)
 
-		// TODO: what happens to further nesting, if any?
 		// traverse through sub packages of a meta package
 		for _, subMod := range pkg.Packages {
 			subV23Pkg := tov23Package(*subMod)
@@ -123,6 +125,8 @@ func (h *Handler) AddDocumentPackages(opts *options.Options, document spdxCommon
 	return nil
 }
 
+// tov23Package converts the package returned from the parsers to the spdx format
+// https://spdx.github.io/spdx-spec/v2.3/package-information/
 func tov23Package(p meta.Package) *v23.Package {
 	return &v23.Package{
 		PackageName:           p.Name,

@@ -13,7 +13,7 @@ import (
 
 const (
 	NoAssertion = "NOASSERTION"
-	HttpsPrefix = "https"
+	HTTPSPrefix = "https"
 )
 
 var (
@@ -31,11 +31,11 @@ func BuildHomepageURL(url string) string {
 		return NoAssertion
 	}
 
-	if strings.HasPrefix(url, HttpsPrefix) {
+	if strings.HasPrefix(url, HTTPSPrefix) {
 		return url
 	}
 
-	return fmt.Sprintf("%s://%s", HttpsPrefix, url)
+	return fmt.Sprintf("%s://%s", HTTPSPrefix, url)
 }
 
 func BuildVersion(module meta.Package) string {
@@ -60,17 +60,6 @@ func BuildVersion(module meta.Package) string {
 	return head.Hash().String()[0:7]
 }
 
-func SetPkgValue(s string) *common.Supplier {
-	if s == "" {
-		return nil
-	}
-
-	return &common.Supplier{
-		Supplier:     s,
-		SupplierType: "",
-	}
-}
-
 func SetPkgSPDXIdentifier(s, v string, root bool) common.ElementID {
 	if root {
 		return common.ElementID(replacer.Replace(s))
@@ -82,10 +71,10 @@ func SetPkgSPDXIdentifier(s, v string, root bool) common.ElementID {
 func BuildNamespace(name, version string) string {
 	uuidStr := uuid.New().String()
 	if version == "" {
-		return fmt.Sprintf("%s://spdx.org/spdxdocs/%s-%s", HttpsPrefix, name, uuidStr)
+		return fmt.Sprintf("%s://spdx.org/spdxdocs/%s-%s", HTTPSPrefix, name, uuidStr)
 	}
 
-	return fmt.Sprintf("%s://spdx.org/spdxdocs/%s-%s-%s", HttpsPrefix, name, version, uuidStr)
+	return fmt.Sprintf("%s://spdx.org/spdxdocs/%s-%s-%s", HTTPSPrefix, name, version, uuidStr)
 }
 
 func BuildName(name, version string) string {
