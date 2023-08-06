@@ -2,10 +2,9 @@
 package runner
 
 import (
-	"errors"
-
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	v22 "github.com/spdx/spdx-sbom-generator/pkg/runner/dochandlers/v22"
 	v23 "github.com/spdx/spdx-sbom-generator/pkg/runner/dochandlers/v23"
@@ -14,6 +13,7 @@ import (
 
 type defaultGeneratorImplementation struct{}
 
+// GetDocumentFormatHandler gets a document handler according to the spdx schema version
 func (di *defaultGeneratorImplementation) GetDocumentFormatHandler(opts *options.Options) (DocumentFormatHandler, error) {
 	switch opts.SchemaVersion {
 	case "2.3":
@@ -25,6 +25,8 @@ func (di *defaultGeneratorImplementation) GetDocumentFormatHandler(opts *options
 	}
 }
 
+// GetCodeParsers gets all valid parsers for the project path.
+// In case of multiple programming languages in the project, multiple parsers are returned.
 func (di *defaultGeneratorImplementation) GetCodeParsers(opts *options.Options) ([]plugin.Plugin, error) {
 	var parsers = make([]plugin.Plugin, 0)
 
@@ -41,6 +43,8 @@ func (di *defaultGeneratorImplementation) GetCodeParsers(opts *options.Options) 
 	return parsers, nil
 }
 
+// RunParser runs the parser to parse packages from the project
+// The parsers are implemented at https://github.com/opensbom-generator/parsers
 func (di *defaultGeneratorImplementation) RunParser(opts *options.Options, plugin plugin.Plugin) ([]meta.Package, error) {
 	modulePath := opts.Path
 	version, err := plugin.GetVersion()
@@ -56,14 +60,16 @@ func (di *defaultGeneratorImplementation) RunParser(opts *options.Options, plugi
 	opts.SetSlug(plugin.GetMetadata().Slug)
 
 	log.Infof("Current Language Version %s", version)
-	log.Infof("Global Setting File %s", opts.GlobalSettingFile)
+	log.Infof("Global Setting File path %s", opts.GlobalSettingFile)
+	log.Infof("Parsing %s for packages", opts.Path)
+
 	if moduleErr := plugin.HasModulesInstalled(modulePath); moduleErr != nil {
 		return nil, moduleErr
 	}
 
 	metaPackages, err := plugin.ListModulesWithDeps(modulePath, opts.GlobalSettingFile)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "error parsing packages")
 	}
 
 	return metaPackages, nil
