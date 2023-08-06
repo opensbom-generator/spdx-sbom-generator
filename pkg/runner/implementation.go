@@ -7,6 +7,7 @@ import (
 	"github.com/opensbom-generator/parsers/meta"
 	"github.com/opensbom-generator/parsers/plugin"
 	log "github.com/sirupsen/logrus"
+	v22 "github.com/spdx/spdx-sbom-generator/pkg/runner/dochandlers/v22"
 	v23 "github.com/spdx/spdx-sbom-generator/pkg/runner/dochandlers/v23"
 	"github.com/spdx/spdx-sbom-generator/pkg/runner/options"
 )
@@ -17,6 +18,8 @@ func (di *defaultGeneratorImplementation) GetDocumentFormatHandler(opts *options
 	switch opts.SchemaVersion {
 	case "2.3":
 		return &v23.Handler{}, nil
+	case "2.2":
+		return &v22.Handler{}, nil
 	default:
 		return nil, errors.New("no document format handler defined")
 	}
