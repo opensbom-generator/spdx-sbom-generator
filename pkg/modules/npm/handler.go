@@ -105,7 +105,12 @@ func (m *npm) GetRootModule(path string) (*models.Module, error) {
 		mod.Name = pkResult["name"].(string)
 	}
 	if pkResult["author"] != nil {
-		mod.Supplier.Name = pkResult["author"].(string)
+		if name, ok := pkResult["author"].(string); ok {
+			mod.Supplier.Name = name
+		}
+		if _, ok := pkResult["author"].(map[string]interface{}); ok && pkResult["author"].(map[string]interface{})["name"] != nil {
+			mod.Supplier.Name = pkResult["author"].(map[string]interface{})["name"].(string)
+		}
 	}
 	if pkResult["version"] != nil {
 		mod.Version = pkResult["version"].(string)
@@ -317,7 +322,10 @@ func getPackageDependencies(modDeps map[string]interface{}, t string) map[string
 		name := strings.TrimPrefix(k, "@")
 		version := ""
 		if t == "dependencies" {
-			version = strings.TrimPrefix(v.(map[string]interface{})["version"].(string), "^")
+			_, ok := v.(map[string]interface{})
+			if ok && v.(map[string]interface{})["version"] != nil {
+				version = strings.TrimPrefix(v.(map[string]interface{})["version"].(string), "^")
+			}
 		}
 		if t == "requires" {
 			version = strings.TrimPrefix(v.(string), "^")
@@ -351,7 +359,12 @@ func appendNestedDependencies(deps map[string]interface{}) map[string]map[string
 		if allDeps[k] != nil {
 			mainDeps = allDeps[k]
 		}
-		mainDeps[v.(map[string]interface{})["version"].(string)] = v
+		_, ok := v.(map[string]interface{})
+		if ok && v.(map[string]interface{})["version"] != nil {
+			mainDeps[v.(map[string]interface{})["version"].(string)] = v
+		} else {
+			mainDeps[""] = v
+		}
 		allDeps[k] = mainDeps
 
 		if r, ok := v.(map[string]interface{})["requires"]; ok {

@@ -160,11 +160,11 @@ func (f *Format) convertToPackage(module models.Module) (models.Package, error) 
 			Value:     module.CheckSum.String(),
 		}},
 		PackageHomePage:         buildHomepageURL(module.PackageURL),
-		PackageLicenseConcluded: noAssertion, // setPkgValue(module.LicenseConcluded),
-		PackageLicenseDeclared:  noAssertion, // setPkgValue(module.LicenseDeclared),
-		PackageCopyrightText:    noAssertion, // setPkgValue(module.Copyright),
-		PackageLicenseComments:  setPkgValue(""),
-		PackageComment:          setPkgValue(""),
+		PackageLicenseConcluded: setPkgValue(module.LicenseConcluded),
+		PackageLicenseDeclared:  setPkgValue(module.LicenseDeclared),
+		PackageCopyrightText:    setPkgValue(module.Copyright),
+		PackageLicenseComments:  setPkgValue(module.CommentsLicense),
+		PackageComment:          setPkgValue(module.PackageComment),
 		RootPackage:             module.Root,
 	}, nil
 }
