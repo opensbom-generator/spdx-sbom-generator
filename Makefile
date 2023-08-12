@@ -30,12 +30,15 @@ mod:
 generate: mod
 	@echo "Running cli on version: $(VERSION)"
 	@GO111MODULE=on GLFLAGs=-mod-vendor go run cmd/generator/generator.go $(ARGS)
+	@GO111MODULE=on GLFLAGs=-mod-vendor go run cmd/sbomgen/sbomgen.go $(ARGS) > examples/sbom.spdx
 
 .PHONY: build
 build: mod
 	@echo "Building spdx-sbom-generator for Linux Intel/AMD 64-bit version: $(VERSION)"
 	env GOOS=linux GOARCH=amd64 go build $(LD_FLAGS) -o bin/spdx-sbom-generator cmd/generator/generator.go
+	env GOOS=linux GOARCH=amd64 go build $(LD_FLAGS) -o bin/sbomgen cmd/sbomgen/sbomgen.go
 	@chmod +x bin/spdx-sbom-generator
+	@chmod +x bin/sbomgen
 
 .PHONY: build-mac
 build-mac: mod

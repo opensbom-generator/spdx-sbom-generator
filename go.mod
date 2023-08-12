@@ -9,6 +9,7 @@ require (
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/google/uuid v1.2.0
 	github.com/opensbom-generator/parsers v0.0.0-20230627202907-fc5a182b1325
+	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spdx/tools-golang v0.5.2
 	github.com/spf13/cobra v1.7.0
@@ -40,7 +41,6 @@ require (
 	github.com/montanaflynn/stats v0.6.6 // indirect
 	github.com/pelletier/go-toml/v2 v2.0.8 // indirect
 	github.com/pjbgf/sha1cd v0.3.0 // indirect
-	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/sergi/go-diff v1.2.0 // indirect
