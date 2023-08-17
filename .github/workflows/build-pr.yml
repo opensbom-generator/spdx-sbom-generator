@@ -26,7 +26,7 @@ jobs:
         run: make check-headers
       - name: Build
         run: make build
-  generate:
+  generate-and-validate:
     name: Generate and validate SBOM file
     runs-on: ubuntu-latest
     strategy:
