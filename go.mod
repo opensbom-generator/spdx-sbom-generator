@@ -16,6 +16,7 @@ require (
 	github.com/stretchr/testify v1.8.4
 	github.com/vifraa/gopom v0.2.1
 	golang.org/x/mod v0.11.0
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
@@ -57,6 +58,5 @@ require (
 	gonum.org/v1/gonum v0.8.2 // indirect
 	gopkg.in/neurosnap/sentences.v1 v1.0.7 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/release-utils v0.7.4 // indirect
 )
