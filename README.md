@@ -1,5 +1,9 @@
 # SPDX Software Bill of Materials (SBOM) Generator
 
+🚧 THIS PROJECT IS UNDER CONSTRUCTION 🚧
+
+Keep up with work being done on the project by joining the [community call](https://meet.jit.si/SBOM-tools) every Wednesday at 9:30 am Pacific Time.
+
 ## Table of Contents
 - [Contributing](CONTRIBUTING.md)
 - [Overview](#overview)

@@ -1,7 +1,7 @@
 # Contributing to the Project
 Everyone is encouraged to participate in the SPDX Software Bill of Materials (SBOM) Generator project. Anyone can influence the project by simply being involved in the discussions about new features, the roadmap, architecture, and even problems they are facing.
 
-Community meetings are held every Wednesday, 9:00am-10:00am Pacific (12:00pm-1:00pm EDT, 5:00pm-6:00pm UTC), online. Join the meeting [here](https://meet.jit.si/SBOM-tools)
+Community meetings are held every Wednesday, 9:30am-10:30am Pacific (12:30pm-1:30pm EDT, 5:30pm-6:30pm UTC), online. Join the meeting [here](https://meet.jit.si/SBOM-tools)
 
 Meeting minutes are recorded [here](https://hackmd.io/EQ0DwvvgRnOl2uzPiTYQcw).
 
