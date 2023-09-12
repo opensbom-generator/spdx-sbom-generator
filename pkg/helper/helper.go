@@ -155,7 +155,9 @@ func GetCopyright(content string) string {
 
 		if strings.EqualFold(copyrightLookup, tokens[0]) {
 			cr[matchLevel2] = line
-			if re.MatchString(tokens[1]) {
+
+			has_multiple_tokens := len(tokens) > 1
+			if has_multiple_tokens && re.MatchString(tokens[1]) {
 				cr[matchLevel1] = line
 			}
 		}
