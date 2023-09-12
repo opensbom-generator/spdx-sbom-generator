@@ -58,6 +58,17 @@ build-win: mod
 	env GOOS=windows GOARCH=amd64 go build $(LD_FLAGS) -o bin/spdx-sbom-generator.exe cmd/generator/generator.go
 	@chmod +x bin/spdx-sbom-generator.exe
 
+.PHONY: build-docker
+build-docker:
+	@echo "Building spdx/spdx-sbom-generator docker image version: $(VERSION)"
+	docker build -t spdx/spdx-sbom-generator .
+
+.PHONY: docker
+docker:
+	@echo "Building spdx/spdx-sbom-generator docker image version: $(VERSION)"
+	docker build -f Dockerfile.spack -t spdx/spdx-sbom-generator .
+
+
 $(LINT_TOOL):
 	@echo "Installing golangci linter version $(LINT_VERSION)..."
 	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(shell go env GOPATH)/bin $(LINT_VERSION)

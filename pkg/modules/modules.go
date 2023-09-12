@@ -5,21 +5,10 @@ package modules
 import (
 	"errors"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/javagradle"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/models"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/cargo"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/composer"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/gem"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/gomod"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/javamaven"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/npm"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/nuget"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/swift"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/yarn"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/spack"
 )
 
 var (
@@ -32,7 +21,7 @@ var registeredPlugins []models.IPlugin
 
 func init() {
 	registeredPlugins = append(registeredPlugins,
-		cargo.New(),
+		/*cargo.New(),
 		composer.New(),
 		gomod.New(),
 		gem.New(),
@@ -41,8 +30,9 @@ func init() {
 		javamaven.New(),
 		nuget.New(),
 		yarn.New(),
-		pip.New(),
-		swift.New(),
+		pip.New(),*/
+		spack.New(),
+		//swift.New(),
 	)
 }
 
