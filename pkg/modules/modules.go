@@ -4,6 +4,7 @@ package modules
 
 import (
 	"errors"
+	"github.com/spdx/spdx-sbom-generator/pkg/modules/pnpm"
 
 	"github.com/spdx/spdx-sbom-generator/pkg/modules/javagradle"
 
@@ -43,6 +44,7 @@ func init() {
 		yarn.New(),
 		pip.New(),
 		swift.New(),
+		pnpm.New(),
 	)
 }
 
