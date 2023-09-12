@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
-module github.com/spdx/spdx-sbom-generator
+module github.com/opensbom-generator/spdx-sbom-generator
 
 go 1.20
 

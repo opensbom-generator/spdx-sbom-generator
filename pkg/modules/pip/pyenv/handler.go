@@ -8,9 +8,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/helper"
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
-	"github.com/spdx/spdx-sbom-generator/pkg/modules/pip/worker"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/helper"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/modules/pip/worker"
 )
 
 const cmdName = "python"

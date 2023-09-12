@@ -5,7 +5,7 @@ package format
 import (
 	"encoding/json"
 
-	"github.com/spdx/spdx-sbom-generator/pkg/models"
+	"github.com/opensbom-generator/spdx-sbom-generator/pkg/models"
 )
 
 // JsonSPDXRenderer implements an SPDXRenderer that outputs JSON formatted SPDX documents
