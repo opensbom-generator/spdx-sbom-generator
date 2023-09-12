@@ -17,5 +17,14 @@ var (
 // Parse ...
 func (c command) Parse() []string {
 	cmd := strings.TrimSpace(string(c))
-	return strings.Fields(cmd)
+
+	// Keep double-quoted strings as a single token
+	quoted := false
+	tokens := strings.FieldsFunc(cmd, func(r rune) bool {
+		if r == '"' {
+			quoted = !quoted
+		}
+		return !quoted && r == ' '
+	})
+	return tokens
 }
