@@ -9,12 +9,14 @@ require (
 	github.com/go-git/go-git/v5 v5.7.0
 	github.com/google/uuid v1.2.0
 	github.com/opensbom-generator/parsers v0.0.0-20230627202907-fc5a182b1325
+	github.com/package-url/packageurl-go v0.1.2
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spdx/tools-golang v0.5.2
 	github.com/spf13/cobra v1.7.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vifraa/gopom v0.2.1
+	github.com/vifraa/gopom v1.0.0
+	golang.org/x/exp v0.0.0-20221006183845-316c7553db56
 	golang.org/x/mod v0.11.0
 )
 
@@ -49,7 +51,6 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	golang.org/x/crypto v0.10.0 // indirect
-	golang.org/x/exp v0.0.0-20221006183845-316c7553db56 // indirect
 	golang.org/x/net v0.11.0 // indirect
 	golang.org/x/sys v0.9.0 // indirect
 	golang.org/x/text v0.10.0 // indirect
